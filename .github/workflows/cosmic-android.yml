@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -36,7 +36,7 @@ jobs:
 
       - name: Install Capacitor dependencies
         working-directory: android-wrapper
-        run: npm ci
+        run: npm install
 
       - name: Copy latest COSMIC frontend
         run: |
