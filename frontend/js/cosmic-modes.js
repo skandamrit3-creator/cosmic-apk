@@ -20,18 +20,8 @@ function showMode(mode){
   chat.querySelector("#cosmicVoice").onclick=startVoice;
   loadModels();loadChats();
  }
- if(mode==="avatar"&&!avatar.dataset.ready){
-  avatar.dataset.ready="1";
-  const avatarNames=["Astra","Nova","Orion","Mira","Kai","Zara","Atlas","Luna","Aria","Ethan","Iris","Leo"];
-  avatar.innerHTML='<div class="avatar-studio"><header class="cosmic-chat-head"><b>COSMIC / LIVE AVATAR STUDIO</b><span>12 PERSONAS</span></header><div class="avatar-stage"><div class="avatar-figure" id="avatarFigure" data-avatar="0"><div class="avatar-halo"></div><div class="avatar-head"><i class="avatar-hair"></i><i class="avatar-eye left"></i><i class="avatar-eye right"></i><i class="avatar-nose"></i><i class="avatar-mouth" id="avatarMouth"></i></div><div class="avatar-neck"></div><div class="avatar-body"></div></div><div class="avatar-caption"><strong id="avatarName">Astra</strong><span id="avatarState">READY TO SPEAK</span></div><div class="avatar-speak"><textarea id="avatarText" rows="2" placeholder="Type something for your avatar to say…"></textarea><button id="avatarSpeak" type="button">SPEAK ↗</button></div></div><div class="avatar-picker" id="avatarPicker">'+avatarNames.map((n,i)=>'<button type="button" data-avatar="'+i+'" class="'+(i===0?'active':'')+'"><span class="avatar-thumb" data-tone="'+i+'"></span><b>'+n+'</b></button>').join('')+'</div><p class="avatar-disclaimer">Persona selection and speech animation are active. Accurate human 3D facial motion needs rigged 3D avatar assets and a viseme-capable speech stream; this build does not yet contain those assets.</p><section class="provider-audit"><header><b>LIVE API DIAGNOSTICS</b><button id="providerAuditRefresh" type="button">TEST APIS</button></header><div id="providerAuditResults">Checking provider configuration…</div></section></div>';
-  const figure=avatar.querySelector("#avatarFigure"),mouth=avatar.querySelector("#avatarMouth"),name=avatar.querySelector("#avatarName"),state=avatar.querySelector("#avatarState");
-  avatar.querySelectorAll("[data-avatar]").forEach(btn=>btn.addEventListener("click",()=>{const n=Number(btn.dataset.avatar);figure.dataset.avatar=n;name.textContent=avatarNames[n];avatar.querySelectorAll(".avatar-picker button").forEach(x=>x.classList.toggle("active",x===btn));}));
-  const speak=()=>{const text=avatar.querySelector("#avatarText").value.trim();if(!text||!window.speechSynthesis)return;window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.onstart=()=>{state.textContent="SPEAKING";figure.classList.add("talking");};utterance.onboundary=()=>{mouth.classList.toggle("open");};utterance.onend=()=>{figure.classList.remove("talking");mouth.classList.remove("open");state.textContent="READY";};utterance.onerror=()=>{figure.classList.remove("talking");state.textContent="VOICE ERROR";};window.speechSynthesis.speak(utterance);};
-  avatar.querySelector("#avatarSpeak").addEventListener("click",speak);
-  avatar.querySelector("#providerAuditRefresh").addEventListener("click",auditProviders);
-  auditProviders();
- }
-}
+ if(mode==="avatar"&&!avatar.dataset.ready){avatar.dataset.ready="1";avatar.innerHTML="";}
+
 
 async function auditProviders(){
  const root=document.querySelector("#providerAuditResults");if(!root)return;
@@ -80,6 +70,67 @@ function newChat(){sessionId="chat-"+Date.now().toString(36);localStorage.setIte
 function speakText(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(String(t)));}
 function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){chat.querySelector("#cosmicChatState").textContent="VOICE NOT SUPPORTED";return;}const r=new SR();r.lang=navigator.language||"en-US";r.onresult=e=>{const v=e.results[e.results.length-1][0].transcript;if(e.results[e.results.length-1].isFinal)chat.querySelector("#cosmicChatInput").value=v;};r.onerror=e=>chat.querySelector("#cosmicChatState").textContent="VOICE "+e.error;r.start();chat.querySelector("#cosmicChatState").textContent="LISTENING";}
 
+function ensureQuickPanel(){
+ let panel=document.querySelector("#cosmicQuickPanel");
+ if(panel)return panel;
+ panel=document.createElement("section");panel.id="cosmicQuickPanel";panel.className="cosmic-quick-panel";panel.hidden=true;
+ panel.innerHTML='<div class="cosmic-quick-card"><header class="cosmic-quick-head"><h2 id="cosmicQuickTitle">COSMIC</h2><button type="button" id="cosmicQuickClose">CLOSE</button></header><div id="cosmicQuickBody" class="cosmic-quick-body"></div></div>';
+ document.body.append(panel);panel.addEventListener("click",e=>{if(e.target===panel)panel.hidden=true;});panel.querySelector("#cosmicQuickClose").onclick=()=>panel.hidden=true;
+ return panel;
+}
+function addQuickText(root,value,tag="p"){const el=document.createElement(tag);el.textContent=String(value??"");root.append(el);return el;}
+function addQuickButton(root,label,handler){const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=handler;root.append(b);return b;}
+async function openQuick(view){
+ const panel=ensureQuickPanel(),title=panel.querySelector("#cosmicQuickTitle"),body=panel.querySelector("#cosmicQuickBody");body.replaceChildren();panel.hidden=false;
+ const labels={models:"MODEL LIBRARY",memory:"MEMORY",tools:"TOOLS",settings:"CONNECTION SETTINGS",updates:"UPGRADE CENTER",research:"RESEARCH",devices:"DEVICE BRIDGE"};
+ title.textContent=labels[view]||String(view).toUpperCase();
+ if(view==="command"){panel.hidden=true;showMode("reactor");return;}
+ if(view==="models"){
+  addQuickText(body,"Live model catalog from the connected COSMIC backend.");
+  try{const d=await(await fetch(apiBase()+"/api/ai/models",{cache:"no-store"})).json();(d.models||[]).forEach(m=>{const row=document.createElement("div");row.className="quick-row";const name=document.createElement("b");name.textContent=m.label;const sub=document.createElement("span");sub.textContent=m.provider.toUpperCase()+" · "+(m.configured?"KEY CONFIGURED":"KEY MISSING");row.append(name,sub);body.append(row);});if(!d.models?.length)addQuickText(body,"No models returned by backend.");}catch(e){addQuickText(body,"Model list unavailable: "+e.message);}return;
+ }
+ if(view==="memory"){
+  addQuickText(body,"Recent saved conversations and memory count.");
+  try{const count=await(await fetch(apiBase()+"/api/memory/count")).json();addQuickText(body,"Stored conversation records: "+(count.count??"unknown"));const d=await(await fetch(apiBase()+"/api/memory/page?limit=20")).json();(d.items||[]).forEach(x=>{const row=document.createElement("div");row.className="quick-row";const b=document.createElement("b");b.textContent=(x.message||"Memory").slice(0,88);const s=document.createElement("span");s.textContent=(x.created_at||"")+" · "+String(x.response||"").slice(0,130);row.append(b,s);body.append(row);});}catch(e){addQuickText(body,"Memory endpoint unavailable: "+e.message);}return;
+ }
+ if(view==="tools"){
+  addQuickText(body,"Quick actions currently connected to this build.");
+  addQuickButton(body,"VOICE INPUT",()=>{panel.hidden=true;document.querySelector("#voiceButton")?.click();});
+  addQuickButton(body,"ATTACH FILE",()=>{panel.hidden=true;document.querySelector("#attachButton")?.click();});
+  addQuickButton(body,"3D AVATAR STUDIO",()=>{panel.hidden=true;showMode("avatar");});
+  addQuickButton(body,"CHECK UPDATES",()=>openQuick("updates"));
+  addQuickText(body,"Device actions require their Android bridge and permissions. COSMIC will report unsupported actions instead of pretending they ran.");return;
+ }
+ if(view==="settings"){
+  addQuickText(body,"The backend connection dialog verifies /api/health and /api/ai/models before saving.");
+  addQuickButton(body,"OPEN BACKEND CONNECTION",()=>{panel.hidden=true;document.querySelector("#systemMenu")?.click();});
+  addQuickText(body,"On the same Android phone, the default local backend is http://127.0.0.1:8059. A different computer needs its LAN or public address.");return;
+ }
+ if(view==="updates"){
+  addQuickText(body,"Upgrade checks use the backend upgrade manager. Applying code changes is a separate, approval-gated operation.");
+  for(const [name,path] of [["STATUS","/api/upgrades/status"],["PROJECT","/api/upgrades/project"],["HISTORY","/api/upgrades/history"]]){
+   try{const d=await(await fetch(apiBase()+path,{cache:"no-store"})).json();const row=document.createElement("div");row.className="quick-row";const b=document.createElement("b");b.textContent=name;const s=document.createElement("span");s.textContent=JSON.stringify(d).slice(0,900);row.append(b,s);body.append(row);}catch(e){addQuickText(body,name+" check failed: "+e.message);}
+  }return;
+ }
+ if(view==="research"){
+  addQuickText(body,"Write a research request. COSMIC sends it through the configured chat backend; it does not claim live web browsing unless a research provider is connected.");
+  const input=document.createElement("textarea");input.rows=3;input.placeholder="Research topic…";input.style.cssText="width:100%;padding:12px;border-radius:10px;background:#0a1726;color:#fff;border:1px solid var(--c-line);";body.append(input);
+  addQuickButton(body,"SEND TO COSMIC",()=>{document.querySelector("#messageInput").value="Research: "+input.value;panel.hidden=true;window.COSMIC?.executeCommand?.();});return;
+ }
+ if(view==="devices"){
+  addQuickText(body,"Android bridge status");
+  const s=document.querySelector("#brainStatus");addQuickText(body,s?.textContent||"Brain status panel is not mounted.");
+  addQuickButton(body,"OPEN PERMISSION CONTROLS",()=>{panel.hidden=true;document.querySelector("#brainEnabled")?.scrollIntoView({behavior:"smooth",block:"center"});});
+ }
+}
+function wireNavigation(){
+ document.querySelectorAll(".rail-item[data-view],.mobile-nav-item[data-view]").forEach(button=>button.addEventListener("click",()=>{
+  const view=button.dataset.view||"command";document.querySelectorAll(".rail-item,.mobile-nav-item").forEach(x=>x.classList.toggle("active",x.dataset.view===view));
+  if(view==="command"){ensureQuickPanel().hidden=true;showMode("reactor");}else openQuick(view);
+ }));
+}
+
+wireNavigation();
 tabs.forEach(t=>t.addEventListener("click",()=>showMode(t.dataset.cosmicMode)));
 showMode("reactor");
 })();
