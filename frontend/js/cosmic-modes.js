@@ -3,7 +3,9 @@
 const tabs=[...document.querySelectorAll("[data-cosmic-mode]")];
 const reactor=document.querySelector(".hud-main"),topbar=document.querySelector(".topbar"),mobile=document.querySelector(".mobile-nav");
 const chat=document.querySelector("#cosmicChatMode"),avatar=document.querySelector("#cosmicAvatarMode");
-let busy=false;
+let busy=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat-"+Date.now().toString(36)), lastPrompt="";
+localStorage.setItem("cosmic.chat.session.v1",sessionId);
+const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\\/$/,"");
 function showMode(mode){
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
  const isReactor=mode==="reactor";
@@ -11,8 +13,12 @@ function showMode(mode){
  chat.hidden=mode!=="chat";avatar.hidden=mode!=="avatar";
  if(mode==="chat"&&!chat.dataset.ready){
   chat.dataset.ready="1";
-  chat.innerHTML='<header class="cosmic-chat-head"><span>COSMIC / CONVERSATION</span><span id="cosmicChatState">CORE LINK READY</span></header><div class="cosmic-chat-log" id="cosmicChatLog"><div class="cosmic-chat-msg">COSMIC CHAT — Ask a question or give a command.</div></div><form class="cosmic-chat-compose" id="cosmicChatForm"><textarea id="cosmicChatInput" rows="2" placeholder="Message COSMIC…"></textarea><button type="submit">SEND ↗</button></form>';
+  chat.innerHTML='<aside class="cosmic-history" id="cosmicHistoryPanel"><b>CHAT HISTORY</b><button id="cosmicNewChat" type="button">＋ NEW</button><div id="cosmicHistoryList"></div></aside><section class="cosmic-chat-main"><header class="cosmic-chat-head"><span>COSMIC / CHAT</span><span id="cosmicChatState">CORE LINK READY</span></header><div class="cosmic-chat-controls"><label>PROVIDER <select id="cosmicChatProvider"><option value="auto">AUTO</option></select></label><label>MODEL <select id="cosmicChatModel"><option value="auto">AUTO</option></select></label><button id="cosmicHistoryToggle" type="button">HISTORY</button></div><div class="cosmic-chat-log" id="cosmicChatLog"><div class="cosmic-chat-msg">COSMIC CHAT — Ask a question or give a command.</div></div><form class="cosmic-chat-compose" id="cosmicChatForm"><textarea id="cosmicChatInput" rows="2" placeholder="Message COSMIC…"></textarea><button id="cosmicVoice" type="button">VOICE</button><button type="submit">SEND ↗</button></form></section>';
   chat.querySelector("#cosmicChatForm").addEventListener("submit",sendChat);
+  chat.querySelector("#cosmicNewChat").onclick=newChat;
+  chat.querySelector("#cosmicHistoryToggle").onclick=()=>chat.querySelector("#cosmicHistoryPanel").hidden=!chat.querySelector("#cosmicHistoryPanel").hidden;
+  chat.querySelector("#cosmicVoice").onclick=startVoice;
+  loadModels();loadChats();
  }
  if(mode==="avatar"&&!avatar.dataset.ready){
   avatar.dataset.ready="1";
@@ -36,17 +42,25 @@ function renderRichText(root,source){
 async function sendChat(e){
  e.preventDefault();if(busy)return;
  const input=chat.querySelector("#cosmicChatInput"),log=chat.querySelector("#cosmicChatLog"),state=chat.querySelector("#cosmicChatState");
- const message=input.value.trim();if(!message)return;
+ const message=input.value.trim();if(!message)return;lastPrompt=message;
  const add=(text,kind)=>{const el=document.createElement("div");el.className="cosmic-chat-msg "+kind;if(kind==="assistant")renderRichText(el,text);else el.textContent=text;log.append(el);log.scrollTop=log.scrollHeight;return el;};
  add(message,"user");input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
-  const response=await fetch((window.COSMIC_API_BASE||"")+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,task:"chat",mode:"auto",provider:"auto",model:"auto"})});
+  const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,task:"chat",mode:chat.querySelector("#cosmicChatProvider")?.value==="auto"?"auto":"manual",provider:chat.querySelector("#cosmicChatProvider")?.value||"auto",model:chat.querySelector("#cosmicChatModel")?.value||"auto",session_id:sessionId})});
   const data=await response.json();if(!response.ok||data.success===false)throw new Error(data.error||data.message||"HTTP "+response.status);
-  wait.replaceChildren();renderRichText(wait,data.message||data.response||data.text||"COSMIC returned an empty response.");state.textContent="CONNECTED";
+  wait.replaceChildren();renderRichText(wait,data.message||data.response||data.text||"COSMIC returned an empty response.");const tools=document.createElement("div");tools.className="cosmic-message-tools";const speak=document.createElement("button");speak.type="button";speak.textContent="🔊 SPEAK";speak.onclick=()=>speakText(data.message||data.response||data.text||"");const edit=document.createElement("button");edit.type="button";edit.textContent="EDIT PROMPT";edit.onclick=()=>{input.value=lastPrompt;input.focus();};tools.append(speak,edit);if(data.provider){const tag=document.createElement("span");tag.className="cosmic-model-tag";tag.textContent=data.provider+" · "+(data.model||"");tools.append(tag);}wait.append(tools);state.textContent="CONNECTED";
  }catch(err){wait.className="cosmic-chat-msg system";wait.textContent="API ERROR: "+err.message;state.textContent="CONNECTION ERROR";}
  finally{busy=false;}
 }
+
+async function loadModels(){const p=chat.querySelector("#cosmicChatProvider"),m=chat.querySelector("#cosmicChatModel");try{const r=await fetch(apiBase()+"/api/ai/models"),d=await r.json();const all=d.models||[];[...new Set(all.map(x=>x.provider))].forEach(x=>p.add(new Option(x.toUpperCase(),x)));function fill(){m.replaceChildren(new Option("AUTOMATIC","auto"));all.filter(x=>p.value==="auto"||x.provider===p.value).forEach(x=>{const o=new Option(x.label+(x.configured?"":" (KEY MISSING)"),x.provider+":"+x.id);o.disabled=!x.configured;m.add(o);});}p.onchange=fill;fill();}catch(e){chat.querySelector("#cosmicChatState").textContent="MODEL LIST ERROR";}}
+async function loadChats(){const list=chat.querySelector("#cosmicHistoryList");try{const d=await(await fetch(apiBase()+"/api/chats")).json();list.replaceChildren();(d.items||[]).forEach(x=>{const b=document.createElement("button");b.className="cosmic-history-item";b.textContent=(x.title||"Untitled").slice(0,60);b.onclick=()=>openChat(x.session_id);list.append(b);});}catch(e){list.textContent="History unavailable";}}
+async function openChat(id){sessionId=id;localStorage.setItem("cosmic.chat.session.v1",id);const log=chat.querySelector("#cosmicChatLog");log.replaceChildren();try{const d=await(await fetch(apiBase()+"/api/history?session_id="+encodeURIComponent(id))).json();(d.items||[]).forEach(x=>{lastPrompt=x.message;const u=document.createElement("div");u.className="cosmic-chat-msg user";u.textContent=x.message;log.append(u);const a=document.createElement("div");a.className="cosmic-chat-msg assistant";renderRichText(a,x.response||"");log.append(a);});}catch(e){log.textContent="History load failed";}chat.querySelector("#cosmicHistoryPanel").hidden=true;}
+function newChat(){sessionId="chat-"+Date.now().toString(36);localStorage.setItem("cosmic.chat.session.v1",sessionId);chat.querySelector("#cosmicChatLog").replaceChildren();}
+function speakText(t){if(!window.speechSynthesis)return;window.speechSynthesis.cancel();window.speechSynthesis.speak(new SpeechSynthesisUtterance(String(t)));}
+function startVoice(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){chat.querySelector("#cosmicChatState").textContent="VOICE NOT SUPPORTED";return;}const r=new SR();r.lang=navigator.language||"en-US";r.onresult=e=>{const v=e.results[e.results.length-1][0].transcript;if(e.results[e.results.length-1].isFinal)chat.querySelector("#cosmicChatInput").value=v;};r.onerror=e=>chat.querySelector("#cosmicChatState").textContent="VOICE "+e.error;r.start();chat.querySelector("#cosmicChatState").textContent="LISTENING";}
+
 tabs.forEach(t=>t.addEventListener("click",()=>showMode(t.dataset.cosmicMode)));
 showMode("reactor");
 })();
