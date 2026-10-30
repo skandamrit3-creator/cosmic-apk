@@ -106,7 +106,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   ].join("");}
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
-    $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f)loadBlob(f,f.name);});
+    $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f){currentTaskId="";$("#avatarRig3D",host).disabled=true;loadBlob(f,f.name);}});
     host.querySelectorAll("[data-avatar-style]").forEach(b=>b.onclick=()=>{host.querySelectorAll("[data-avatar-style]").forEach(x=>x.classList.toggle("active",x===b));setPreview(b.dataset.avatarStyle);});
     host.querySelectorAll("[data-avatar-preset]").forEach(b=>b.addEventListener("click",()=>generatePreset(b.dataset.avatarPreset,b)));
     host.querySelectorAll("[data-avatar-sample]").forEach(b=>b.onclick=async()=>{try{status("Loading "+b.dataset.avatarSample+" VRM model from the sample library…");await loadUrl(b.dataset.url,"VRoid Avatar Sample "+b.dataset.avatarSample);}catch(e){status("Could not load sample avatar: "+e.message,"error");}});
@@ -139,7 +139,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       status("Preset generation failed: "+e.message,"error");
     }finally{all.forEach(x=>x.disabled=false);}
   }
-  async function checkProvider(){try{const r=await fetch(apiBase()+"/api/avatar/3d/status",{cache:"no-store"}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);status(d.configured?"Tripo connection configured. Generation still requires your explicit photo upload.":"3D viewer ready; photo-to-3D is not configured. Add TRIPO_API_KEY to backend .env.","info");$("#avatarGenerate3D").disabled=!d.configured;}catch(e){status("3D service status unavailable: "+e.message,"error");}}
+  async function checkProvider(){try{const r=await fetch(apiBase()+"/api/avatar/3d/status",{cache:"no-store"}),d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);status(d.configured?"Tripo is configured. Photo twin and character generation may use paid credits.":"3D viewer ready; cloud creation is not configured. Add TRIPO_API_KEY to the backend .env.","info");$("#avatarGenerate3D").disabled=!d.configured;document.querySelectorAll("[data-avatar-preset]").forEach(b=>b.disabled=!d.configured);}catch(e){status("3D service status unavailable: "+e.message,"error");document.querySelectorAll("[data-avatar-preset]").forEach(b=>b.disabled=true);}}
   async function generatePhotos(){
     const consent=$("#avatarPhotoConsent");if(!consent?.checked){status("Confirm permission to upload the selected photos first.","error");return;}
     const views=["front","left","back","right"],files=views.map(v=>[v,document.getElementById("avatarPhoto"+v[0].toUpperCase()+v.slice(1))?.files?.[0]]).filter(x=>x[1]);
