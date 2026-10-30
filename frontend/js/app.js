@@ -164,7 +164,7 @@
         const start = performance.now();
 
         try {
-            const response = await fetch(window.COSMIC_API_BASE + "/api/chat", {
+            const response = await fetch((window.COSMIC_API_BASE || window.location.origin) + "/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -270,20 +270,24 @@
         }
     });
 
-    // Mobile voice placeholder
-    $("#voiceButton")?.addEventListener("click", () => {
-        addMessage(
-            "system-message",
-            "VOICE INTERFACE READY — microphone integration pending."
-        );
-    });
+    // Native/browser voice controls are registered in voice-control.js.
 
-    // Attachment placeholder
+    // File selection is local in this build; the text-chat API does not upload image/document bytes.
     $("#attachButton")?.addEventListener("click", () => {
-        addMessage(
-            "system-message",
-            "INPUT ATTACHMENT INTERFACE READY."
-        );
+        let picker = $("#cosmicAttachmentPicker");
+        if (!picker) {
+            picker = document.createElement("input");
+            picker.id = "cosmicAttachmentPicker";
+            picker.type = "file";
+            picker.accept = "image/*,.pdf,.txt,.md,.doc,.docx";
+            picker.hidden = true;
+            document.body.append(picker);
+            picker.addEventListener("change", () => {
+                const file = picker.files && picker.files[0];
+                if (file) addMessage("system-message", "Selected locally: " + file.name + " (" + Math.round(file.size / 1024) + " KB). File transfer/vision analysis is not enabled on the current chat endpoint.");
+            });
+        }
+        picker.click();
     });
 
     // System menu
