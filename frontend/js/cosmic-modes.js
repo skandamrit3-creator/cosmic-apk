@@ -21,7 +21,7 @@ function showMode(mode){
   loadModels();loadChats();
  }
  if(mode==="avatar"&&!avatar.dataset.ready){avatar.dataset.ready="1";avatar.innerHTML="";}
-
+ }
 
 async function auditProviders(){
  const root=document.querySelector("#providerAuditResults");if(!root)return;
