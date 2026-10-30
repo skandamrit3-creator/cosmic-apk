@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#02060a">
     <title>COSMIC — AI Operating System</title>
     <link rel="stylesheet" href="css/app.css">
-<link rel="stylesheet" href="css/cosmic-hud.css">
+<link rel="stylesheet" href="css/cosmic-hud.css">\n<link rel="stylesheet" href="css/cosmic-modes.css">
 </head>
 
 <body>
-<div id="cosmic">
+<div id="cosmic">\n    <nav class="mode-switch" aria-label="COSMIC interface modes">\n      <button class="mode-tab active" data-cosmic-mode="reactor">◈ REACTOR</button>\n      <button class="mode-tab" data-cosmic-mode="chat">◉ CHAT</button>\n      <button class="mode-tab" data-cosmic-mode="avatar">◎ AVATAR</button>\n    </nav>\n    <section id="cosmicChatMode" class="cosmic-mode-view chat-mode" hidden></section>\n    <section id="cosmicAvatarMode" class="cosmic-mode-view avatar-mode" hidden></section>
 
     <!-- AMBIENT HUD -->
     <div class="hud-grid"></div>
@@ -596,7 +596,7 @@ window.COSMIC_API_BASE = window.COSMIC_API_BASE || "http://127.0.0.1:8001";
 })();
 </script>
 
-<script src="js/app.js"></script>
+<script src="js/cosmic-modes.js"></script>\n<script src="js/app.js"></script>
 <script src="js/integrations.js"></script>
     <script src="js/upgrade-ui.js"></script>
     <script src="js/voice-control.js"></script>\n</body>
