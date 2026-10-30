@@ -72,6 +72,37 @@ class AIGateway:
     def __init__(self):
         pass
 
+
+    def provider_status(self):
+        """Report key presence separately from a real provider API probe."""
+        result = []
+        for provider, cfg in CONFIG.items():
+            key = os.getenv(cfg["key"], "").strip()
+            item = {"provider": provider, "configured": bool(key),
+                    "status": "not_configured" if not key else "not_tested",
+                    "tested": False}
+            if key:
+                try:
+                    if cfg.get("kind") == "gemini":
+                        url = "https://generativelanguage.googleapis.com/v1beta/models"
+                        response = requests.get(url, params={"key": key}, timeout=8)
+                    else:
+                        base = cfg["url"].rsplit("/", 2)[0]
+                        response = requests.get(base + "/models",
+                            headers={"Authorization": "Bearer " + key}, timeout=8)
+                    item["tested"] = True
+                    item["http_status"] = response.status_code
+                    item["status"] = "reachable" if response.ok else "api_error"
+                    if not response.ok:
+                        item["detail"] = (response.text or "")[:180]
+                except requests.RequestException as exc:
+                    item["tested"] = True
+                    item["status"] = "network_error"
+                    item["detail"] = str(exc)[:180]
+            result.append(item)
+        return result
+
+
     def _gemini(self, model, key, message, history):
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
