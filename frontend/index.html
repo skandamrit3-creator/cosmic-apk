@@ -531,7 +531,13 @@
 
 
 <script>
-window.COSMIC_API_BASE = window.COSMIC_API_BASE || window.location.origin;
+(() => {
+  const isNativeApp = /^(capacitor|ionic):\/\//i.test(window.location.protocol);
+  const configured = window.localStorage.getItem("COSMIC_API_BASE");
+  window.COSMIC_API_BASE = configured || (isNativeApp
+    ? "http://127.0.0.1:8059"
+    : window.location.origin);
+})();
 </script>
 <script id="COSMIC_MODEL_ROUTER_BRIDGE">
 (() => {
