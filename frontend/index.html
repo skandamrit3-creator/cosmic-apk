@@ -529,6 +529,20 @@
 
 </div>
 
+<div id="cosmicBackendDialog" role="dialog" aria-modal="true" aria-labelledby="cosmicBackendTitle" hidden style="position:fixed;inset:0;z-index:99999;background:#02060aeF;display:none;place-items:center;padding:20px">
+  <section style="width:min(520px,100%);background:#071522;border:1px solid #168bd0;border-radius:16px;padding:20px;color:#e8f5ff;box-shadow:0 0 40px #087ac455">
+    <h2 id="cosmicBackendTitle">COSMIC BACKEND CONNECTION</h2>
+    <p style="color:#9bb5c9">Enter the address where your COSMIC Python backend is running. On this same phone, use http://127.0.0.1:8059.</p>
+    <label for="cosmicBackendUrl">Backend URL</label>
+    <input id="cosmicBackendUrl" type="url" autocomplete="url" placeholder="http://127.0.0.1:8059" style="display:block;width:100%;box-sizing:border-box;margin:8px 0 14px;padding:12px;background:#020a12;color:white;border:1px solid #24516c;border-radius:8px">
+    <div id="cosmicBackendStatus" role="status" style="min-height:24px;color:#9bb5c9;margin-bottom:12px">Not checked</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="cosmicBackendTest" type="button">TEST CONNECTION</button>
+      <button id="cosmicBackendSave" type="button">SAVE CONNECTION</button>
+      <button id="cosmicBackendClose" type="button">CLOSE</button>
+    </div>
+  </section>
+</div>
 
 <script>
 (() => {
