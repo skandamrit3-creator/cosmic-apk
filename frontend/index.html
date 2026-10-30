@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="css/responsive-safety.css">
 <link rel="stylesheet" href="css/cosmic-hud.css">
 <link rel="stylesheet" href="css/cosmic-modes.css">
+<link rel="stylesheet" href="css/cosmic-premium.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/","@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3/lib/three-vrm.module.min.js"}}</script>
 </head>
 
 <body>
@@ -506,22 +508,22 @@
             <small>CORE</small>
         </button>
 
-        <button class="mobile-nav-item">
+        <button class="mobile-nav-item" data-view="models">
             <span>◇</span>
             <small>MODELS</small>
         </button>
 
-        <button class="mobile-nav-item">
+        <button class="mobile-nav-item" data-view="memory">
             <span>◎</span>
             <small>MEMORY</small>
         </button>
 
-        <button class="mobile-nav-item">
+        <button class="mobile-nav-item" data-view="tools">
             <span>⌘</span>
             <small>TOOLS</small>
         </button>
 
-        <button class="mobile-nav-item">
+        <button class="mobile-nav-item" data-view="settings">
             <span>⚙</span>
             <small>CONFIG</small>
         </button>
@@ -711,5 +713,6 @@
     <script src="js/upgrade-ui.js"></script>
     <script src="js/voice-control.js"></script>
 <script src="js/brain-control.js"></script>
+<script type="module" src="js/avatar-studio.js"></script>
 </body>
 </html>
