@@ -19,3 +19,13 @@
 .avatar-card p{color:#a7bdca;line-height:1.6}
 @keyframes avatarPulse{50%{transform:scale(1.035);box-shadow:0 0 55px #1dbbe988,inset 0 0 45px #1dbbe955}}
 @media(max-width:700px){.mode-switch{top:7px}.mode-tab{padding:8px 11px;font-size:9px}.cosmic-mode-view{inset:58px 0 0}.cosmic-chat-msg{max-width:96%}.cosmic-chat-compose button{padding:0 13px}}
+
+.cosmic-chat-msg p{margin:0 0 10px}.cosmic-chat-msg p:last-child{margin-bottom:0}
+.cosmic-chat-msg h1,.cosmic-chat-msg h2,.cosmic-chat-msg h3{color:#eafaff;margin:14px 0 8px}
+.cosmic-chat-msg ul{padding-left:22px;margin:7px 0}.cosmic-chat-msg li{margin:4px 0}
+.cosmic-chat-msg code:not(pre code){padding:2px 6px;border-radius:5px;background:#102b3b;color:#8fe8ff;font-family:ui-monospace,monospace}
+.cosmic-code-block{margin:12px 0;border:1px solid #47c8ec44;border-radius:10px;overflow:hidden;background:#030a11}
+.cosmic-code-block header{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#0b1c2a;color:#79cfe8;font:10px ui-monospace,monospace;letter-spacing:.1em}
+.cosmic-code-block header button{padding:6px 10px;border:1px solid #48c5e855;border-radius:6px;background:#0b2a3b;color:#a8edff;font-size:10px}
+.cosmic-code-block pre{overflow:auto;padding:14px;margin:0;color:#d5eaf4;font:12px/1.6 ui-monospace,monospace;white-space:pre}
+.cosmic-code-block pre code{font:inherit}
