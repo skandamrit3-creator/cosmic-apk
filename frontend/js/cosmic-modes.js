@@ -5,7 +5,7 @@ const reactor=document.querySelector(".hud-main"),topbar=document.querySelector(
 const chat=document.querySelector("#cosmicChatMode"),avatar=document.querySelector("#cosmicAvatarMode");
 let busy=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat-"+Date.now().toString(36)), lastPrompt="";
 localStorage.setItem("cosmic.chat.session.v1",sessionId);
-const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\\/$/,"");
+const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/$/,"");
 function showMode(mode){
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
  const isReactor=mode==="reactor";
