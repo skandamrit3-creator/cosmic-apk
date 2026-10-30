@@ -168,3 +168,6 @@ button, .avatar-action, .avatar-gallery button, .cosmic-quick-card button { touc
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.cosmic-voice-language{min-width:118px;max-width:155px;min-height:38px;padding:8px 10px;border:1px solid var(--cosmic-border);border-radius:10px;background:rgba(12,27,43,.94);color:#dceaf4;font-size:11px;outline:none}.cosmic-voice-language:focus{border-color:rgba(142,220,241,.65);box-shadow:0 0 0 3px rgba(142,220,241,.1)}
+@media(max-width:420px){.cosmic-voice-language{max-width:112px;min-width:0;font-size:10px}.command-actions{gap:5px}}
