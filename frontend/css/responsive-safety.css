@@ -1,0 +1,60 @@
+/* COSMIC responsive safety layer: additive overrides for phones, tablets and desktop */
+:root{--cosmic-safe-top:env(safe-area-inset-top,0px);--cosmic-safe-bottom:env(safe-area-inset-bottom,0px)}
+html,body,#cosmic{width:100%;max-width:100%;min-height:100%;margin:0}
+body{min-height:100dvh;overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box}
+button,select,textarea{max-width:100%;font:inherit}
+button{touch-action:manipulation}
+.topbar{padding-top:var(--cosmic-safe-top)}
+.mode-switch{top:max(7px,calc(var(--cosmic-safe-top) + 5px));max-width:calc(100vw - 16px)}
+.hud-main{min-width:0;min-height:0}
+.core-stage,.cosmic-mode-view,.command-zone,.command-box,.response-stream{min-width:0;max-width:100%}
+.response-stream,.cosmic-chat-log{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.command-box textarea{width:100%;min-width:0;max-height:30dvh;resize:vertical;overflow:auto;overflow-wrap:anywhere}
+.command-actions{display:flex;flex-wrap:nowrap;align-items:center}
+.action-button,.execute-button,.hud-button,.mode-tab,.task,.rail-item{min-height:42px}
+.pipeline{max-width:100%;overflow-x:auto;scrollbar-width:thin}
+img,video,canvas,svg{max-width:100%}
+@media(max-width:850px){
+ html,body{overflow-x:hidden;overflow-y:auto}
+ body{padding-bottom:calc(58px + var(--cosmic-safe-bottom))}
+ .topbar{position:sticky;top:0;z-index:100;height:auto;min-height:58px;padding:calc(var(--cosmic-safe-top) + 8px) 12px 8px}
+ .mode-switch{position:sticky;top:0;left:auto;transform:none;margin:6px auto;justify-content:center;width:max-content}
+ .hud-main{height:auto;min-height:calc(100dvh - 130px);display:block}
+ .core-stage{display:flex;flex-direction:column;min-height:calc(100dvh - 140px);padding-bottom:10px}
+ .ai-core-area{flex:0 0 clamp(170px,34dvh,235px);min-height:170px;width:100%;overflow:hidden}
+ .response-stream{flex:1 1 auto;min-height:90px;max-height:32dvh;overflow:auto}
+ .command-zone{position:sticky;bottom:calc(58px + var(--cosmic-safe-bottom));z-index:30;padding:8px 10px;background:linear-gradient(180deg,transparent,#02060a 18%)}
+ .command-box{display:flex;flex-wrap:wrap}
+ .command-box textarea{flex:1 1 100%;min-height:46px}
+ .command-footer{flex-wrap:wrap;gap:5px;font-size:10px}
+ .mobile-nav{bottom:0;padding-bottom:var(--cosmic-safe-bottom);height:calc(58px + var(--cosmic-safe-bottom))}
+ .cosmic-mode-view{inset:0;padding:calc(62px + var(--cosmic-safe-top)) 12px calc(12px + var(--cosmic-safe-bottom));height:100dvh;overflow:auto}
+ .chat-mode{min-height:0}
+}
+@media(max-width:480px){
+ .identity{min-width:0}.identity-text{min-width:0}.system-name{font-size:clamp(12px,3.6vw,15px)}
+ .top-telemetry{gap:7px}.hud-button{min-width:40px;min-height:40px}
+ .stage-header{gap:8px;flex-wrap:wrap}
+ .ai-core-area{flex-basis:clamp(160px,28dvh,205px)}
+ .core-orbit{max-width:92vw}
+ .pipeline{gap:4px}.pipeline-node{flex:0 0 auto;min-width:48px}
+ .pipeline-line{flex:0 0 9px;width:9px}
+ .pipeline-node strong{font-size:clamp(6px,1.8vw,8px)}
+ .command-prefix{font-size:9px}
+ .command-actions{width:100%;justify-content:flex-end}
+ .action-button{width:42px;min-height:42px}
+ .execute-button{min-width:48px;min-height:42px}
+ .command-footer{font-size:9px}
+ .mode-tab{padding:9px 10px;font-size:9px}
+}
+@media(min-width:851px) and (max-width:1100px){
+ .hud-main{grid-template-columns:96px minmax(0,1fr) 240px}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:950px){
+ .ai-core-area{flex-basis:145px;min-height:145px}
+ .ai-core{width:115px;height:115px}
+ .core-orbit{opacity:.45}
+ .response-stream{max-height:24dvh}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important}}
