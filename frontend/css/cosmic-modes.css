@@ -29,3 +29,15 @@
 .cosmic-code-block header button{padding:6px 10px;border:1px solid #48c5e855;border-radius:6px;background:#0b2a3b;color:#a8edff;font-size:10px}
 .cosmic-code-block pre{overflow:auto;padding:14px;margin:0;color:#d5eaf4;font:12px/1.6 ui-monospace,monospace;white-space:pre}
 .cosmic-code-block pre code{font:inherit}
+
+
+/* Rich response presentation */
+.cosmic-chat-msg p{margin:0 0 10px}.cosmic-chat-msg p:last-child{margin-bottom:0}
+.cosmic-chat-msg h1,.cosmic-chat-msg h2,.cosmic-chat-msg h3{color:#eafaff;margin:13px 0 8px;letter-spacing:.02em}
+.cosmic-chat-msg ul{padding-left:22px;margin:8px 0}.cosmic-chat-msg li{margin:5px 0}
+.cosmic-chat-msg code:not(pre code){padding:2px 6px;border:1px solid #70e6ff30;border-radius:5px;background:#020a12;color:#9cecff;font-family:var(--mono,monospace);font-size:.92em}
+.cosmic-code-block{margin:12px 0;border:1px solid #70e6ff35;border-radius:11px;overflow:hidden;background:#020811}
+.cosmic-code-block>header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#0b1b2a;color:#70e6ff;font:10px var(--mono,monospace);letter-spacing:.12em}
+.cosmic-code-block>header button{padding:6px 10px;border:1px solid #70e6ff55;border-radius:6px;background:#0c2b40;color:#dffaff;font-size:9px}
+.cosmic-code-block pre{max-width:100%;overflow:auto;padding:14px;color:#d5e9f4;font:12px/1.6 var(--mono,monospace);tab-size:2;white-space:pre}
+.cosmic-chat-msg.assistant{width:fit-content;max-width:min(900px,96%)}
