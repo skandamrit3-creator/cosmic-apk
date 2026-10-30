@@ -9,7 +9,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
   let currentTaskId="",speaking=false,rotate=false,dbPromise;
   const state={frame:0,style:"human",modelName:"COSMIC Preview"};
-  const $=(root,selector)=>root.querySelector(selector);
+  const $=(selector,root=document)=>root.querySelector(selector);
   function status(message,type="info"){const el=document.querySelector("#cosmicAvatarStatus");if(el){el.textContent=message;el.dataset.state=type;}}
   function badge(message){const el=document.querySelector("#cosmicAvatarStageState");if(el)el.textContent=message;}
   function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open("cosmic-avatar-library-v1",1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains("models"))r.result.createObjectStore("models",{keyPath:"id"});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});return dbPromise;}
