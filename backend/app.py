@@ -457,7 +457,7 @@ def avatar_3d_rig_check():
 def avatar_3d_rig():
     data = request.get_json(silent=True) or {}
     try:
-        result = TripoService().rig(data.get("task_id", ""), data.get("rig_type", "biped"))
+        result = TripoService().rig(data.get("task_id", ""), data.get("rig_type", "biped"), data.get("rig_model", "v3.0-20260909"), data.get("spec", "vrm"))
         return jsonify({"success": True, **result})
     except TripoError as exc:
         return jsonify({"success": False, "error": str(exc)}), exc.status
