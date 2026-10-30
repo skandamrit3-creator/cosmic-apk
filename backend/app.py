@@ -5,11 +5,13 @@ from flask_cors import CORS
 from backend.database.connection import init_db, get_connection
 from backend.core.kernel.kernel import process_message
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
+from backend.integrations.tripo import TripoService, TripoError
 import os, platform, time
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = Flask(__name__)
+app.config["MAX_CONTENT_LENGTH"] = 90 * 1024 * 1024
 
 # COSMIC FRONTEND
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -23,14 +25,23 @@ def frontend_index():
 def frontend_files(filename):
     return send_from_directory(FRONTEND_DIR, filename)
 
+# The browser and Android WebView load the same relative css/ and js/ paths.
+# Serve real frontend assets at the root URL so they work on localhost:8059.
+@app.get("/<path:asset>")
+def frontend_asset(asset):
+    target = (FRONTEND_DIR / asset).resolve()
+    try:
+        target.relative_to(FRONTEND_DIR.resolve())
+    except ValueError:
+        return jsonify({"success": False, "error": "Not found"}), 404
+    if target.is_file():
+        return send_from_directory(FRONTEND_DIR, asset)
+    return jsonify({"success": False, "error": "Not found"}), 404
+
 CORS(app)
 init_db()
 START_TIME = time.time()
 
-
-@app.get("/")
-def root():
-    return jsonify({"success": True, "service": APP_NAME, "version": APP_VERSION, "status": "running"})
 
 
 @app.get("/api/health")
@@ -387,6 +398,50 @@ def cosmic_upgrade_rollback():
         return jsonify(result)
     except (ValueError, TypeError) as e:
         return jsonify({"success": False, "error": str(e)}), 400
+
+
+# Optional user-consented 3D avatar generation.
+@app.get("/api/avatar/3d/status")
+def avatar_3d_status():
+    service = TripoService()
+    return jsonify({
+        "success": True,
+        "configured": service.configured,
+        "provider": "Tripo",
+        "model": os.getenv("TRIPO_MODEL", "v3.1-20260211"),
+        "message": "3D generation ready" if service.configured else "Set TRIPO_API_KEY on the backend to enable paid cloud generation."
+    })
+
+
+@app.post("/api/avatar/3d/generate")
+def avatar_3d_generate():
+    if request.form.get("consent") != "true":
+        return jsonify({"success": False, "error": "Explicit photo-upload consent is required."}), 400
+    files = {view: request.files.get(view) for view in ("front", "left", "back", "right")}
+    try:
+        result = TripoService().create_multiview(files)
+        return jsonify({"success": True, **result})
+    except TripoError as exc:
+        return jsonify({"success": False, "error": str(exc)}), exc.status
+
+
+@app.get("/api/avatar/3d/task/<task_id>")
+def avatar_3d_task(task_id):
+    try:
+        return jsonify({"success": True, **TripoService().task(task_id)})
+    except TripoError as exc:
+        return jsonify({"success": False, "error": str(exc)}), exc.status
+
+
+@app.post("/api/avatar/3d/rig")
+def avatar_3d_rig():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = TripoService().rig(data.get("task_id", ""))
+        return jsonify({"success": True, **result})
+    except TripoError as exc:
+        return jsonify({"success": False, "error": str(exc)}), exc.status
+
 
 @app.errorhandler(Exception)
 def error_handler(error):
