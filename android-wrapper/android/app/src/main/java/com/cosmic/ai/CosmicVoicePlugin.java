@@ -156,6 +156,28 @@ public class CosmicVoicePlugin extends Plugin {
         call.reject("This action requires an enabled COSMIC Accessibility Service");
     }
 
+
+    @PluginMethod
+    public void openAccessibilitySettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) { call.reject("Could not open Accessibility settings: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void openAppSettings(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.parse("package:" + getContext().getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) { call.reject("Could not open app settings: " + e.getMessage()); }
+    }
+
     @Override
     protected void handleOnDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
