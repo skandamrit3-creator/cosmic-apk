@@ -195,6 +195,13 @@ def ai_models():
     })
 
 
+
+@app.get("/api/ai/provider-status")
+def ai_provider_status():
+    """Live API reachability check; never returns API keys."""
+    from backend.ai.gateway.gateway import AIGateway
+    return jsonify({"success": True, "providers": AIGateway().provider_status()})
+
 @app.post("/api/chat")
 def chat():
     data = request.get_json(silent=True)
