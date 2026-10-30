@@ -20,7 +20,7 @@ function showMode(mode){
   chat.querySelector("#cosmicVoice").onclick=startVoice;
   loadModels();loadChats();
  }
- if(mode==="avatar"&&!avatar.dataset.ready){avatar.dataset.ready="1";avatar.innerHTML="";}
+ if(mode==="avatar"&&!avatar.dataset.ready){avatar.dataset.ready="1";avatar.innerHTML="<div class=\"avatar-mount-placeholder\"></div>";}
  }
 
 async function auditProviders(){
