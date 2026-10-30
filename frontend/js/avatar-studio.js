@@ -167,7 +167,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
         }else status("Rigging completed. The rigged model is saved locally.", "success");
         return d;
       }
-      if(["failed","cancelled","banned"].includes(d.status))throw new Error(d.error||"Task "+d.status);
+      if(["failed","cancelled","banned","expired"].includes(d.status))throw new Error(d.error||"Task "+d.status);
     }
     throw new Error("Task is still processing after 20 minutes; it can be checked again later.");
   }
@@ -186,7 +186,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       if(result.riggable!==true)throw new Error("Tripo reports that this model cannot be rigged. Try a neutral standing A-pose preset or regenerate the photos.");
       const rigResponse=await fetch(apiBase()+"/api/avatar/3d/rig",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({task_id:currentTaskId,rig_type:result.rig_type||"biped"})
+        body:JSON.stringify({task_id:currentTaskId,rig_type:result.rig_type||"biped",rig_model:"v3.0-20260909",spec:"vrm"})
       });
       const rigData=await rigResponse.json();
       if(!rigResponse.ok||!rigData.success)throw new Error(rigData.error||"Rig request failed");
