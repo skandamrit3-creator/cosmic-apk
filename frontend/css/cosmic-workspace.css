@@ -1,0 +1,170 @@
+/* COSMIC 2.1 — responsive soft-glass workspace and 3D studio refinements */
+:root {
+  --cosmic-surface: rgba(18, 34, 52, .78);
+  --cosmic-surface-strong: rgba(22, 42, 62, .94);
+  --cosmic-border: rgba(190, 218, 238, .16);
+  --cosmic-shadow: 0 18px 52px rgba(0, 0, 0, .28);
+  --cosmic-glow: 0 0 28px rgba(137, 203, 229, .12);
+}
+html { scroll-behavior: smooth; }
+body { overscroll-behavior-y: contain; }
+button, a, select, input, textarea { -webkit-tap-highlight-color: transparent; }
+button, .avatar-action, .avatar-gallery button, .cosmic-quick-card button { touch-action: manipulation; }
+.topbar, .left-rail, .right-panel, .hud-panel, .core-stage, .cosmic-chat-main,
+.cosmic-history, .avatar-panel, .avatar-stage-v2 {
+  border-color: var(--cosmic-border);
+}
+.hud-panel, .left-rail, .right-panel, .cosmic-history, .cosmic-chat-main,
+.avatar-panel {
+  background: var(--cosmic-surface);
+  box-shadow: var(--cosmic-shadow);
+  backdrop-filter: blur(20px) saturate(1.12);
+  -webkit-backdrop-filter: blur(20px) saturate(1.12);
+}
+.hud-main { min-width: 0; }
+.core-stage, .right-panel, .left-rail { min-width: 0; }
+.mode-switch { z-index: 2500; }
+.mode-tab, .rail-item, .mobile-nav-item, .task, .action-button,
+.execute-button, .avatar-action, .avatar-primary {
+  min-height: 42px;
+}
+.mode-tab:active, .rail-item:active, .mobile-nav-item:active, .task:active,
+.action-button:active, .execute-button:active, .avatar-primary:active {
+  transform: translateY(1px) scale(.99);
+}
+.mobile-nav {
+  z-index: 2600;
+  padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px));
+  background: rgba(8, 19, 31, .92);
+  border-top: 1px solid var(--cosmic-border);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+.mobile-nav-item { flex: 1 1 0; }
+.mobile-nav-item.active {
+  color: #f4fbff;
+  background: linear-gradient(135deg, rgba(135, 194, 222, .24), rgba(165, 147, 208, .18));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), 0 6px 18px rgba(80,150,190,.08);
+}
+.cosmic-quick-card { padding-top: 16px; }
+.cosmic-quick-head {
+  position: sticky;
+  top: -18px;
+  z-index: 3;
+  padding: 4px 0 12px;
+  background: linear-gradient(145deg, #172b3f, #0b1726);
+}
+.cosmic-quick-body > p { margin: 5px 0 12px; color: #b4c6d4; }
+.cosmic-quick-body .quick-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 12px;
+  margin: 7px 0;
+  border: 1px solid var(--cosmic-border);
+  border-radius: 13px;
+  background: rgba(255,255,255,.035);
+}
+.cosmic-quick-body .quick-row b { color: #edf6fc; font-size: 12px; }
+.cosmic-quick-body .quick-row span {
+  color: #9eb4c5;
+  text-align: right;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+}
+.cosmic-quick-body > button {
+  width: 100%;
+  margin: 5px 0;
+  text-align: left;
+}
+.avatar-studio-v2 { align-items: start; }
+.avatar-stage-v2 {
+  min-width: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), var(--cosmic-shadow);
+}
+#cosmicAvatarCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 460px;
+  touch-action: pan-y;
+}
+.avatar-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 7px;
+  margin: 12px 0;
+}
+.avatar-preset-grid button {
+  min-height: 44px;
+  padding: 9px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
+  color: var(--c-text);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .045em;
+}
+.avatar-preset-grid button:hover, .avatar-preset-grid button:focus-visible {
+  border-color: rgba(142,220,241,.55);
+  background: linear-gradient(145deg, rgba(142,220,241,.14), rgba(183,165,239,.10));
+}
+.avatar-preset-grid button:disabled { opacity: .45; }
+.avatar-upload label {
+  min-width: 0;
+  min-height: 66px;
+  padding: 10px;
+  border: 1px solid var(--c-line);
+  border-radius: 12px;
+  background: rgba(255,255,255,.035);
+}
+.avatar-upload input { width: 100%; min-width: 0; margin-top: 8px; color: var(--c-muted); font-size: 10px; }
+.avatar-consent { align-items: flex-start; }
+.avatar-status { overflow-wrap: anywhere; }
+.cosmic-chat-layout { min-height: 0; }
+.cosmic-chat-log { overscroll-behavior: contain; }
+.cosmic-chat-compose textarea, .cosmic-quick-body textarea {
+  font-size: 16px;
+  line-height: 1.45;
+}
+@media (max-width: 850px) {
+  html, body { min-height: 100%; height: auto; overflow-x: hidden; overflow-y: auto; }
+  #cosmic { height: auto; min-height: 100dvh; overflow: visible; padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+  .mode-switch {
+    position: sticky;
+    top: 5px;
+    left: auto;
+    transform: none;
+    width: max-content;
+    max-width: calc(100% - 20px);
+    margin: 7px auto 10px;
+  }
+  .mode-tab { min-width: 0; padding: 10px 12px; font-size: 9px; }
+  .topbar { top: 0; }
+  .hud-main { min-height: auto; padding-bottom: 12px; }
+  .core-stage { width: 100%; }
+  .ai-core-area { min-height: 330px; }
+  .command-zone { position: sticky; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); z-index: 2200; }
+  .mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 4px; }
+  .cosmic-mode-view { min-height: calc(100dvh - 140px); }
+  .cosmic-chat-layout { display: flex; flex-direction: column; }
+  .cosmic-history { max-height: 180px; }
+  .cosmic-chat-log { min-height: 38dvh; }
+  .avatar-mode { height: auto; min-height: calc(100dvh - 120px); overflow: visible; }
+  .avatar-studio-v2 { display: flex; flex-direction: column; gap: 12px; padding: 10px; }
+  .avatar-stage-v2 { width: 100%; min-height: 400px; height: 50dvh; }
+  #cosmicAvatarCanvas { min-height: 360px; }
+  .avatar-panel { width: 100%; }
+  .avatar-studio-head { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 380px) {
+  .system-type { font-size: 8px; }
+  .right-panel { grid-template-columns: minmax(0,1fr); }
+  .avatar-preset-grid { grid-template-columns: minmax(0,1fr); }
+  .cosmic-quick-card { border-radius: 20px 20px 0 0; padding-left: 12px; padding-right: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
