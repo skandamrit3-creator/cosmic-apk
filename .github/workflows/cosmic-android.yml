@@ -44,6 +44,29 @@ jobs:
             "platforms;android-36" \
             "build-tools;36.0.0"
 
+      - name: Validate Python backend
+        run: python -m compileall -q backend
+
+      - name: Validate frontend JavaScript
+        run: |
+          node --check frontend/js/app.js
+          node --check frontend/js/cosmic-modes.js
+          node --check frontend/js/voice-control.js
+          node --input-type=module --check < frontend/js/avatar-studio.js
+
+      - name: Verify referenced frontend assets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          html = Path("frontend/index.html").read_text()
+          refs = re.findall(r'(?:src|href)="(js/[^"]+|css/[^"]+)"', html)
+          missing = [ref for ref in refs if not (Path("frontend") / ref).is_file()]
+          if missing:
+              raise SystemExit("Missing frontend assets: " + ", ".join(missing))
+          print(f"Verified {len(refs)} linked frontend assets.")
+          PY
+
       - name: Install Capacitor dependencies
         working-directory: android-wrapper
         run: npm install
@@ -69,4 +92,4 @@ jobs:
           name: COSMIC-Android-APK
           path: android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
