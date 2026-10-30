@@ -41,3 +41,18 @@
 .cosmic-code-block>header button{padding:6px 10px;border:1px solid #70e6ff55;border-radius:6px;background:#0c2b40;color:#dffaff;font-size:9px}
 .cosmic-code-block pre{max-width:100%;overflow:auto;padding:14px;color:#d5e9f4;font:12px/1.6 var(--mono,monospace);tab-size:2;white-space:pre}
 .cosmic-chat-msg.assistant{width:fit-content;max-width:min(900px,96%)}
+
+.cosmic-chat-layout{height:100%;display:grid;grid-template-columns:230px minmax(0,1fr);min-height:0}
+.cosmic-history{padding:12px;overflow:auto;border-right:1px solid #70e6ff25}
+.cosmic-history-item{display:block;width:100%;margin:6px 0;padding:9px;text-align:left;background:#0a1b2a;color:#ccecf6;border:1px solid #70e6ff30;border-radius:8px;overflow:hidden;text-overflow:ellipsis}
+.cosmic-chat-main{display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px}
+.cosmic-chat-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 0}
+.cosmic-chat-controls select{background:#071725;color:#dffaff;border:1px solid #70e6ff40;padding:7px;border-radius:7px}
+.cosmic-chat-controls button,.cosmic-message-tools button{background:#0b3550;color:#eafaff;border:1px solid #70e6ff55;border-radius:8px;padding:8px}
+.cosmic-message-tools{display:flex;gap:7px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.cosmic-model-tag{font:10px ui-monospace,monospace;color:#80b4c8;margin-left:auto}
+.cosmic-md-table{display:block;overflow-x:auto;border-collapse:collapse;width:100%}
+.cosmic-md-table td,.cosmic-md-table th{border:1px solid #70e6ff35;padding:8px;text-align:left;min-width:85px}
+.cosmic-inline-image{max-width:100%;max-height:320px;object-fit:contain}
+.cosmic-message-body blockquote{border-left:3px solid #42c7ed;padding:8px 12px;background:#0b2634}
+@media(max-width:700px){.cosmic-chat-layout{grid-template-columns:1fr}.cosmic-history{position:absolute;z-index:5;inset:0 20% 0 0;background:#030b14;}.cosmic-chat-main{padding:6px}}
