@@ -65,6 +65,96 @@ class TripoService:
             raise TripoError("Tripo did not return a file token for the " + view + " image.")
         return token
 
+
+    def create_preset(self, preset_name):
+        """Create a ready-made adult human or anime character from a controlled preset."""
+        presets = {
+            "hyderabad_man": (
+                "Photorealistic full-body adult Hyderabadi Indian man, natural South Asian facial features, "
+                "warm medium-brown skin, short neatly styled dark hair, subtle stubble, elegant modern "
+                "charcoal kurta jacket and trousers, realistic hands and shoes, neutral A-pose with arms "
+                "slightly away from torso, symmetrical anatomy, detailed skin and fabric PBR textures, "
+                "studio soft lighting, isolated full-body character, no props, no text."
+            ),
+            "hyderabad_woman": (
+                "Photorealistic full-body adult Hyderabadi Indian woman, natural South Asian facial features, "
+                "warm medium-brown skin, dark hair, tasteful contemporary Indian outfit with realistic fabric "
+                "folds, realistic hands and shoes, neutral A-pose with arms slightly away from torso, "
+                "symmetrical anatomy, detailed skin and fabric PBR textures, studio soft lighting, "
+                "isolated full-body character, no props, no text."
+            ),
+            "global_man": (
+                "Photorealistic full-body adult male human character with natural balanced facial proportions, "
+                "short dark hair, neutral contemporary clothing, realistic hands and shoes, neutral A-pose, "
+                "symmetrical anatomy, detailed skin and fabric PBR textures, studio soft lighting, "
+                "isolated full-body character, no props, no text."
+            ),
+            "global_woman": (
+                "Photorealistic full-body adult female human character with natural balanced facial proportions, "
+                "long dark hair, neutral contemporary clothing, realistic hands and shoes, neutral A-pose, "
+                "symmetrical anatomy, detailed skin and fabric PBR textures, studio soft lighting, "
+                "isolated full-body character, no props, no text."
+            ),
+            "anime_hero": (
+                "High-quality full-body 3D anime-style adult male hero character, expressive stylized face, "
+                "large anime eyes, carefully sculpted hair, detailed layered fantasy streetwear, realistic "
+                "3D materials and fabric, clean stylized proportions, neutral A-pose, symmetrical anatomy, "
+                "full body including hands and shoes, studio soft lighting, isolated character, no text."
+            ),
+            "anime_heroine": (
+                "High-quality full-body 3D anime-style adult female heroine character, expressive stylized face, "
+                "large anime eyes, carefully sculpted hair, detailed layered elegant outfit, realistic 3D "
+                "materials and fabric, clean stylized proportions, neutral A-pose, symmetrical anatomy, "
+                "full body including hands and shoes, studio soft lighting, isolated character, no text."
+            ),
+        }
+        prompt = presets.get(str(preset_name or "").strip().lower())
+        if not prompt:
+            raise TripoError("Unknown character preset.", 400)
+        body = {
+            "prompt": prompt,
+            "model": os.getenv("TRIPO_CHARACTER_MODEL", "v3.1-20260211"),
+            "face_limit": int(os.getenv("TRIPO_CHARACTER_FACE_LIMIT", "30000")),
+            "texture": True,
+            "pbr": True,
+            "texture_quality": "detailed",
+            "geometry_quality": "detailed",
+            "auto_size": True,
+        }
+        try:
+            response = requests.post(
+                BASE_URL + "/generation/text-to-model",
+                headers=self._headers(json_body=True),
+                json=body,
+                timeout=self.timeout,
+            )
+        except requests.RequestException as exc:
+            raise TripoError("Could not start character generation: " + str(exc)[:160])
+        data = self._data(response)
+        task_id = data.get("task_id")
+        if not task_id:
+            raise TripoError("Tripo did not return a character task ID.")
+        return {"task_id": task_id, "preset": preset_name, "model": body["model"]}
+
+    def rig_check(self, task_id):
+        task_id = str(task_id or "").strip()
+        if not task_id.startswith("task_") or len(task_id) > 160:
+            raise TripoError("Invalid Tripo task ID.", 400)
+        try:
+            response = requests.post(
+                BASE_URL + "/animations/rig-check",
+                headers=self._headers(json_body=True),
+                json={"input": task_id},
+                timeout=self.timeout,
+            )
+        except requests.RequestException as exc:
+            raise TripoError("Could not check model riggability: " + str(exc)[:160])
+        data = self._data(response)
+        check_task_id = data.get("task_id")
+        if not check_task_id:
+            raise TripoError("Tripo did not return a rig-check task ID.")
+        return {"task_id": check_task_id}
+
     def create_multiview(self, files):
         if not self.configured:
             raise TripoError("3D creation is not configured. Add TRIPO_API_KEY to the backend .env file.", 503)
@@ -118,28 +208,37 @@ class TripoService:
             "progress": data.get("progress", 0),
             "error": data.get("error_message") or data.get("message"),
             "model_url": output.get("model_url"),
+            "model_urls": output.get("model_urls"),
             "preview_url": output.get("rendered_image_url"),
+            "riggable": output.get("riggable"),
+            "rig_type": output.get("rig_type"),
             "credits_consumed": data.get("credits_consumed"),
         }
 
-    def rig(self, task_id):
+    def rig(self, task_id, rig_type="biped"):
         task_id = str(task_id or "").strip()
         if not task_id.startswith("task_") or len(task_id) > 160:
             raise TripoError("Invalid Tripo task ID.", 400)
+        if rig_type != "biped":
+            raise TripoError("COSMIC character rigging currently supports human biped models only.", 400)
         body = {
             "input": task_id,
             "model": "v1.0-20240301",
-            "rig_type": "biped",
+            "rig_type": rig_type,
             "spec": "tripo",
             "out_format": "glb",
         }
         try:
-            response = requests.post(BASE_URL + "/animations/rig",
-                                     headers=self._headers(json_body=True), json=body, timeout=self.timeout)
+            response = requests.post(
+                BASE_URL + "/animations/rig",
+                headers=self._headers(json_body=True),
+                json=body,
+                timeout=self.timeout,
+            )
         except requests.RequestException as exc:
             raise TripoError("Could not start rigging: " + str(exc)[:160])
         data = self._data(response)
         new_task_id = data.get("task_id")
         if not new_task_id:
             raise TripoError("Tripo did not return a rigging task ID.")
-        return {"task_id": new_task_id}
+        return {"task_id": new_task_id, "rig_type": rig_type}
