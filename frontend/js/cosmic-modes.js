@@ -22,9 +22,28 @@ function showMode(mode){
  }
  if(mode==="avatar"&&!avatar.dataset.ready){
   avatar.dataset.ready="1";
-  avatar.innerHTML='<div class="avatar-card"><div class="cosmic-chat-head">COSMIC / AVATAR MODE <span>PREVIEW</span></div><div class="avatar-orb" aria-hidden="true"></div><h2>AVATAR INTERFACE</h2><p>The Avatar workspace is ready for 3D integration. Realistic human animation, facial expressions and lip-sync require a rigged 3D model and live-audio connection; these are not yet active.</p></div>';
+  const avatarNames=["Astra","Nova","Orion","Mira","Kai","Zara","Atlas","Luna","Aria","Ethan","Iris","Leo"];
+  avatar.innerHTML='<div class="avatar-studio"><header class="cosmic-chat-head"><b>COSMIC / LIVE AVATAR STUDIO</b><span>12 PERSONAS</span></header><div class="avatar-stage"><div class="avatar-figure" id="avatarFigure" data-avatar="0"><div class="avatar-halo"></div><div class="avatar-head"><i class="avatar-hair"></i><i class="avatar-eye left"></i><i class="avatar-eye right"></i><i class="avatar-nose"></i><i class="avatar-mouth" id="avatarMouth"></i></div><div class="avatar-neck"></div><div class="avatar-body"></div></div><div class="avatar-caption"><strong id="avatarName">Astra</strong><span id="avatarState">READY TO SPEAK</span></div><div class="avatar-speak"><textarea id="avatarText" rows="2" placeholder="Type something for your avatar to say…"></textarea><button id="avatarSpeak" type="button">SPEAK ↗</button></div></div><div class="avatar-picker" id="avatarPicker">'+avatarNames.map((n,i)=>'<button type="button" data-avatar="'+i+'" class="'+(i===0?'active':'')+'"><span class="avatar-thumb" data-tone="'+i+'"></span><b>'+n+'</b></button>').join('')+'</div><p class="avatar-disclaimer">Persona selection and speech animation are active. Accurate human 3D facial motion needs rigged 3D avatar assets and a viseme-capable speech stream; this build does not yet contain those assets.</p><section class="provider-audit"><header><b>LIVE API DIAGNOSTICS</b><button id="providerAuditRefresh" type="button">TEST APIS</button></header><div id="providerAuditResults">Checking provider configuration…</div></section></div>';
+  const figure=avatar.querySelector("#avatarFigure"),mouth=avatar.querySelector("#avatarMouth"),name=avatar.querySelector("#avatarName"),state=avatar.querySelector("#avatarState");
+  avatar.querySelectorAll("[data-avatar]").forEach(btn=>btn.addEventListener("click",()=>{const n=Number(btn.dataset.avatar);figure.dataset.avatar=n;name.textContent=avatarNames[n];avatar.querySelectorAll(".avatar-picker button").forEach(x=>x.classList.toggle("active",x===btn));}));
+  const speak=()=>{const text=avatar.querySelector("#avatarText").value.trim();if(!text||!window.speechSynthesis)return;window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.onstart=()=>{state.textContent="SPEAKING";figure.classList.add("talking");};utterance.onboundary=()=>{mouth.classList.toggle("open");};utterance.onend=()=>{figure.classList.remove("talking");mouth.classList.remove("open");state.textContent="READY";};utterance.onerror=()=>{figure.classList.remove("talking");state.textContent="VOICE ERROR";};window.speechSynthesis.speak(utterance);};
+  avatar.querySelector("#avatarSpeak").addEventListener("click",speak);
+  avatar.querySelector("#providerAuditRefresh").addEventListener("click",auditProviders);
+  auditProviders();
  }
 }
+
+async function auditProviders(){
+ const root=document.querySelector("#providerAuditResults");if(!root)return;
+ root.textContent="Testing provider API endpoints…";
+ try{
+  const r=await fetch(apiBase()+"/api/ai/provider-status",{cache:"no-store"});const d=await r.json();
+  if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);
+  root.replaceChildren();
+  (d.providers||[]).forEach(p=>{const row=document.createElement("div");row.className="provider-audit-row";const label=document.createElement("b");label.textContent=p.provider.toUpperCase();const status=document.createElement("span");status.textContent=p.status.replaceAll("_"," ").toUpperCase()+(p.http_status?" · HTTP "+p.http_status:"");status.dataset.status=p.status;row.append(label,status);if(p.detail){const detail=document.createElement("small");detail.textContent=p.detail;row.append(detail);}root.append(row);});
+ }catch(e){root.textContent="API AUDIT FAILED: "+e.message;}
+}
+
 function renderRichText(root,source){
  const lines=String(source).replace(/\r/g,"").split("\n");let paragraph=[];
  const flush=()=>{if(!paragraph.length)return;const p=document.createElement("p");renderInline(p,paragraph.join(" "));root.append(p);paragraph=[];};
