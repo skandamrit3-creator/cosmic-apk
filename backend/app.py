@@ -413,6 +413,16 @@ def avatar_3d_status():
     })
 
 
+@app.post("/api/avatar/3d/preset")
+def avatar_3d_preset():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = TripoService().create_preset(data.get("preset", ""))
+        return jsonify({"success": True, **result})
+    except TripoError as exc:
+        return jsonify({"success": False, "error": str(exc)}), exc.status
+
+
 @app.post("/api/avatar/3d/generate")
 def avatar_3d_generate():
     if request.form.get("consent") != "true":
@@ -433,11 +443,21 @@ def avatar_3d_task(task_id):
         return jsonify({"success": False, "error": str(exc)}), exc.status
 
 
+@app.post("/api/avatar/3d/rig-check")
+def avatar_3d_rig_check():
+    data = request.get_json(silent=True) or {}
+    try:
+        result = TripoService().rig_check(data.get("task_id", ""))
+        return jsonify({"success": True, **result})
+    except TripoError as exc:
+        return jsonify({"success": False, "error": str(exc)}), exc.status
+
+
 @app.post("/api/avatar/3d/rig")
 def avatar_3d_rig():
     data = request.get_json(silent=True) or {}
     try:
-        result = TripoService().rig(data.get("task_id", ""))
+        result = TripoService().rig(data.get("task_id", ""), data.get("rig_type", "biped"))
         return jsonify({"success": True, **result})
     except TripoError as exc:
         return jsonify({"success": False, "error": str(exc)}), exc.status
