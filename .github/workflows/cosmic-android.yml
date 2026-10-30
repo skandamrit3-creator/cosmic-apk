@@ -24,6 +24,11 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -65,6 +70,56 @@ jobs:
           if missing:
               raise SystemExit("Missing frontend assets: " + ", ".join(missing))
           print(f"Verified {len(refs)} linked frontend assets.")
+          PY
+
+      - name: Install backend test dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate Python backend
+        run: python -m compileall -q backend
+
+      - name: Validate frontend JavaScript
+        run: |
+          node --check frontend/js/app.js
+          node --check frontend/js/cosmic-modes.js
+          node --check frontend/js/voice-control.js
+          node --input-type=module --check < frontend/js/avatar-studio.js
+
+      - name: Verify shared frontend and backend routes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os, re, subprocess, sys, time, urllib.request
+          html = Path("frontend/index.html").read_text()
+          refs = re.findall(r'(?:src|href)="(js/[^"]+|css/[^"]+)"', html)
+          missing = [ref for ref in refs if not (Path("frontend") / ref).is_file()]
+          if missing:
+              raise SystemExit("Missing frontend assets: " + ", ".join(missing))
+          env = os.environ.copy()
+          env.update({"COSMIC_HOST":"127.0.0.1","COSMIC_PORT":"8765","COSMIC_DATABASE":"data/cosmic-ci.db"})
+          server = subprocess.Popen([sys.executable, "-m", "backend.app"], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+          try:
+              base = "http://127.0.0.1:8765"
+              for _ in range(40):
+                  try:
+                      with urllib.request.urlopen(base + "/api/health", timeout=3) as response:
+                          assert response.status == 200
+                      break
+                  except Exception:
+                      if server.poll() is not None:
+                          raise SystemExit("COSMIC backend exited before becoming healthy.")
+                      time.sleep(1)
+              else:
+                  raise SystemExit("COSMIC backend did not start.")
+              for path in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/avatar/3d/status"]:
+                  with urllib.request.urlopen(base + path, timeout=10) as response:
+                      if response.status != 200:
+                          raise SystemExit(path + " returned HTTP " + str(response.status))
+              print("Frontend assets and browser/backend routes passed.")
+          finally:
+              server.terminate()
+              try: server.wait(timeout=10)
+              except subprocess.TimeoutExpired: server.kill()
           PY
 
       - name: Install Capacitor dependencies
