@@ -175,10 +175,12 @@ class TripoService:
         body = {
             "inputs": inputs,
             "model": os.getenv("TRIPO_MODEL", "v3.1-20260211"),
+            "face_limit": int(os.getenv("TRIPO_CHARACTER_FACE_LIMIT", "30000")),
             "texture": True,
             "pbr": True,
             "texture_quality": "detailed",
             "geometry_quality": "detailed",
+            "compress": "geometry",
             "texture_alignment": "original_image",
         }
         try:
