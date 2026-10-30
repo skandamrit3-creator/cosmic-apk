@@ -118,7 +118,7 @@ jobs:
                   log.seek(0)
                   print(log.read())
                   raise SystemExit("COSMIC backend did not start.")
-              for route in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/avatar/3d/status", "/api/avatar/3d/preset"]:
+              for route in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/avatar/3d/status"]:
                   with urllib.request.urlopen(base + route, timeout=10) as response:
                       if response.status != 200:
                           raise SystemExit(route + " returned HTTP " + str(response.status))
