@@ -1,5 +1,9 @@
 {
   "appId": "com.cosmic.ai",
   "appName": "COSMIC",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  }
 }
