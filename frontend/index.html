@@ -553,6 +553,86 @@
     : window.location.origin);
 })();
 </script>
+<script id="COSMIC_BACKEND_SETTINGS">
+(() => {
+  const $ = id => document.getElementById(id);
+  const dialog = $("cosmicBackendDialog");
+  const input = $("cosmicBackendUrl");
+  const status = $("cosmicBackendStatus");
+  const clean = value => String(value || "").trim().replace(/\\/+$/, "");
+  async function test(url) {
+    const base = clean(url);
+    if (!/^https?:\\/\\//i.test(base)) throw new Error("Enter a valid http:// or https:// backend URL.");
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7000);
+    try {
+      const response = await fetch(base + "/api/health", {signal:controller.signal,cache:"no-store"});
+      if (!response.ok) throw new Error("Health endpoint returned HTTP " + response.status);
+      const data = await response.json();
+      if (!data.success || data.status !== "healthy") throw new Error("Backend responded but is not healthy.");
+      const modelsResponse = await fetch(base + "/api/ai/models", {signal:controller.signal,cache:"no-store"});
+      if (!modelsResponse.ok) throw new Error("Health is OK, but /api/ai/models returned HTTP " + modelsResponse.status);
+      const models = await modelsResponse.json();
+      if (!models.success || !Array.isArray(models.models)) throw new Error("Model-list API returned an unexpected response.");
+      return {base,version:data.version || "unknown",models:models.models.length};
+    } finally { clearTimeout(timer); }
+  }
+  function open() {
+    if (!dialog) return;
+    input.value = window.COSMIC_API_BASE || "";
+    dialog.hidden = false;
+    dialog.style.display = "grid";
+    status.textContent = "Test the connection before saving.";
+  }
+  function close() {
+    dialog.hidden = true;
+    dialog.style.display = "none";
+  }
+  $("systemMenu")?.addEventListener("click", event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    open();
+  }, true);
+  $("cosmicBackendClose")?.addEventListener("click", close);
+  $("cosmicBackendTest")?.addEventListener("click", async () => {
+    status.textContent = "Checking backend and model-list APIs…";
+    try {
+      const result = await test(input.value);
+      status.textContent = "CONNECTED • COSMIC " + result.version + " • " + result.models + " model entries found.";
+      status.style.color = "#65e6a5";
+    } catch (error) {
+      status.textContent = "NOT CONNECTED • " + (error.name === "AbortError" ? "Connection timed out." : error.message);
+      status.style.color = "#ff8d8d";
+    }
+  });
+  $("cosmicBackendSave")?.addEventListener("click", async () => {
+    status.textContent = "Verifying before saving…";
+    try {
+      const result = await test(input.value);
+      localStorage.setItem("COSMIC_API_BASE", result.base);
+      window.COSMIC_API_BASE = result.base;
+      status.textContent = "Saved and connected. Reloading COSMIC…";
+      status.style.color = "#65e6a5";
+      setTimeout(() => location.reload(), 500);
+    } catch (error) {
+      status.textContent = "NOT SAVED • " + (error.name === "AbortError" ? "Connection timed out." : error.message);
+      status.style.color = "#ff8d8d";
+    }
+  });
+  window.addEventListener("DOMContentLoaded", async () => {
+    const badge = $("connection");
+    if (!badge) return;
+    try {
+      await test(window.COSMIC_API_BASE);
+      badge.textContent = "BACKEND ONLINE";
+      badge.style.color = "#65e6a5";
+    } catch (_) {
+      badge.textContent = "BACKEND OFFLINE";
+      badge.style.color = "#ff8d8d";
+    }
+  }, {once:true});
+})();
+</script>
 <script id="COSMIC_MODEL_ROUTER_BRIDGE">
 (() => {
   const originalFetch = window.fetch.bind(window);
