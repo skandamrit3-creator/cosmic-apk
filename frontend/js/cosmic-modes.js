@@ -28,7 +28,13 @@ async function sendChat(e){
  e.preventDefault(); if(busy)return;
  const input=chat.querySelector("#cosmicChatInput"),log=chat.querySelector("#cosmicChatLog"),state=chat.querySelector("#cosmicChatState");
  const message=input.value.trim(); if(!message)return;
- const add=(text,kind)=>{const el=document.createElement("div");el.className="cosmic-chat-msg "+kind;el.textContent=text;log.append(el);log.scrollTop=log.scrollHeight;return el;};
+ const add=(text,kind)=>{const el=document.createElement("div");el.className="cosmic-chat-msg "+kind;if(kind==="assistant")renderRichText(el,text);else el.textContent=text;log.append(el);log.scrollTop=log.scrollHeight;return el;};
+function renderRichText(root,source){
+ const lines=String(source).replace(/\r/g,"").split("\n");let paragraph=[];
+ const flush=()=>{if(!paragraph.length)return;const p=document.createElement("p");renderInline(p,paragraph.join(" "));root.append(p);paragraph=[];};
+ const renderInline=(parent,value)=>{const re=/\*\*(.+?)\*\*|`([^`]+)`|\*(.+?)\*/g;let last=0,m;while((m=re.exec(value))){parent.append(document.createTextNode(value.slice(last,m.index)));const node=document.createElement(m[1]?"strong":m[2]?"code":"em");node.textContent=m[1]||m[2]||m[3];parent.append(node);last=re.lastIndex;}parent.append(document.createTextNode(value.slice(last));};
+ for(let i=0;i<lines.length;i++){const line=lines[i];if(line.startsWith("```")){flush();const lang=line.slice(3).trim()||"code";const code=[];while(++i<lines.length&&!lines[i].startsWith("```"))code.push(lines[i]);const wrap=document.createElement("section");wrap.className="cosmic-code-block";const head=document.createElement("header");head.textContent=lang.toUpperCase();const copy=document.createElement("button");copy.type="button";copy.textContent="COPY CODE";copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(code.join("\n"));copy.textContent="COPIED";setTimeout(()=>copy.textContent="COPY CODE",1200);}catch(_){copy.textContent="COPY FAILED";}});head.append(copy);const pre=document.createElement("pre");const codeEl=document.createElement("code");codeEl.textContent=code.join("\n");pre.append(codeEl);wrap.append(head,pre);root.append(wrap);continue;}if(!line.trim()){flush();continue;}if(/^#{1,3} /.test(line)){flush();const level=line.match(/^#+/)[0].length;const h=document.createElement("h"+level);renderInline(h,line.slice(level+1));root.append(h);continue;}if(/^[-*] /.test(line)){flush();let list=root.lastElementChild;if(!list||list.tagName!=="UL"){list=document.createElement("ul");root.append(list);}const li=document.createElement("li");renderInline(li,line.slice(2));list.append(li);continue;}paragraph.push(line);}flush();
+}
  add(message,"user");input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
