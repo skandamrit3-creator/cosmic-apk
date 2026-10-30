@@ -217,17 +217,21 @@ class TripoService:
             "credits_consumed": data.get("credits_consumed"),
         }
 
-    def rig(self, task_id, rig_type="biped"):
+    def rig(self, task_id, rig_type="biped", rig_model="v3.0-20260909", spec="vrm"):
         task_id = str(task_id or "").strip()
         if not task_id.startswith("task_") or len(task_id) > 160:
             raise TripoError("Invalid Tripo task ID.", 400)
         if rig_type != "biped":
             raise TripoError("COSMIC character rigging currently supports human biped models only.", 400)
+        if rig_model not in {"v3.0-20260909", "v1.0-20240301"}:
+            raise TripoError("Unsupported humanoid rig model version.", 400)
+        if spec not in {"tripo", "mixamo", "actorcore", "unity", "unreal", "vrm"}:
+            raise TripoError("Unsupported humanoid rig convention.", 400)
         body = {
             "input": task_id,
-            "model": "v1.0-20240301",
+            "model": rig_model,
             "rig_type": rig_type,
-            "spec": "tripo",
+            "spec": spec,
             "out_format": "glb",
         }
         try:
@@ -243,4 +247,4 @@ class TripoService:
         new_task_id = data.get("task_id")
         if not new_task_id:
             raise TripoError("Tripo did not return a rigging task ID.")
-        return {"task_id": new_task_id, "rig_type": rig_type}
+        return {"task_id": new_task_id, "rig_type": rig_type, "rig_model": rig_model, "spec": spec}
