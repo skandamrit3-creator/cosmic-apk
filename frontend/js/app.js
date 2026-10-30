@@ -151,6 +151,12 @@
 
         addMessage("user-message", text);
 
+        if (window.COSMIC_BRAIN?.handle && await window.COSMIC_BRAIN.handle(text)) {
+            addMessage("system-message", "BRAIN: " + (window.COSMIC_BRAIN.state.lastAction || "Command processed"));
+            input.value = "";
+            return;
+        }
+
         input.value = "";
 
         setBusy(true);
