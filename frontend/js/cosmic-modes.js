@@ -148,6 +148,15 @@ async function openQuick(view){
    catch(e){status.textContent="SAVE FAILED: "+e.message;}finally{save.disabled=false;}
   });
   const test=addQuickButton(actions,"TEST PROVIDERS",async()=>{test.disabled=true;status.textContent="Sending live provider checks…";try{const r=await fetch(apiBase()+"/api/ai/provider-status",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);(d.providers||[]).forEach(p=>{const el=grid.querySelector('[data-provider="'+p.provider+'"]');if(el)el.textContent=p.status.replaceAll("_"," ").toUpperCase()+(p.http_status?" · HTTP "+p.http_status:"");});status.textContent="Provider checks finished. Only REACHABLE means the API accepted the check.";}catch(e){status.textContent="TEST FAILED: "+e.message;}finally{test.disabled=false;}});
+  const liveTest=addQuickButton(actions,"TEST GEMINI LIVE",async()=>{
+   liveTest.disabled=true;status.textContent="Requesting a short-lived Gemini Live token…";
+   try{
+    const r=await fetch(apiBase()+"/api/ai/live-token",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+    const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);
+    status.textContent="GEMINI LIVE TOKEN READY · Start the floating Live control to begin speaking.";
+   }catch(e){status.textContent="GEMINI LIVE TEST FAILED: "+e.message;}
+   finally{liveTest.disabled=false;}
+  });
   async function refreshStatus(){try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);(d.providers||[]).forEach(p=>{const el=grid.querySelector('[data-provider="'+p.provider+'"]');if(el)el.textContent=p.configured?"KEY SAVED · NOT YET TESTED":"KEY MISSING";});status.textContent="Add your own provider keys, then test them. COSMIC does not include free API credits."; }catch(e){status.textContent="KEY SETTINGS UNAVAILABLE: "+e.message;}}
   refreshStatus();
   addQuickText(body,"A provider needs its own API key and may charge or enforce free-tier limits. Keys are not supplied by the APK.");
