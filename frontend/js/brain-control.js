@@ -80,6 +80,15 @@
     throw new Error("COSMIC has no approved device tool named "+name+".");
   }
 
+  function setEnabled(value) {
+    state.enabled = !!value;
+    const input = document.getElementById("brainEnabled");
+    if (input) input.checked = state.enabled;
+    status(state.enabled ? "Brain enabled" : "Brain paused");
+    document.dispatchEvent(new CustomEvent("cosmic:brain-state",{detail:{enabled:state.enabled}}));
+    return state.enabled;
+  }
+
   function mount() {
     if (document.getElementById("cosmicBrainPanel")) return;
     const panel = document.createElement("section");
@@ -89,10 +98,7 @@
     const stage = document.querySelector(".core-stage");
     const command = document.querySelector(".command-zone");
     if (stage && command) stage.insertBefore(panel, command);
-    panel.querySelector("#brainEnabled").addEventListener("change", e => {
-      state.enabled = e.target.checked;
-      status(state.enabled ? "Brain enabled" : "Brain paused");
-    });
+    panel.querySelector("#brainEnabled").addEventListener("change", e => setEnabled(e.target.checked));
     panel.querySelectorAll("[data-brain-action]").forEach(btn => btn.addEventListener("click", () => {
       const p = native();
       const method = btn.dataset.brainAction === "accessibility" ? "openAccessibilitySettings" : "openAppSettings";
@@ -104,6 +110,6 @@
     }));
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",mount,{once:true}); else mount();
-  window.COSMIC_BRAIN = {handle, handleTool, state, parse};
+  window.COSMIC_BRAIN = {handle, handleTool, state, parse, setEnabled};
   document.addEventListener("cosmic:brain-error",e => console.warn("COSMIC Brain:",e.detail?.message));
 })();
