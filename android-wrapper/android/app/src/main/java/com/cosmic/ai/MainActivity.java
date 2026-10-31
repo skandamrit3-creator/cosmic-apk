@@ -27,6 +27,10 @@ public class MainActivity extends BridgeActivity {
 
     private void resumeVoiceIfEnabled() {
         android.content.SharedPreferences prefs = getSharedPreferences("cosmic_live", MODE_PRIVATE);
+        if (!prefs.contains("wake_word_enabled")) {
+            // First install defaults to the visible, user-controllable local wake-word mode.
+            prefs.edit().putBoolean("wake_word_enabled", true).apply();
+        }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
         if (prefs.getBoolean("voice_auto_resume", false)) {
             if (CosmicLiveService.isRunning()) return;
@@ -37,10 +41,15 @@ public class MainActivity extends BridgeActivity {
             return;
         }
         if (prefs.getBoolean("wake_word_enabled", false) && !CosmicWakeWordService.isRunning() && !CosmicLiveService.isRunning()) {
-            Intent wake = new Intent(this, CosmicWakeWordService.class);
-            wake.setAction(CosmicWakeWordService.ACTION_START);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(wake);
-            else startService(wake);
+            // Allow the WebView's Gemini Live auto-start a moment to take ownership of the mic.
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                android.content.SharedPreferences current = getSharedPreferences("cosmic_live", MODE_PRIVATE);
+                if (!current.getBoolean("wake_word_enabled", false) || CosmicWakeWordService.isRunning() || CosmicLiveService.isRunning()) return;
+                Intent wake = new Intent(this, CosmicWakeWordService.class);
+                wake.setAction(CosmicWakeWordService.ACTION_START);
+                try { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(wake); else startService(wake); }
+                catch (Exception error) { android.util.Log.e("COSMIC", "Could not restore local wake listener", error); }
+            }, 4500);
         }
     }
 
