@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CosmicLiveService extends Service {
     public static final String ACTION_START = "com.cosmic.ai.live.START";
     public static final String ACTION_STOP = "com.cosmic.ai.live.STOP";
+    public static final String ACTION_USER_STOP_LISTENING = "com.cosmic.ai.live.USER_STOP_LISTENING";
     public static final String ACTION_SCREEN_START = "com.cosmic.ai.live.SCREEN_START";
     public static final String ACTION_SCREEN_STOP = "com.cosmic.ai.live.SCREEN_STOP";
     public static final String ACTION_EVENT = "com.cosmic.ai.live.EVENT";
@@ -177,6 +178,20 @@ public class CosmicLiveService extends Service {
                 sessionThread.start();
             }
             return START_STICKY;
+        }
+        if (intent != null && ACTION_USER_STOP_LISTENING.equals(intent.getAction())) {
+            // The visible notification action means stop ALL microphone capture, including
+            // the offline wake-word standby. The in-app Live toggle uses ACTION_STOP and
+            // may intentionally return to the opted-in wake-word standby.
+            getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
+                    .putBoolean("wake_word_enabled", false)
+                    .putBoolean("voice_auto_resume", false)
+                    .apply();
+            Intent stopWake = new Intent(this, CosmicWakeWordService.class);
+            stopWake.setAction(CosmicWakeWordService.ACTION_STOP);
+            try { startService(stopWake); } catch (Exception ignored) {}
+            stopLive();
+            return START_NOT_STICKY;
         }
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
             stopLive();
@@ -659,7 +674,7 @@ public class CosmicLiveService extends Service {
 
     private Notification notification(String message) {
         Intent stopIntent = new Intent(this, CosmicLiveService.class);
-        stopIntent.setAction(ACTION_STOP);
+        stopIntent.setAction(ACTION_USER_STOP_LISTENING);
         PendingIntent stopPending = PendingIntent.getService(this, NOTIFICATION_ID, stopIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         return new NotificationCompat.Builder(this, CHANNEL)
