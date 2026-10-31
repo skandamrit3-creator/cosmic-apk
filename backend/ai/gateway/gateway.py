@@ -23,6 +23,10 @@ CATALOG = {
         ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite · Legacy access"),
         ("gemini-2.5-pro", "Gemini 2.5 Pro · Legacy access"),
     ],
+    "openai": [
+        ("gpt-4.1-mini", "GPT-4.1 mini · Fast"),
+        ("gpt-4.1", "GPT-4.1 · Advanced"),
+    ],
     "groq": [
         ("openai/gpt-oss-120b", "GPT OSS 120B"),
         ("openai/gpt-oss-20b", "GPT OSS 20B - Fast"),
@@ -44,6 +48,11 @@ CONFIG = {
         "kind": "gemini",
         "default": "gemini-3.8-flash",
     },
+    "openai": {
+        "key": "OPENAI_API_KEY",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "default": "gpt-4.1-mini",
+    },
     "groq": {
         "key": "GROQ_API_KEY",
         "url": "https://api.groq.com/openai/v1/chat/completions",
@@ -62,7 +71,7 @@ CONFIG = {
 }
 
 
-AUTO_ORDER = ("gemini", "groq", "mistral", "openrouter")
+AUTO_ORDER = ("gemini", "openai", "groq", "mistral", "openrouter")
 
 
 def _provider_key_file():
