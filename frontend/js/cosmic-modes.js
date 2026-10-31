@@ -116,7 +116,7 @@ async function openQuick(view){
    const input=document.createElement("input");input.type="password";input.autocomplete="off";input.spellcheck=false;input.placeholder="Paste "+label+" API key";input.setAttribute("aria-label",label+" API key");fields[id]=input;row.append(input);
    const state=document.createElement("small");state.dataset.provider=id;state.textContent="Checking…";row.append(state);
    const clear=document.createElement("button");clear.type="button";clear.textContent="REMOVE";clear.onclick=async()=>{
-    clear.disabled=true;try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clear:[id]})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);state.textContent="NOT CONFIGURED";status.textContent=label+" key removed from this device.";}catch(e){status.textContent="Could not remove key: "+e.message;}finally{clear.disabled=false;}
+    clear.disabled=true;try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clear:[id]})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);state.textContent="NOT CONFIGURED";status.textContent=label+" key removed from this device.";await loadModels();}catch(e){status.textContent="Could not remove key: "+e.message;}finally{clear.disabled=false;}
    };row.append(clear);grid.append(row);
   });
   const actions=document.createElement("div");actions.className="cosmic-key-actions";body.append(actions);
