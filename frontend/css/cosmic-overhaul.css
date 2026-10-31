@@ -240,3 +240,9 @@ body:has(#cosmicChatMode:not([hidden])) .cosmic-live-dock{bottom:calc(92px + env
 .cosmic-live-orb{cursor:pointer;touch-action:manipulation}
 .cosmic-live-share,.cosmic-live-bubble{cursor:pointer;touch-action:manipulation}
 .cosmic-live-status{user-select:none}
+
+.cosmic-live-choice{max-width:128px;min-height:31px;padding:0 7px;border:1px solid rgba(160,210,235,.22);border-radius:999px;background:rgba(255,255,255,.055);color:#cce5f2;font-size:8px;font-weight:800;letter-spacing:.025em;outline:none}
+.cosmic-live-choice option{background:#0a1826;color:#eafaff}
+.cosmic-live-voice{max-width:76px}
+@media(max-width:850px){.cosmic-live-choice{max-width:106px;font-size:7px}.cosmic-live-voice{max-width:66px}}
+@media(max-width:390px){.cosmic-live-choice{max-width:92px}.cosmic-live-voice{max-width:58px}}
