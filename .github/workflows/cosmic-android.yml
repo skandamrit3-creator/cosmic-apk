@@ -62,6 +62,7 @@ jobs:
 
       - name: Verify referenced frontend assets
         run: |
+          export APK_SHA256
           python - <<'PY'
           from pathlib import Path
           import re
