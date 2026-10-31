@@ -116,6 +116,33 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<div class="avatar-divider"></div><h3>VOICE & EXPRESSION</h3><textarea id="avatarSpeakText" rows="3" placeholder="Write what your character should say…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><button class="avatar-primary" id="avatarSpeakButton" type="button" style="margin-top:8px">SPEAK AS CHARACTER</button><p class="avatar-help">VRM facial expressions are used when the model provides compatible expression morphs. Generic GLB models do not automatically gain realistic lip-sync.</p>',
     '<div class="avatar-divider"></div><h3>BUILT-IN ANIME CHARACTERS</h3><div class="avatar-gallery" id="cosmicAvatarSamples"><button type="button" data-avatar-sample="A" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_A.vrm">AVATAR SAMPLE A</button><button type="button" data-avatar-sample="B" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_B.vrm">AVATAR SAMPLE B</button><button type="button" data-avatar-sample="C" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_C.vrm">AVATAR SAMPLE C</button></div><p class="avatar-help">VRoid sample models A–C. Their use is governed by Pixiv/VRoid sample-model terms, not CC0. <a href="https://vroid.pixiv.help/hc/en-us/articles/4402394424089-VRoidPreset-A-Z" target="_blank" rel="noopener">View usage terms</a>.</p><div class="avatar-divider"></div><h3>MY CHARACTER LIBRARY</h3><div class="avatar-gallery" id="cosmicAvatarLibrary"></div><p class="avatar-help">Imported and generated model files are saved in local IndexedDB on this device.</p><div class="avatar-price-note">Photo-to-3D uses Tripo’s paid API. Add TRIPO_API_KEY to the backend environment. This repo does not bundle photorealistic/anime asset files.</div></aside></div>'
   ].join("");}
+  async function loadFirstCharacter(){
+    try{
+      const db=await openDB();
+      const items=await new Promise((resolve,reject)=>{const q=db.transaction("models","readonly").objectStore("models").getAll();q.onsuccess=()=>resolve(q.result||[]);q.onerror=()=>reject(q.error);});
+      if(items.length){items.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));await loadBlob(items[0].blob,items[0].name,false);return;}
+    }catch(_){}
+    const samples=[
+      ["A","https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_A.vrm"],
+      ["B","https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_B.vrm"],
+      ["C","https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_C.vrm"]
+    ];
+    for(const [name,url] of samples){
+      try{
+        status("Importing real VRM anime companion "+name+"…");
+        const response=await fetch(url,{cache:"force-cache",mode:"cors"});
+        if(!response.ok)throw new Error("HTTP "+response.status);
+        const blob=await response.blob();
+        if(!blob.size)throw new Error("Empty VRM file");
+        await loadBlob(blob,"COSMIC VRM Companion "+name,true);
+        const download=document.querySelector("#cosmicAvatarDownload");
+        if(download){if(currentDownloadUrl)URL.revokeObjectURL(currentDownloadUrl);currentDownloadUrl=URL.createObjectURL(blob);download.href=currentDownloadUrl;download.hidden=false;}
+        status("A real VRM character is loaded. Import another model or select a different sample.","success");
+        return;
+      }catch(error){console.warn("VRM sample "+name+" failed:",error);}
+    }
+    status("Could not download the sample VRM models on this connection. Use IMPORT GLB / VRM to load a model from your device.","error");
+  }
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
     $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f){currentTaskId="";$("#avatarRig3D",host).disabled=true;loadBlob(f,f.name);}});
