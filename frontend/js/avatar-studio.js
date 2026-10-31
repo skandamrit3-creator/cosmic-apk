@@ -259,12 +259,9 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   }
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
-    const studio=host.querySelector(".avatar-studio-v2"),stage=host.querySelector(".avatar-stage-v2"),panel=host.querySelector(".avatar-panel");
+    const studio=host.querySelector(".avatar-studio-v2"),panel=host.querySelector(".avatar-panel");
     host.querySelector("#cosmicAvatarSettings")?.addEventListener("click",()=>studio.classList.toggle("settings-open"));
     const closeSettings=document.createElement("button");closeSettings.type="button";closeSettings.className="avatar-settings-close";closeSettings.textContent="CLOSE";closeSettings.onclick=()=>studio.classList.remove("settings-open");panel?.prepend(closeSettings);
-    const dock=document.createElement("div");dock.className="avatar-chat-dock";dock.innerHTML='<div class="avatar-chat-log-slot"></div><div class="avatar-chat-row"></div>';
-    const oldLog=panel?.querySelector("#avatarConversationLog"),oldInput=panel?.querySelector("#avatarConversationInput"),oldActions=panel?.querySelector(".avatar-conversation-actions");
-    if(oldLog)dock.querySelector(".avatar-chat-log-slot").append(oldLog);if(oldInput)dock.querySelector(".avatar-chat-row").append(oldInput);if(oldActions)dock.querySelector(".avatar-chat-row").append(oldActions);stage?.append(dock);
     const lm=host.querySelector("#cosmicAvatarLiveModel"),lv=host.querySelector("#cosmicAvatarVoice"),mm=host.querySelector("#cosmicAvatarMood");
     if(lm){lm.value=localStorage.getItem("COSMIC_LIVE_MODEL")||"gemini-3.8-live";lm.onchange=()=>{localStorage.setItem("COSMIC_LIVE_MODEL",lm.value);const x=document.querySelector("#cosmicLiveModel");if(x){x.value=lm.value;x.dispatchEvent(new Event("change"));}};}
     if(lv){lv.value=localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore";lv.onchange=()=>{localStorage.setItem("COSMIC_LIVE_VOICE",lv.value);localStorage.setItem("COSMIC_TTS_VOICE",lv.value);const x=document.querySelector("#cosmicLiveVoice");if(x){x.value=lv.value;x.dispatchEvent(new Event("change"));}};}
