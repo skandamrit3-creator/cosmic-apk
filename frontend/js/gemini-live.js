@@ -69,9 +69,9 @@
           else if (navigator.permissions?.query) {
             navigator.permissions.query({name:"microphone"}).then(permission => {
               if (permission.state === "granted" && state.desired) start(true);
-              else setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused");
-            }).catch(() => setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"));
-          } else setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused");
+              else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
+            }).catch(() => { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); });
+          } else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
         })
         .catch(() => setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"));
     }
