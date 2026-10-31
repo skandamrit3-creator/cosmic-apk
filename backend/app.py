@@ -297,6 +297,8 @@ def chat():
 @app.post("/api/images/generate")
 def generate_image():
     """Generate an image with Gemini Nano Banana and save it in app-private storage."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Image generation is available only from the local COSMIC app."}), 403
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return jsonify({"success": False, "error": "JSON object required"}), 400
