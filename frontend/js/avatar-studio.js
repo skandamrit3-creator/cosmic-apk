@@ -7,7 +7,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   "use strict";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
-  let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
+  let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",avatarSpeechAudio=null,nextBlink=2.5,blinkTime=0;
   let gestureBones=null, activeGesture="idle", gestureUntil=0, conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
   localStorage.setItem("cosmic.chat.session.v1",conversationSession);
   localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
@@ -191,7 +191,32 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     else if(/\b(wow|surprise|amazing)\b/.test(value)){state.mood="surprised";}
   }
   window.COSMIC_AVATAR_COMMAND=commandGesture;
-  function speak(text){const value=String(text||"").trim();if(!value)return;speaking=true;window.COSMIC_AVATAR_TALK?.(true);const native=window.Capacitor?.Plugins?.CosmicVoice;if(native?.speak){native.speak({text:value}).catch(e=>status("Voice error: "+e.message,"error")).finally(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);});setTimeout(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);},Math.max(1800,value.length*65));return;}if(window.speechSynthesis){speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);utterance.onend=utterance.onerror=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);};speechSynthesis.speak(utterance);}else{speaking=false;window.COSMIC_AVATAR_TALK?.(false);status("Text-to-speech is unavailable.","error");}}
+  async function speak(text){
+    const value=String(text||"").trim();if(!value)return;
+    if(avatarSpeechAudio){try{avatarSpeechAudio.pause();URL.revokeObjectURL(avatarSpeechAudio.src);}catch(_){}avatarSpeechAudio=null;}
+    speaking=true;window.COSMIC_AVATAR_TALK?.(true);
+    const finish=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);};
+    try{
+      const response=await fetch(apiBase()+"/api/ai/speech",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({text:value,voice:localStorage.getItem("COSMIC_TTS_VOICE")||localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore",
+          model:localStorage.getItem("COSMIC_TTS_MODEL")||(value.length>400?"gemini-3.8-flash-tts":"gemini-3.8-flash-lite-tts")})});
+      if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||"Gemini speech HTTP "+response.status);}
+      const blob=await response.blob();if(!blob.size)throw new Error("Gemini speech returned empty audio.");
+      const url=URL.createObjectURL(blob),audio=new Audio(url);avatarSpeechAudio=audio;
+      audio.onended=()=>{URL.revokeObjectURL(url);if(avatarSpeechAudio===audio)avatarSpeechAudio=null;finish();};
+      audio.onerror=()=>{URL.revokeObjectURL(url);if(avatarSpeechAudio===audio)avatarSpeechAudio=null;finish();status("Gemini speech playback failed.","error");};
+      await audio.play();return;
+    }catch(error){console.warn("MYRAA Gemini speech fallback:",error.message);}
+    const native=window.Capacitor?.Plugins?.CosmicVoice;
+    if(typeof native?.speak==="function"){
+      try{await native.speak({text:value});setTimeout(finish,Math.max(1800,value.length*65));return;}
+      catch(error){console.warn("MYRAA native speech fallback:",error.message);}
+    }
+    if(window.speechSynthesis){
+      speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);
+      utterance.onend=utterance.onerror=finish;speechSynthesis.speak(utterance);
+    }else{finish();status("Text-to-speech is unavailable.","error");}
+  }
   function addConversationMessage(text,kind){
     const log=document.querySelector("#avatarConversationLog");if(!log)return;
     const item=document.createElement("div");item.className="avatar-conversation-message "+kind;item.textContent=String(text||"");log.append(item);log.scrollTop=log.scrollHeight;return item;
@@ -208,8 +233,14 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
         if(!await window.COSMIC_LIVE.sendText(message,true))throw new Error("Gemini Live session is not ready.");
         waiting.remove();status("Gemini Live · message sent","success");return;
       }
+      const providerSelect=document.querySelector("#cosmicChatProvider");
+      const modelSelect=document.querySelector("#cosmicChatModel");
+      const selectedModel=modelSelect?.value||"auto";
+      const modelParts=selectedModel.includes(":")?selectedModel.split(":"):[];
+      const selectedProvider=modelParts[0]||providerSelect?.value||"auto";
+      const selectedModelId=modelParts[1]||selectedModel;
       const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({message,provider:"auto",model:"auto",mode:"auto",task:"chat",session_id:conversationSession})});
+        body:JSON.stringify({message,provider:selectedProvider,model:selectedModelId,mode:selectedProvider==="auto"?"auto":"manual",task:"chat",session_id:conversationSession})});
       const data=await response.json();if(!response.ok||data.success===false)throw new Error(data.error||"HTTP "+response.status);
       const answer=data.message||data.response||data.text||"COSMIC returned an empty reply.";
       waiting.textContent=answer;speak(answer);
