@@ -5,15 +5,16 @@
   const state = { active:false, starting:false, listener:null, lastState:"READY" };
   const dock = document.createElement("aside");
   dock.id = "cosmicLiveDock";
-  dock.innerHTML = '<span class="cosmic-live-indicator" aria-hidden="true"></span><div class="cosmic-live-copy"><b id="cosmicLiveTitle">COSMIC LIVE</b><small id="cosmicLiveStatus">VOICE OFF · READY</small></div><button id="cosmicLiveToggle" type="button" aria-pressed="false">START LIVE</button>';
+  dock.innerHTML = '<span class="cosmic-live-indicator" aria-hidden="true"></span><div class="cosmic-live-copy"><b id="cosmicLiveTitle">COSMIC LIVE</b><small id="cosmicLiveStatus">VOICE OFF · READY</small></div><button id="cosmicLiveShare" type="button" hidden>SHARE SCREEN</button><button id="cosmicLiveToggle" type="button" aria-pressed="false">START LIVE</button>';
   document.body.append(dock);
-  const title=dock.querySelector("#cosmicLiveTitle"), status=dock.querySelector("#cosmicLiveStatus"), button=dock.querySelector("#cosmicLiveToggle");
+  const title=dock.querySelector("#cosmicLiveTitle"), status=dock.querySelector("#cosmicLiveStatus"), button=dock.querySelector("#cosmicLiveToggle"), share=dock.querySelector("#cosmicLiveShare");
   function paint(message, active=state.active) {
     state.lastState=message||"READY"; state.active=active;
     dock.classList.toggle("is-live",active);
     dock.classList.toggle("is-starting",state.starting);
     button.textContent=state.starting?"CONNECTING…":active?"STOP LIVE":"START LIVE";
     button.setAttribute("aria-pressed",String(active));
+    share.hidden=!active||!native()?.startScreenShare;
     status.textContent=state.lastState;
     title.textContent=active?"COSMIC IS LISTENING":"COSMIC LIVE";
   }
@@ -74,9 +75,19 @@
     document.documentElement.classList.remove("cosmic-live-speaking");
   }
   button.addEventListener("click",()=>state.active||state.starting?stop():start());
+  share.addEventListener("click",async()=>{
+    const plugin=native();
+    if(!plugin?.startScreenShare){paint("SCREEN SHARING IS ANDROID ONLY",state.active);return;}
+    share.disabled=true;
+    try{await plugin.startScreenShare();share.textContent="SCREEN SHARING";status.textContent="LIVE · SCREEN SHARING";}
+    catch(error){status.textContent="SCREEN SHARE ERROR · "+(error?.message||error);}
+    finally{share.disabled=false;}
+  });
   window.COSMIC_LIVE={
     start,stop,
     toggle(){return state.active||state.starting?stop():start();},
+    async shareScreen(){const plugin=native();if(!plugin?.startScreenShare)throw new Error("Screen sharing requires the Android app.");return plugin.startScreenShare();},
+    async stopScreenShare(){return native()?.stopScreenShare?.();},
     get active(){return state.active||state.starting;},
     async sendText(text){const plugin=native();if(!plugin?.sendLiveText)throw new Error("Native Gemini Live is unavailable.");return plugin.sendLiveText({text:String(text||"")});},
     onEvent
