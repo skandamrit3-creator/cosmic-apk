@@ -354,6 +354,9 @@ class AIGateway:
         return "gemini-3.8-flash"
 
     def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
+        # Reload app-private credentials for every request. Android .env files are
+        # intentionally not bundled into the APK; API Setup stores keys on-device.
+        load_saved_provider_keys()
         history = history or []
         provider = str(provider or "auto").lower()
         model = str(model or "auto")
