@@ -59,7 +59,7 @@ async function sendChat(e){
  add(message,"user");input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
-  if(/\\b(?:make|create|generate|draw|design|render)\\b.{0,70}\\b(?:image|picture|photo|illustration|wallpaper|logo|poster|artwork)\\b/i.test(message)){
+  if(/\b(?:make|create|generate|draw|design|render)\b.{0,70}\b(?:image|picture|photo|illustration|wallpaper|logo|poster|artwork)\b/i.test(message)){
    try{
     state.textContent="CREATING IMAGE…";
     const r=await fetch(apiBase()+"/api/images/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:message})});
