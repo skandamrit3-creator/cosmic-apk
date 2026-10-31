@@ -309,7 +309,10 @@
       if(/key is missing|API key|permission denied|permission is required/i.test(message)){state.desired=false;state.nativeMode=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");}
       setStatus(message,"error");
     } else if(type==="transcript") transcript(message,"assistant");
-    else if(type==="user_transcript") transcript(message,"user");
+    else if(type==="user_transcript") {
+      transcript(message,"user");
+      document.dispatchEvent(new CustomEvent("cosmic:live-transcript",{detail:{text:message,role:"user"}}));
+    }
     else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
     else if(type==="audio_start") window.COSMIC_AVATAR_TALK?.(true);
     else if(type==="audio_end"||type==="turn_complete") {
