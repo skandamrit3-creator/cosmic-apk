@@ -203,3 +203,8 @@ body{margin:0}
  .cosmic-live-share{font-size:7px;padding:0 8px}
 }
 @media(max-width:390px){.cosmic-live-status{max-width:78px}.cosmic-live-share{max-width:75px;white-space:normal;line-height:1.1}}
+
+#cosmicLiveShare{min-height:36px;padding:7px 10px;border:1px solid rgba(124,194,220,.24);border-radius:10px;background:rgba(124,194,220,.08);color:#cbeeff;font-size:8px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
+#cosmicLiveShare[hidden]{display:none!important}
+#cosmicLiveDock{flex-wrap:wrap}
+@media(max-width:420px){#cosmicLiveDock{gap:6px}#cosmicLiveShare{order:3;flex:1 1 100%}}
