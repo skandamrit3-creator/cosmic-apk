@@ -169,6 +169,7 @@ public class CosmicLiveService extends Service {
                                         JSONObject part = parts.optJSONObject(i);
                                         JSONObject inline = part == null ? null : part.optJSONObject("inlineData");
                                         if (inline != null) {
+                                            emit("audio_start", "");
                                             String encoded = inline.optString("data", "");
                                             if (!encoded.isEmpty() && player != null) {
                                                 byte[] pcm = Base64.decode(encoded, Base64.DEFAULT);
