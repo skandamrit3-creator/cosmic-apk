@@ -2,10 +2,12 @@ package com.cosmic.ai;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Environment;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -14,6 +16,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.provider.Settings;
 import android.content.Context;
 import android.net.Uri;
+import android.webkit.URLUtil;
 import android.view.accessibility.AccessibilityNodeInfo;
 import com.getcapacitor.*;
 import com.getcapacitor.annotation.*;
@@ -136,6 +139,64 @@ public class CosmicVoicePlugin extends Plugin {
             getContext().startActivity(launch);
             call.resolve(new JSObject().put("success", true));
         } catch (Exception e) { call.reject("Could not launch app: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void openUrl(PluginCall call) {
+        String raw = call.getString("url", "").trim();
+        Uri uri = Uri.parse(raw);
+        String scheme = uri.getScheme();
+        if (raw.isEmpty() || !("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))) {
+            call.reject("Only valid HTTP or HTTPS links can be opened");
+            return;
+        }
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (intent.resolveActivity(getContext().getPackageManager()) == null) {
+                call.reject("No browser or app can open this link");
+                return;
+            }
+            getContext().startActivity(intent);
+            call.resolve(new JSObject().put("success", true).put("url", uri.toString()));
+        } catch (Exception e) {
+            call.reject("Could not open link: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void downloadFile(PluginCall call) {
+        String raw = call.getString("url", "").trim();
+        Uri uri = Uri.parse(raw);
+        String scheme = uri.getScheme();
+        if (raw.isEmpty() || !("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))) {
+            call.reject("Only HTTP or HTTPS download links are allowed");
+            return;
+        }
+        try {
+            String filename = call.getString("fileName", URLUtil.guessFileName(raw, null, null));
+            filename = filename == null ? "cosmic-download" : filename.trim();
+            filename = filename.replaceAll("[^A-Za-z0-9._-]", "_");
+            if (filename.isEmpty() || filename.equals(".") || filename.equals("..")) {
+                filename = "cosmic-download";
+            }
+            DownloadManager manager = (DownloadManager) getContext().getSystemService(Context.DOWNLOAD_SERVICE);
+            if (manager == null) {
+                call.reject("Android Download Manager is unavailable");
+                return;
+            }
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle(filename);
+            request.setDescription("Downloaded by COSMIC");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setAllowedOverMetered(true);
+            request.setAllowedOverRoaming(false);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename);
+            long id = manager.enqueue(request);
+            call.resolve(new JSObject().put("success", true).put("downloadId", id).put("fileName", filename));
+        } catch (Exception e) {
+            call.reject("Could not start download: " + e.getMessage());
+        }
     }
 
     @PluginMethod
