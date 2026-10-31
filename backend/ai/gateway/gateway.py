@@ -9,8 +9,9 @@ Never claim to control devices or files unless an actual connected tool provides
 # These are candidate IDs; providers can change availability and free quotas.
 CATALOG = {
     "gemini": [
-        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite"),
-        ("gemini-2.5-flash", "Gemini 2.5 Flash"),
+        ("gemini-3.6-flash", "Gemini 3.6 Flash"),
+        ("gemini-3.5-flash", "Gemini 3.5 Flash"),
+        ("gemini-3.5-flash-lite", "Gemini 3.5 Flash Lite"),
     ],
     "groq": [
         ("openai/gpt-oss-120b", "GPT OSS 120B"),
@@ -31,7 +32,7 @@ CONFIG = {
     "gemini": {
         "key": "GEMINI_API_KEY",
         "kind": "gemini",
-        "default": "gemini-2.5-flash-lite",
+        "default": "gemini-3.6-flash",
     },
     "groq": {
         "key": "GROQ_API_KEY",

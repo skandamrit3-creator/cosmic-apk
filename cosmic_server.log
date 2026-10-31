@@ -1,4 +1,4 @@
- * Serving Flask app 'app'
- * Debug mode: off
-Address in use
-Port 8000 is in use by another program. Either identify and stop that program, or start the server with a different port.
+Traceback (most recent call last):
+  File "/public/Cosmic AI/backend/app.py", line 5, in <module>
+    from backend.database.connection import init_db, get_connection
+ModuleNotFoundError: No module named 'backend'
