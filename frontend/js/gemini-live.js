@@ -73,7 +73,7 @@
             }).catch(() => { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); });
           } else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
         })
-        .catch(() => setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"));
+        .catch(() => { state.desired = false; setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"); });
     }
   }
 
