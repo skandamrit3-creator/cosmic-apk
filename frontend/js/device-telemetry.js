@@ -9,17 +9,20 @@
  async function sample(){
   const api=plugin();
   if(typeof api?.getDeviceMetrics!=="function"){
-   paint(find("CPU")||find("CORE"),null);paint(find("NETWORK"),null,"GPU");paint(find("MEMORY"),null,"RAM");
+   paint(find("CPU")||find("CORE"),null);paint(find("GPU"),null,"GPU");paint(find("STORAGE"),null,"STORAGE");paint(find("RAM"),null,"RAM");paint(find("BATTERY"),null,"BATTERY");
    const status=document.getElementById("coreLoad");if(status)status.textContent="ANDROID SENSOR BRIDGE REQUIRED";
    return;
   }
   try{
    const m=await api.getDeviceMetrics();
    paint(find("CPU")||find("CORE"),m.cpuPercent>=0?m.cpuPercent:null,"CPU");
-   const ram=find("MEMORY");paint(ram,m.ramPercent>=0?m.ramPercent:null,"RAM");
+   const ram=find("RAM")||find("MEMORY");paint(ram,m.ramPercent>=0?m.ramPercent:null,"RAM");
    if(ram){const out=ram.querySelector("b");if(out&&m.ramTotalBytes)out.title=fmt(m.ramUsedBytes)+" / "+fmt(m.ramTotalBytes);}
-   const storage=find("NETWORK");paint(storage,m.storagePercent>=0?m.storagePercent:null,"STORAGE");
+   const storage=find("STORAGE")||find("NETWORK");paint(storage,m.storagePercent>=0?m.storagePercent:null,"STORAGE");
    if(storage){const out=storage.querySelector("b");if(out&&m.storageTotalBytes)out.title=fmt(m.storageUsedBytes)+" / "+fmt(m.storageTotalBytes);}
+   const gpu=find("GPU");paint(gpu,m.gpuAvailable&&m.gpuPercent>=0?m.gpuPercent:null,"GPU");
+   if(gpu){const out=gpu.querySelector("b");if(out)out.title=m.gpuAvailable?"Android GPU utilization":"GPU utilization is not exposed by this Android device";}
+   paint(find("BATTERY"),m.batteryPercent>=0?m.batteryPercent:null,"BATTERY");
    const status=document.getElementById("coreLoad");if(status)status.textContent=m.cpuPercent>=0?"LIVE · ANDROID":"SAMPLING CPU";
    const coreMetric=document.getElementById("coreMetric");if(coreMetric&&m.cpuPercent>=0)coreMetric.textContent=m.cpuPercent+"%";
   }catch(error){const status=document.getElementById("coreLoad");if(status)status.textContent="TELEMETRY UNAVAILABLE";}
