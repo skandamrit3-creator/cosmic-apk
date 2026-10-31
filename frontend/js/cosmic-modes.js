@@ -172,7 +172,7 @@ async function openQuick(view){
   addQuickText(body,"COSMIC FEATURE CENTER · Download verified frontend updates inside the app. Native Android changes still require an in-place app update.");
   const featureStatus=document.createElement("p");featureStatus.className="cosmic-key-status";featureStatus.textContent="Checking feature updater…";body.append(featureStatus);
   addQuickButton(body,"CHECK FEATURE UPDATES",async()=>{
-   featureStatus.textContent="Checking signed-official GitHub release assets and SHA-256 manifest…";
+   featureStatus.textContent="Checking official COSMIC GitHub release assets and SHA-256 manifest…";
    try{const result=await window.COSMIC_FEATURE_UPDATER.check();featureStatus.textContent=result.updateAvailable?"FEATURE UPDATE AVAILABLE · "+result.version+" · "+result.files+" files": "UP TO DATE · "+result.installed+" · "+result.files+" files";featureStatus.dataset.state=result.updateAvailable?"available":"current";}
    catch(error){featureStatus.textContent="FEATURE CHECK · "+error.message;}
   });
