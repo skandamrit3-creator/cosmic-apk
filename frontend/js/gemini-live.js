@@ -277,9 +277,6 @@
         } else if (call.name === "navigate_back") {
           if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable in this client.");
           await plugin.systemAction({action:"back"}); result = {success:true,action:"navigate_back"};
-        } else if (call.name === "navigate_back") {
-          if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable.");
-          await plugin.systemAction({action:"back"}); result = {success:true};
         } else {
           throw new Error("Unknown COSMIC action.");
         }
@@ -308,14 +305,11 @@
         state.sharing=false;setStatus("GEMINI LIVE · LISTENING","live");
       } else setStatus(message,state.connected?"live":"connecting");
     } else if(type==="error") {
-      state.connected=false;state.connecting=false;state.nativeMode=false;
-      if(/key is missing|API key|permission denied|permission is required/i.test(message)){state.desired=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");}
+      state.connected=false;state.connecting=false;
+      if(/key is missing|API key|permission denied|permission is required/i.test(message)){state.desired=false;state.nativeMode=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");}
       setStatus(message,"error");
     } else if(type==="transcript") transcript(message,"assistant");
-    else if(type==="user_transcript") {
-      transcript(message,"user");
-      document.dispatchEvent(new CustomEvent("cosmic:live-transcript",{detail:{text:message,role:"user"}}));
-    }
+    else if(type==="user_transcript") transcript(message,"user");
     else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
     else if(type==="audio_start") window.COSMIC_AVATAR_TALK?.(true);
     else if(type==="audio_end"||type==="turn_complete") {
