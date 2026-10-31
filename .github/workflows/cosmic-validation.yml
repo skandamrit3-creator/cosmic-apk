@@ -51,6 +51,13 @@ jobs:
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Install Capacitor dependencies
+        working-directory: android-wrapper
+        run: npm install
+      - name: Sync Capacitor Android project
+        working-directory: android-wrapper
+        run: npx cap sync android
+
       - name: Compile Android Java only (no APK packaging)
         working-directory: android-wrapper/android
         run: |
