@@ -26,13 +26,22 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void resumeVoiceIfEnabled() {
-        if (!getSharedPreferences("cosmic_live", MODE_PRIVATE).getBoolean("voice_auto_resume", false)) return;
+        android.content.SharedPreferences prefs = getSharedPreferences("cosmic_live", MODE_PRIVATE);
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) return;
-        if (CosmicLiveService.isRunning()) return;
-        Intent live = new Intent(this, CosmicLiveService.class);
-        live.setAction(CosmicLiveService.ACTION_START);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(live);
-        else startService(live);
+        if (prefs.getBoolean("voice_auto_resume", false)) {
+            if (CosmicLiveService.isRunning()) return;
+            Intent live = new Intent(this, CosmicLiveService.class);
+            live.setAction(CosmicLiveService.ACTION_START);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(live);
+            else startService(live);
+            return;
+        }
+        if (prefs.getBoolean("wake_word_enabled", false) && !CosmicWakeWordService.isRunning() && !CosmicLiveService.isRunning()) {
+            Intent wake = new Intent(this, CosmicWakeWordService.class);
+            wake.setAction(CosmicWakeWordService.ACTION_START);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(wake);
+            else startService(wake);
+        }
     }
 
     private void startCosmicBackend() {
