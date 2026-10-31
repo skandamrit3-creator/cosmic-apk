@@ -177,6 +177,8 @@ public class CosmicLiveService extends Service {
                             config.put("responseModalities", new JSONArray().put("AUDIO"));
                             config.put("inputAudioTranscription", new JSONObject());
                             config.put("outputAudioTranscription", new JSONObject());
+                            config.put("speechConfig", new JSONObject().put("voiceConfig",
+                                    new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", "Aoede"))));
                             config.put("contextWindowCompression", new JSONObject().put("slidingWindow", new JSONObject()));
                             JSONObject resume = new JSONObject();
                             if (!resumeHandle.isEmpty()) resume.put("handle", resumeHandle);
@@ -211,7 +213,7 @@ public class CosmicLiveService extends Service {
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
-                                            "You are COSMIC, a fast, warm, highly capable personal assistant. Speak naturally and concisely. You can answer questions and help plan actions. Never claim to have performed a phone action unless a connected tool confirms it. The user can interrupt you at any time."))));
+                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
                             setup.put("setup", config);
                             webSocket.send(setup.toString());
                         } catch (Exception e) {
