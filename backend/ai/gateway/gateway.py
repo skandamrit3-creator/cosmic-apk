@@ -320,6 +320,26 @@ class AIGateway:
             raise RuntimeError(provider.title() + " returned an empty response")
         return text
 
+    @staticmethod
+    def _auto_gemini_model(message):
+        """Fast task-aware model choice; explicit user selection always wins."""
+        text = str(message or "").lower()
+        deep_signals = (
+            "prove ", "proof ", "derive ", "architecture", "design a system",
+            "deep analysis", "analyze in detail", "debug this code",
+            "complex reasoning", "compare in depth", "step by step implementation",
+            "security review", "optimize this code",
+        )
+        quick_signals = (
+            "in one line", "short answer", "quickly", "just the answer",
+            "yes or no", "define ", "meaning of ",
+        )
+        if any(signal in text for signal in deep_signals):
+            return "gemini-4-argon"
+        if len(text) < 100 and any(signal in text for signal in quick_signals):
+            return "gemini-3.5-flash-lite"
+        return "gemini-3.8-flash"
+
     def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
         history = history or []
         provider = str(provider or "auto").lower()
@@ -351,7 +371,7 @@ class AIGateway:
                 errors.append(candidate + ": API key not configured")
                 continue
 
-            chosen_model = model if model != "auto" and candidate == provider else cfg["default"]
+            chosen_model = model if model != "auto" and candidate == provider else (self._auto_gemini_model(message) if candidate == "gemini" else cfg["default"])
             try:
                 if cfg.get("kind") == "gemini":
                     answer = self._gemini(chosen_model, key, message, history)
