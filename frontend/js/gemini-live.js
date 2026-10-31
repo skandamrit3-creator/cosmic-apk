@@ -485,10 +485,10 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "false");
       stopScreenShare();
       const nativeVoice=window.Capacitor?.Plugins?.CosmicVoice;
-      try {
-        nativeVoice?.disableWakeWord?.().then(()=>{if(wakeButton){wakeButton.textContent="ENABLE OK COSMIC";wakeButton.classList.remove("is-enabled");wakeButton.setAttribute("aria-pressed","false");}}).catch(()=>{});
-        nativeVoice?.stopLive?.();
-      } catch (_) {}
+      Promise.resolve(nativeVoice?.disableWakeWord?.()).catch(()=>{}).finally(()=>{
+        try { nativeVoice?.stopLive?.(); } catch (_) {}
+        if(wakeButton){wakeButton.textContent="ENABLE OK COSMIC";wakeButton.classList.remove("is-enabled");wakeButton.setAttribute("aria-pressed","false");}
+      });
       state.nativeMode = false; state.resumeHandle = "";
       setStatus("ALL VOICE LISTENING OFF", "idle");
       return;
