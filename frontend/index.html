@@ -668,7 +668,7 @@
       const response = await originalFetch(window.COSMIC_API_BASE + "/api/ai/models");
       const data = await response.json();
       if (!data.success) return;
-      const all = data.models || [];
+      const all = (data.models || []).filter(item => item.chat_compatible !== false);
 
       function fillModels() {
         const selectedProvider = provider.value;
