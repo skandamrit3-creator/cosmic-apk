@@ -156,16 +156,7 @@ public class CosmicLiveService extends Service {
             getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
                     .putString("live_model", liveModel).putString("live_voice", liveVoice).apply();
             if (changed && socket != null) socket.close(1012, "COSMIC Live voice settings changed");
-            String requestedVoice = intent.getStringExtra("live_voice");
-            if (requestedVoice != null && java.util.Arrays.asList(
-                    "Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr"
-            ).contains(requestedVoice)) {
-                boolean changed = !requestedVoice.equals(liveVoice);
-                liveVoice = requestedVoice;
-                getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
-                        .putString("live_voice", liveVoice).apply();
-                if (changed && socket != null) socket.close(1012, "COSMIC Live voice changed");
-            }
+
         }
         if (intent != null && ACTION_SCREEN_STOP.equals(intent.getAction())) {
             stopScreenCapture();
