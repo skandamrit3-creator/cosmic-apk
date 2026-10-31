@@ -1,4 +1,6 @@
 import os
+import json
+from pathlib import Path
 import requests
 
 COSMIC_SYSTEM = """You are COSMIC, the user's personal AI system.
@@ -50,7 +52,82 @@ CONFIG = {
     },
 }
 
+
 AUTO_ORDER = ("groq", "gemini", "mistral", "openrouter")
+
+
+def _provider_key_file():
+    configured = os.getenv("COSMIC_SECRETS_FILE", "").strip()
+    if configured:
+        return Path(configured)
+    return Path.home() / ".cosmic-ai" / "provider-keys.json"
+
+
+def load_saved_provider_keys():
+    """Load user-entered provider keys from app-private runtime storage."""
+    path = _provider_key_file()
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(saved, dict):
+            for provider, cfg in CONFIG.items():
+                value = saved.get(provider)
+                if isinstance(value, str) and value.strip():
+                    os.environ.setdefault(cfg["key"], value.strip())
+    except (OSError, ValueError, TypeError):
+        pass
+
+
+def save_provider_keys(keys=None, clear=None):
+    """Persist provider keys without ever returning their values to the client."""
+    keys = keys if isinstance(keys, dict) else {}
+    clear = set(clear or [])
+    allowed = set(CONFIG)
+    unknown = (set(keys) | clear) - allowed
+    if unknown:
+        raise ValueError("Unknown providers: " + ", ".join(sorted(unknown)))
+
+    path = _provider_key_file()
+    saved = {}
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(existing, dict):
+            saved.update({k: v for k, v in existing.items()
+                          if k in allowed and isinstance(v, str)})
+    except (OSError, ValueError, TypeError):
+        pass
+
+    for provider in clear:
+        saved.pop(provider, None)
+        os.environ.pop(CONFIG[provider]["key"], None)
+
+    for provider, value in keys.items():
+        if not isinstance(value, str):
+            raise ValueError("API keys must be text.")
+        value = value.strip()
+        if len(value) > 512:
+            raise ValueError("API key is too long.")
+        if value:
+            saved[provider] = value
+            os.environ[CONFIG[provider]["key"]] = value
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(saved), encoding="utf-8")
+    try:
+        temporary.chmod(0o600)
+    except OSError:
+        pass
+    temporary.replace(path)
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
+    return [{"provider": provider,
+             "configured": bool(os.getenv(cfg["key"], "").strip())}
+            for provider, cfg in CONFIG.items()]
+
+
+load_saved_provider_keys()
 
 
 def model_catalog():
