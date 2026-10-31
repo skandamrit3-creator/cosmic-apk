@@ -69,6 +69,7 @@ public class CosmicVoicePlugin extends Plugin {
 
     private void startLiveService(PluginCall call) {
         try {
+            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", true).apply();
             String model = call.getString("model", "gemini-3.8-live");
             if (!"gemini-3.8-live".equals(model) &&
                     !"gemini-3.8-live-extended-thinking".equals(model)) {
@@ -97,6 +98,7 @@ public class CosmicVoicePlugin extends Plugin {
     @PluginMethod
     public void stopLive(PluginCall call) {
         try {
+            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", false).apply();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
             intent.setAction(CosmicLiveService.ACTION_STOP);
             getContext().startService(intent);
