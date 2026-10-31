@@ -1,0 +1,37 @@
+name: Publish COSMIC Frontend Feature Pack
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/complete-cosmic-systems
+    paths:
+      - frontend/feature-release-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build allow-listed frontend pack
+        run: |
+          set -euo pipefail
+          COSMIC_FEATURE_OUT="$RUNNER_TEMP/cosmic-feature-pack" python tools/build_feature_pack.py
+      - name: Publish versioned feature assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: features-${{ github.run_number }}
+          name: COSMIC Frontend Features ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          fail_on_unmatched_files: true
+          body: |
+            Frontend-only feature pack for COSMIC. Every asset has a SHA-256 digest in the manifest.
+            Native Android services, permissions and plugins still require a compatible in-place APK update.
+          files: |
+            ${{ runner.temp }}/cosmic-feature-pack/cosmic-feature-manifest.json
+            ${{ runner.temp }}/cosmic-feature-pack/assets/*
