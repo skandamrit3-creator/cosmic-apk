@@ -313,10 +313,10 @@
     setStatus("LIVE VOICE OFF", "idle");
   }
 
-  function sendText(text) {
+  function sendText(text, alreadyDisplayed) {
     const value = String(text || "").trim();
     if (!value || !state.connected) return false;
-    transcript(value, "user");
+    if (!alreadyDisplayed) transcript(value, "user");
     return send({realtimeInput:{text:value}});
   }
 
