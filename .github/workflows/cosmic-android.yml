@@ -207,7 +207,6 @@ jobs:
           }
           with open("release/latest.json", "w") as f:
               json.dump(data, f, indent=2)
-              f.write("\\n")
           PY
         shell: bash
 
