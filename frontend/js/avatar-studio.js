@@ -117,7 +117,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     if(send)send.disabled=true;if(mic)mic.disabled=true;
     try{
       if(window.COSMIC_LIVE?.active){
-        await window.COSMIC_LIVE.sendText(message);
+        if(!await window.COSMIC_LIVE.sendText(message,true))throw new Error("Gemini Live session is not ready.");
         waiting.remove();status("Gemini Live · message sent","success");return;
       }
       const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
