@@ -7,7 +7,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   "use strict";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
-  let currentTaskId="",speaking=false,rotate=false,dbPromise,currentDownloadUrl="";
+  let currentTaskId="",speaking=false,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
   const state={frame:0,style:"human",modelName:"COSMIC Preview"};
   const $=(selector,root=document)=>root.querySelector(selector);
   function status(message,type="info"){const el=document.querySelector("#cosmicAvatarStatus");if(el){el.textContent=message;el.dataset.state=type;}}
@@ -55,7 +55,19 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview)currentRoot.rotation.y=Math.sin(state.frame*.22)*.06;if(currentVrm){currentVrm.update(dt);if(speaking&&currentVrm.expressionManager)currentVrm.expressionManager.setValue("aa",.18+.48*Math.abs(Math.sin(state.frame*12)));}controls.update();renderer.render(scene,camera);};animate();
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview)currentRoot.rotation.y=Math.sin(state.frame*.22)*.06;if(currentVrm){
+      currentVrm.update(dt);
+      const em=currentVrm.expressionManager;
+      if(em){
+        const pulse=speaking?Math.max(0,Math.sin(state.frame*10)):0;
+        const visemes={aa:.12+.62*pulse,ih:.08+.24*Math.max(0,Math.sin(state.frame*10+1.2)),ou:.05+.2*Math.max(0,Math.sin(state.frame*10+2.4)),ee:.04+.18*Math.max(0,Math.sin(state.frame*10+3.1)),oh:.04+.2*Math.max(0,Math.sin(state.frame*10+4.2))};
+        Object.entries(visemes).forEach(([name,value])=>{if(em.getExpression?.(name))em.setValue(name,speaking?value:0);});
+        blinkTime+=dt;
+        if(blinkTime>=nextBlink){blinkTime=0;nextBlink=2.1+Math.random()*3.8;}
+        const blink=blinkTime<.13?Math.sin(Math.PI*blinkTime/.13):0;
+        if(em.getExpression?.("blink"))em.setValue("blink",blink);
+      }
+    }controls.update();renderer.render(scene,camera);};animate();
     currentRoot=previewCharacter("human");scene.add(currentRoot);
   }
   async function fitAndAdd(gltf,name,blob,save=true){
@@ -96,7 +108,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<aside class="avatar-panel"><h3>CHARACTER STYLE</h3><p>Starter meshes are previews. Import a real GLB/VRM or generate a detailed model from multiple photos.</p>',
     '<div class="avatar-segment"><button type="button" class="active" data-avatar-style="human">HUMAN PREVIEW</button><button type="button" data-avatar-style="anime">ANIME PREVIEW</button></div>',
     '<div class="avatar-divider"></div><h3>GENERATE REAL 3D CHARACTERS</h3><p>Generate full-body textured human or anime characters. Each generation can use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="hyderabad_man">HYDERABAD MAN</button><button type="button" data-avatar-preset="hyderabad_woman">HYDERABAD WOMAN</button><button type="button" data-avatar-preset="global_man">REALISTIC MAN</button><button type="button" data-avatar-preset="global_woman">REALISTIC WOMAN</button><button type="button" data-avatar-preset="anime_hero">ANIME HERO</button><button type="button" data-avatar-preset="anime_heroine">ANIME HEROINE</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">Select a character preset to generate a real model.</div>',
-    '<div class="avatar-model-import"><label class="avatar-action" for="cosmicAvatarModelFile">IMPORT GLB / VRM</label><input id="cosmicAvatarModelFile" type="file" accept=".glb,.gltf,.vrm,model/gltf-binary,model/gltf+json"></div>',
+    '<div class="avatar-model-import"><button class="avatar-action" id="cosmicAvatarHumanCreator" type="button">OPEN FREE REAL-HUMAN 3D CREATOR</button><p class="avatar-help">Create and export a rigged human GLB with the free Ara 3D Gen tool, then import it here. Its generator and exported assets have separate licences; check the current terms before redistribution.</p><label class="avatar-action" for="cosmicAvatarModelFile">IMPORT GLB / VRM</label><input id="cosmicAvatarModelFile" type="file" accept=".glb,.gltf,.vrm,model/gltf-binary,model/gltf+json"></div>',
     '<div class="avatar-divider"></div><h3>CREATE YOUR 3D TWIN</h3><p>Use photos of the same person, in consistent light. Front is required; two or more views are needed, and four are recommended.</p>',
     '<div class="avatar-upload"><label>01 · FRONT<input type="file" id="avatarPhotoFront" accept="image/jpeg,image/png,image/webp" capture="user"></label><label>02 · LEFT<input type="file" id="avatarPhotoLeft" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>03 · BACK<input type="file" id="avatarPhotoBack" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>04 · RIGHT<input type="file" id="avatarPhotoRight" accept="image/jpeg,image/png,image/webp" capture="environment"></label></div>',
     '<label class="avatar-consent"><input type="checkbox" id="avatarPhotoConsent"><span>I have permission to use these photos and agree to send them to Tripo for cloud 3D generation. This may consume paid credits.</span></label>',
@@ -114,7 +126,8 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     $("#cosmicAvatarTurn",host).onclick=()=>{rotate=!rotate;controls.autoRotate=rotate;$("#cosmicAvatarTurn",host).textContent=rotate?"STOP ROTATION":"AUTO ROTATE";};
     $("#avatarSpeakButton",host).onclick=()=>speak($("#avatarSpeakText",host).value);
     $("#avatarGenerate3D",host).onclick=generatePhotos;$("#avatarRig3D",host).onclick=rigModel;
-    refreshLibrary();checkProvider();
+    refreshLibrary();checkProvider();loadFirstCharacter();
+    $("#cosmicAvatarHumanCreator",host).onclick=()=>window.open("https://ara3dgen.com","_blank","noopener");
   }
   async function generatePreset(preset,button){
     if(!preset)return;
