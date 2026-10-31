@@ -1,1 +1,3 @@
 Publish the current allow-listed frontend feature pack.
+
+Refresh after MYRAA mode and reboot-resume updates.
