@@ -4,4 +4,5 @@
     <string name="title_activity_main">COSMIC</string>
     <string name="package_name">com.cosmic.ai</string>
     <string name="custom_url_scheme">com.cosmic.ai</string>
+    <string name="cosmic_accessibility_description">Allows COSMIC to perform user-requested navigation actions such as Home, Back, Recents and opening notifications.</string>
 </resources>
