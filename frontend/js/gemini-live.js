@@ -208,7 +208,8 @@
             {name:"open_url",description:"Open an HTTP or HTTPS website or deep link in the available browser.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Complete http or https URL"}},required:["url"]}},
             {name:"download_file",description:"Download a file from a direct HTTP or HTTPS URL using the device download manager.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Direct HTTP or HTTPS file URL"},fileName:{type:"STRING",description:"Optional filename"}},required:["url"]}},
             {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat or Avatar mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar"]}},required:["mode"]}},
-            {name:"navigate_back",description:"Navigate back in the current COSMIC view.",parameters:{type:"OBJECT",properties:{}}}
+            {name:"navigate_back",description:"Navigate back in the current COSMIC view.",parameters:{type:"OBJECT",properties:{}}},
+            {name:"system_action",description:"Perform a user-requested Android navigation action. Requires COSMIC Device Controls accessibility permission.",parameters:{type:"OBJECT",properties:{action:{type:"STRING",enum:["home","back","notifications","quicksettings","recents"]}},required:["action"]}}
           ]}]
         };
         socket.send(JSON.stringify({setup:{
@@ -297,6 +298,11 @@
         } else if (call.name === "navigate_back") {
           if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable in this client.");
           await plugin.systemAction({action:"back"}); result = {success:true,action:"navigate_back"};
+        } else if (call.name === "system_action") {
+          const action=String(args.action||"").toLowerCase();
+          if(!["home","back","notifications","quicksettings","recents"].includes(action))throw new Error("Unsupported Android action.");
+          if(typeof plugin?.systemAction!=="function")throw new Error("Android device-control bridge is unavailable.");
+          await plugin.systemAction({action});result={success:true,action};
         } else {
           throw new Error("Unknown COSMIC action.");
         }
