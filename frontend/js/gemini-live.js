@@ -484,9 +484,13 @@
       state.desired = false; state.connected = false; state.connecting = false;
       localStorage.setItem("COSMIC_LIVE_AUTO", "false");
       stopScreenShare();
-      try { window.Capacitor?.Plugins?.CosmicVoice?.stopLive?.(); } catch (_) {}
+      const nativeVoice=window.Capacitor?.Plugins?.CosmicVoice;
+      try {
+        nativeVoice?.disableWakeWord?.().then(()=>{if(wakeButton){wakeButton.textContent="ENABLE OK COSMIC";wakeButton.classList.remove("is-enabled");wakeButton.setAttribute("aria-pressed","false");}}).catch(()=>{});
+        nativeVoice?.stopLive?.();
+      } catch (_) {}
       state.nativeMode = false; state.resumeHandle = "";
-      setStatus("LIVE VOICE OFF", "idle");
+      setStatus("ALL VOICE LISTENING OFF", "idle");
       return;
     }
     state.desired = false;
