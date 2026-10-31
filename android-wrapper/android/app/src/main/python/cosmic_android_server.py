@@ -21,6 +21,7 @@ def start_server(data_dir):
         os.environ["COSMIC_HOST"] = "127.0.0.1"
         os.environ["COSMIC_PORT"] = "8059"
         os.environ["COSMIC_DATABASE"] = str(data / "cosmic" / "cosmic.db")
+        os.environ["COSMIC_SECRETS_FILE"] = str(data / "cosmic" / "provider-keys.json")
 
         # Import only after setting Android-private storage paths.
         from backend.app import app
