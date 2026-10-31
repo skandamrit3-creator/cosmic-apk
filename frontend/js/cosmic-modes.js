@@ -19,7 +19,7 @@ function showMode(mode){
   chat.querySelector("#cosmicHistoryToggle").onclick=()=>{const panel=chat.querySelector("#cosmicHistoryPanel");panel.hidden=!panel.hidden;chat.querySelector("#cosmicHistoryToggle").setAttribute("aria-expanded",String(!panel.hidden));};
   chat.querySelector("#cosmicApiSetup").onclick=()=>openQuick("settings");
   const brainToggle=chat.querySelector("#cosmicBrainToggle");
-  brainToggle.onclick=()=>{const brain=window.COSMIC_BRAIN;if(!brain)return;brain.state.enabled=!brain.state.enabled;brainToggle.textContent=brain.state.enabled?"BRAIN ON":"BRAIN OFF";brainToggle.setAttribute("aria-pressed",String(brain.state.enabled));brainToggle.classList.toggle("is-off",!brain.state.enabled);};
+  brainToggle.onclick=()=>{const brain=window.COSMIC_BRAIN;if(!brain)return;const enabled=brain.setEnabled?!brain.state.enabled:(brain.state.enabled=!brain.state.enabled);brainToggle.textContent=enabled?"BRAIN ON":"BRAIN OFF";brainToggle.setAttribute("aria-pressed",String(enabled));brainToggle.classList.toggle("is-off",!enabled);};
   chat.querySelector("#cosmicVoice").onclick=()=>{if(window.COSMIC_LIVE)window.COSMIC_LIVE.toggle();else startVoice();};
   loadModels();loadChats();
  }
