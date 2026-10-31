@@ -155,7 +155,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   }
   function markup(){return [
     '<div class="avatar-studio-v2">',
-    '<header class="avatar-studio-head"><div><h2>Avatar Studio</h2><p>Real human models, anime/VRM characters and your own photo-based 3D twin.</p></div><div class="avatar-stage-meta"><span id="cosmicAvatarModelName">COSMIC 3D Preview</span></div></header>',
+    '<header class="avatar-studio-head"><div><h2>COSMIC <span>AVATAR</span></h2><p>Your live AI companion</p></div><div class="avatar-head-actions"><span id="cosmicAvatarModelName">COSMIC 3D Preview</span><button class="avatar-settings-toggle" id="cosmicAvatarSettings" type="button" aria-label="Avatar settings">⚙</button></div></header>',
     '<section class="avatar-stage-v2"><canvas id="cosmicAvatarCanvas" aria-label="Interactive 3D avatar stage"></canvas><div class="avatar-stage-meta"><span>3D VIEWPORT</span><span id="cosmicAvatarStageState">STARTER PREVIEW</span></div><div class="avatar-stage-actions"><button class="avatar-action" id="cosmicAvatarReset" type="button">RESET VIEW</button><button class="avatar-action" id="cosmicAvatarTurn" type="button">AUTO ROTATE</button><a class="avatar-action" id="cosmicAvatarDownload" hidden download="cosmic-avatar.glb">DOWNLOAD MODEL</a></div></section>',
     '<aside class="avatar-panel"><h3>CHARACTER STYLE</h3><p>Starter meshes are previews. Import a real GLB/VRM or generate a detailed model from multiple photos.</p>',
     '<div class="avatar-segment"><button type="button" class="active" data-avatar-style="human">HUMAN PREVIEW</button><button type="button" data-avatar-style="anime">ANIME PREVIEW</button></div>',
