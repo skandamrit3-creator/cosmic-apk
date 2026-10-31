@@ -140,9 +140,11 @@ public class CosmicLiveService extends Service {
             String requestedModel = intent.getStringExtra("live_model");
             String requestedVoice = intent.getStringExtra("live_voice");
             boolean changed = false;
+            boolean modelChanged = false;
             if ("gemini-3.8-live".equals(requestedModel) ||
                     "gemini-3.8-live-extended-thinking".equals(requestedModel)) {
-                changed |= !requestedModel.equals(liveModel);
+                modelChanged = !requestedModel.equals(liveModel);
+                changed |= modelChanged;
                 liveModel = requestedModel;
             }
             if (requestedVoice != null && ("Kore".equals(requestedVoice) ||
@@ -153,8 +155,13 @@ public class CosmicLiveService extends Service {
                 changed |= !requestedVoice.equals(liveVoice);
                 liveVoice = requestedVoice;
             }
-            getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
-                    .putString("live_model", liveModel).putString("live_voice", liveVoice).apply();
+            android.content.SharedPreferences.Editor livePrefs = getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
+                    .putString("live_model", liveModel).putString("live_voice", liveVoice);
+            if (modelChanged) {
+                resumeHandle = "";
+                livePrefs.remove("resume_handle");
+            }
+            livePrefs.apply();
             if (changed && socket != null) socket.close(1012, "COSMIC Live voice settings changed");
 
         }
