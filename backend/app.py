@@ -1,5 +1,5 @@
 from pathlib import Path
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response
 from dotenv import load_dotenv
 from flask_cors import CORS
 from backend.database.connection import init_db, get_connection
@@ -273,6 +273,67 @@ def ai_provider_keys():
         {"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())}
         for provider, cfg in CONFIG.items()
     ]})
+
+
+@app.post("/api/ai/speech")
+def generate_gemini_speech():
+    """Natural Gemini 3.8 TTS for chat replies; API key stays on the local backend."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Speech generation is available only from the local COSMIC app."}), 403
+    data = request.get_json(silent=True) or {}
+    text = str(data.get("text", "")).strip()
+    if not text:
+        return jsonify({"success": False, "error": "Text is required."}), 400
+    if len(text) > 6000:
+        return jsonify({"success": False, "error": "Speech text is limited to 6,000 characters."}), 400
+    voice = str(data.get("voice", "Kore"))
+    if voice not in {"Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr"}:
+        voice = "Kore"
+    from backend.ai.gateway.gateway import load_saved_provider_keys
+    load_saved_provider_keys()
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP first."}), 400
+    try:
+        response = requests.post(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent",
+            headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+            json={
+                "contents": [{"role": "user", "parts": [{"text": text}]}],
+                "generationConfig": {
+                    "responseModalities": ["AUDIO"],
+                    "speechConfig": {"voiceConfig": {"voice": voice}},
+                },
+            },
+            timeout=90,
+        )
+        if not response.ok:
+            detail = (response.text or "").replace("\\n", " ")[:300]
+            return jsonify({"success": False, "error": "Gemini TTS HTTP "
+                + str(response.status_code) + ": " + detail}), 502
+        payload = response.json()
+        encoded = None
+        for candidate in payload.get("candidates", []):
+            for part in candidate.get("content", {}).get("parts", []):
+                inline = part.get("inlineData") or part.get("inline_data") or {}
+                if inline.get("data"):
+                    encoded = inline["data"]
+                    break
+            if encoded:
+                break
+        if not encoded:
+            return jsonify({"success": False, "error": "Gemini TTS returned no audio."}), 502
+        audio = base64.b64decode(encoded, validate=True)
+        if not audio or len(audio) > 20 * 1024 * 1024:
+            return jsonify({"success": False, "error": "Gemini TTS audio was empty or too large."}), 502
+        return Response(audio, mimetype="audio/wav", headers={
+            "Cache-Control": "no-store", "X-COSMIC-Voice": voice,
+            "X-COSMIC-Model": "gemini-3.8-flash-tts",
+        })
+    except requests.RequestException as exc:
+        return jsonify({"success": False, "error": "Gemini TTS request failed: " + str(exc)[:220]}), 502
+    except (ValueError, TypeError) as exc:
+        return jsonify({"success": False, "error": "Could not decode Gemini TTS audio: " + str(exc)}), 502
 
 
 @app.post("/api/ai/provider-keys")
