@@ -10,9 +10,6 @@ import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Build;
 import android.os.Environment;
-import android.speech.RecognitionListener;
-import android.speech.RecognizerIntent;
-import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.view.accessibility.AccessibilityManager;
 import android.provider.Settings;
@@ -188,74 +185,6 @@ public class CosmicVoicePlugin extends Plugin {
             return;
         }
         call.resolve(new JSObject().put("success", true));
-    }
-
-    @PluginMethod
-    public void listen(PluginCall call) {
-        if (getPermissionState("microphone") != PermissionState.GRANTED) {
-            requestPermissionForAlias("microphone", call, "micPermission");
-            return;
-        }
-        startRecognition(call);
-    }
-
-    @PermissionCallback
-    private void micPermission(PluginCall call) {
-        if (getPermissionState("microphone") == PermissionState.GRANTED)
-            startRecognition(call);
-        else call.reject("Microphone permission denied");
-    }
-
-    private void startRecognition(PluginCall call) {
-        Activity activity = getActivity();
-        if (!SpeechRecognizer.isRecognitionAvailable(activity)) {
-            call.reject("Android speech recognition is unavailable");
-            return;
-        }
-        activity.runOnUiThread(() -> {
-            final SpeechRecognizer sr;
-            try { sr = SpeechRecognizer.createSpeechRecognizer(activity); }
-            catch (Exception e) { call.reject("Could not start speech recognition"); return; }
-
-            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-            String language = call.getString("language", Locale.getDefault().toLanguageTag());
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
-            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language);
-            intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
-
-            sr.setRecognitionListener(new RecognitionListener() {
-                private boolean finished = false;
-                private void cleanup() {
-                    try { sr.destroy(); } catch (Exception ignored) {}
-                }
-                @Override public void onResults(Bundle results) {
-                    if (finished) return;
-                    finished = true;
-                    ArrayList<String> list = results.getStringArrayList(
-                            SpeechRecognizer.RESULTS_RECOGNITION);
-                    JSObject out = new JSObject();
-                    out.put("text", list != null && !list.isEmpty() ? list.get(0) : "");
-                    cleanup();
-                    call.resolve(out);
-                }
-                @Override public void onError(int error) {
-                    if (finished) return;
-                    finished = true;
-                    cleanup();
-                    call.reject("Speech recognition error: " + error);
-                }
-                @Override public void onReadyForSpeech(Bundle b) {}
-                @Override public void onBeginningOfSpeech() {}
-                @Override public void onRmsChanged(float v) {}
-                @Override public void onBufferReceived(byte[] b) {}
-                @Override public void onEndOfSpeech() {}
-                @Override public void onPartialResults(Bundle b) {}
-                @Override public void onEvent(int i, Bundle b) {}
-            });
-            sr.startListening(intent);
-        });
     }
 
     @PluginMethod
