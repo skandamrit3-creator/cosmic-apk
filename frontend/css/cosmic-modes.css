@@ -83,3 +83,60 @@
  .cosmic-chat-head button{margin-left:auto}
  .avatar-mode{padding:12px}
 }
+
+
+/* COSMIC calm premium interface refresh — graphite, soft glass, no neon HUD clutter */
+:root{--cosmic-bg:#090b12;--cosmic-surface:rgba(24,27,39,.88);--cosmic-line:rgba(177,181,220,.13);--cosmic-text:#ececf5;--cosmic-muted:#999caf;--cosmic-accent:#aaa7e8}
+.cosmic-mode-view{background:radial-gradient(ellipse at 50% -10%,#28263a 0%,#11121c 42%,#090a10 100%);color:var(--cosmic-text);font-family:Inter,system-ui,sans-serif}
+.mode-switch{border:1px solid rgba(193,190,233,.14);background:rgba(15,16,25,.82);box-shadow:0 12px 36px #0007;backdrop-filter:blur(24px)}
+.mode-tab{color:#a5a5b9;letter-spacing:.045em;font:600 11px/1.2 Inter,system-ui,sans-serif}
+.mode-tab.active{background:linear-gradient(135deg,#37334f,#262a40);color:#f5f3ff;box-shadow:inset 0 1px #ffffff18}
+.chat-mode{padding:clamp(10px,2vw,24px);height:calc(100dvh - 72px);overflow:hidden}
+.cosmic-chat-layout{grid-template-columns:minmax(0,1fr);max-width:1120px;margin:auto;border:1px solid var(--cosmic-line);border-radius:24px;background:linear-gradient(155deg,rgba(28,29,43,.92),rgba(13,15,24,.94));box-shadow:0 22px 70px #0005;overflow:hidden}
+.cosmic-history{position:absolute;z-index:30;inset:0 auto 0 0;width:min(320px,86vw);background:rgba(18,19,30,.97);border-right:1px solid var(--cosmic-line);backdrop-filter:blur(24px)}
+.cosmic-history[hidden]{display:none!important}
+.cosmic-chat-main{padding:clamp(12px,2vw,24px);gap:10px}
+.cosmic-chat-head{border-bottom:1px solid var(--cosmic-line);color:#d4d0f6;letter-spacing:.04em;font:600 12px Inter,system-ui,sans-serif}
+.cosmic-chat-head small{display:block;color:var(--cosmic-muted);font-size:9px;margin-top:4px;letter-spacing:.12em}
+.cosmic-chat-head button,.cosmic-chat-controls button,.cosmic-message-tools button{border:1px solid var(--cosmic-line);border-radius:12px;background:rgba(255,255,255,.045);color:#d9d8e8;padding:9px 12px}
+.cosmic-chat-controls{gap:9px;padding:4px 0;flex-wrap:wrap}
+.cosmic-chat-controls label{color:var(--cosmic-muted);font-size:10px;letter-spacing:.08em}
+.cosmic-chat-controls select{border:1px solid var(--cosmic-line);border-radius:10px;background:#171925;color:#e8e7f2;padding:9px 12px;max-width:min(70vw,330px)}
+.cosmic-chat-log{gap:18px;padding:18px clamp(4px,5vw,60px);overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#55536d transparent}
+.cosmic-chat-msg{border:1px solid var(--cosmic-line);border-radius:18px;background:linear-gradient(145deg,rgba(39,40,57,.8),rgba(25,27,40,.9));color:#e7e6f0;padding:16px 18px;line-height:1.68;box-shadow:0 8px 24px #0002}
+.cosmic-chat-msg.user{background:linear-gradient(145deg,#34334b,#292c40);border-color:#b0acd52a}
+.cosmic-chat-msg.system{background:rgba(112,105,80,.12);color:#d8cda8}
+.cosmic-chat-compose{margin:0 auto 8px;width:min(900px,100%);border:1px solid rgba(191,188,225,.2);border-radius:20px;background:rgba(10,12,20,.78);box-shadow:0 12px 36px #0005;align-items:flex-end}
+.cosmic-chat-compose textarea{min-height:54px;max-height:180px;color:#f1f0f7;resize:none}
+.cosmic-chat-compose textarea::placeholder{color:#85879b}
+.cosmic-chat-compose button{min-height:48px;border-radius:14px;background:linear-gradient(135deg,#514d76,#39445e);color:#fff}
+.cosmic-code-block{background:#0c0e16;border-color:#77739230}
+.cosmic-code-block>header{background:#191a28;color:#c7c2e8}
+.cosmic-chat-msg code:not(pre code){background:#11131d;border-color:#77739230;color:#d8d3ff}
+.cosmic-model-tag{color:#aaa8c2}
+.cosmic-history-head{color:#d1ccef}
+.cosmic-history-head button,.cosmic-history-item{border:1px solid var(--cosmic-line);background:#222333;color:#e6e4f0;border-radius:12px}
+.cosmic-history-item{padding:12px}
+.cosmic-chat-layout,.cosmic-chat-main{min-height:0}
+.cosmic-chat-log,.cosmic-history{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.hud-main{background:radial-gradient(ellipse at 48% 0%,#25243a 0%,#141622 46%,#0b0d14 100%)!important;gap:14px!important;padding:18px!important}
+.hud-grid,.scanline,.ambient-glow{opacity:.035!important}
+.hud-panel{background:linear-gradient(145deg,rgba(34,36,51,.82),rgba(20,22,33,.9))!important;border:1px solid rgba(189,188,220,.12)!important;border-radius:18px!important;box-shadow:0 12px 30px #0003!important;backdrop-filter:blur(18px)}
+.hud-panel h2,.hud-panel h3{color:#d9d7eb!important;letter-spacing:.04em}
+.hud-panel .metric,.hud-panel strong{color:#e6e4f2}
+.hud-panel small,.hud-panel .muted{color:#999caf}
+@media(max-width:700px){
+ .chat-mode{height:calc(100dvh - 58px);padding:7px}
+ .cosmic-chat-layout{border-radius:16px}
+ .cosmic-chat-main{padding:9px;gap:6px}
+ .cosmic-chat-head{align-items:center;flex-wrap:wrap}
+ .cosmic-chat-head-actions{display:flex;gap:5px;flex-wrap:wrap}
+ .cosmic-chat-head button{font-size:10px;padding:8px}
+ .cosmic-chat-controls{gap:6px}
+ .cosmic-chat-controls label{display:flex;flex-direction:column;gap:4px}
+ .cosmic-chat-controls select{max-width:42vw}
+ .cosmic-chat-log{padding:12px 2px}
+ .cosmic-chat-msg{max-width:100%;padding:13px;border-radius:15px}
+ .cosmic-chat-compose{margin-bottom:3px}
+ .hud-main{padding:8px!important;gap:9px!important}
+}
