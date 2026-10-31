@@ -10,6 +10,9 @@ import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.NoiseSuppressor;
+import android.media.audiofx.AutomaticGainControl;
 import android.media.MediaRecorder;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
@@ -75,6 +78,9 @@ public class CosmicLiveService extends Service {
     private volatile WebSocket socket;
     private AudioRecord recorder;
     private AudioTrack player;
+    private AcousticEchoCanceler echoCanceler;
+    private NoiseSuppressor noiseSuppressor;
+    private AutomaticGainControl gainControl;
     private Thread sessionThread;
     private String resumeHandle = "";
     private MediaProjection projection;
@@ -514,8 +520,12 @@ public class CosmicLiveService extends Service {
 
     private void prepareAudio() {
         int min = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, 16000,
+        recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, 16000,
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, Math.max(min, 6400));
+        int audioSession = recorder.getAudioSessionId();
+        try { if (AcousticEchoCanceler.isAvailable()) { echoCanceler = AcousticEchoCanceler.create(audioSession); if (echoCanceler != null) echoCanceler.setEnabled(true); } } catch (Exception ignored) {}
+        try { if (NoiseSuppressor.isAvailable()) { noiseSuppressor = NoiseSuppressor.create(audioSession); if (noiseSuppressor != null) noiseSuppressor.setEnabled(true); } } catch (Exception ignored) {}
+        try { if (AutomaticGainControl.isAvailable()) { gainControl = AutomaticGainControl.create(audioSession); if (gainControl != null) gainControl.setEnabled(true); } } catch (Exception ignored) {}
         int outMin = AudioTrack.getMinBufferSize(24000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
         player = new AudioTrack.Builder()
                 .setAudioAttributes(new AudioAttributes.Builder()
@@ -587,6 +597,9 @@ public class CosmicLiveService extends Service {
     }
 
     private void releaseAudio() {
+        try { if (echoCanceler != null) { echoCanceler.release(); echoCanceler = null; } } catch (Exception ignored) {}
+        try { if (noiseSuppressor != null) { noiseSuppressor.release(); noiseSuppressor = null; } } catch (Exception ignored) {}
+        try { if (gainControl != null) { gainControl.release(); gainControl = null; } } catch (Exception ignored) {}
         try { if (recorder != null) { recorder.release(); recorder = null; } } catch (Exception ignored) {}
         try { if (player != null) { player.pause(); player.flush(); player.release(); player = null; } } catch (Exception ignored) {}
     }
