@@ -224,8 +224,17 @@ def create_gemini_live_token():
     if not key:
         return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP first."}), 400
 
+    data = request.get_json(silent=True) or {}
+    requested_model = str(data.get("model", "gemini-3.8-live")).strip()
+    allowed_live_models = {
+        "gemini-3.8-live",
+        "gemini-3.8-live-extended-thinking",
+    }
+    if requested_model not in allowed_live_models:
+        return jsonify({"success": False, "error": "Unsupported Live model. Choose Gemini 3.8 Live or Gemini 3.8 Live Extended Thinking."}), 400
+
     now = datetime.datetime.now(datetime.timezone.utc)
-    model = "models/gemini-3.8-live"
+    model = "models/" + requested_model
     locked_config = {
         "responseModalities": ["AUDIO"],
         "sessionResumption": {},
