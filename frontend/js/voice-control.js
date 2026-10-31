@@ -42,14 +42,14 @@
  }
  function routeControlPhrase(raw){
   const value=String(raw||"").trim().replace(/[.!?]+$/,"");
-  const lower=value.toLowerCase().replace(/^(?:hey|ok)\\s+cosmic[, ]*/,"").trim();
+  const lower=value.toLowerCase().replace(/^(?:hey|ok)\s+cosmic[, ]*/,"").trim();
   if(/^(stop listening|stop voice|turn off microphone|mute cosmic|go to sleep)$/i.test(lower)){stop();return true;}
   let m=lower.match(/^(?:switch|go) to (chat|avatar|reactor)(?: mode)?$|^(?:open|show) (chat|avatar|reactor)(?: mode)?$/i);
   if(m){const mode=(m[1]||m[2]).toLowerCase();document.querySelector('[data-cosmic-mode="'+mode+'"]')?.click();setStatus("SWITCHED TO "+mode.toUpperCase());return true;}
   m=lower.match(/^(?:use|switch to|change to|select) (gemini|openai|gpt|groq|mistral|openrouter)(?: model)?$/i);
   if(m){selectProvider(m[1].toLowerCase()==="gpt"?"openai":m[1].toLowerCase());return true;}
   m=lower.match(/^(?:use|switch to|change to|select) (?:model )?(.+)$/i);
-  if(m&&/\\b(gemini|gpt-4|gpt oss|llama|deepseek|mistral)\\b/i.test(m[1])){
+  if(m&&/\b(gemini|gpt-4|gpt oss|llama|deepseek|mistral)\b/i.test(m[1])){
    const model=document.querySelector("#cosmicChatModel");
    if(model){const q=m[1].toLowerCase();const option=[...model.options].find(item=>(item.textContent+" "+item.value).toLowerCase().includes(q));if(option&&!option.disabled){model.value=option.value;model.dispatchEvent(new Event("change",{bubbles:true}));setStatus("MODEL SELECTED · "+option.textContent);return true;}}
   }
@@ -59,8 +59,8 @@
   const value=String(raw||"").trim();
   if(!value)return;
   if(routeControlPhrase(value))return;
-  const withoutWake=value.replace(/^(?:hey|ok)\\s+cosmic[, ]*/i,"").trim();
-  if(/^(open|launch|start|visit|download|go back)\\b/i.test(withoutWake)){
+  const withoutWake=value.replace(/^(?:hey|ok)\s+cosmic[, ]*/i,"").trim();
+  if(/^(open|launch|start|visit|download|go back)\b/i.test(withoutWake)){
    if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(withoutWake))return;
   }
  }
