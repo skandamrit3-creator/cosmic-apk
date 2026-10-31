@@ -169,7 +169,25 @@ async function openQuick(view){
   return;
  }
  if(view==="updates"){
-  addQuickText(body,"Upgrade checks use the backend upgrade manager. Applying code changes is a separate, approval-gated operation.");
+  addQuickText(body,"COSMIC FEATURE CENTER · Download verified frontend updates inside the app. Native Android changes still require an in-place app update.");
+  const featureStatus=document.createElement("p");featureStatus.className="cosmic-key-status";featureStatus.textContent="Checking feature updater…";body.append(featureStatus);
+  addQuickButton(body,"CHECK FEATURE UPDATES",async()=>{
+   featureStatus.textContent="Checking signed-official GitHub release assets and SHA-256 manifest…";
+   try{const result=await window.COSMIC_FEATURE_UPDATER.check();featureStatus.textContent=result.updateAvailable?"FEATURE UPDATE AVAILABLE · "+result.version+" · "+result.files+" files": "UP TO DATE · "+result.installed+" · "+result.files+" files";featureStatus.dataset.state=result.updateAvailable?"available":"current";}
+   catch(error){featureStatus.textContent="FEATURE CHECK · "+error.message;}
+  });
+  addQuickButton(body,"DOWNLOAD & INSTALL FEATURE PACK",async()=>{
+   featureStatus.textContent="Downloading and verifying every file…";
+   try{const result=await window.COSMIC_FEATURE_UPDATER.install();featureStatus.textContent="INSTALLED "+result.version+" · "+result.files+" files · CLOSE AND REOPEN COSMIC TO APPLY";}
+   catch(error){featureStatus.textContent="FEATURE INSTALL FAILED · "+error.message;}
+  });
+  addQuickButton(body,"ROLL BACK FRONTEND FEATURES",async()=>{
+   try{await window.COSMIC_FEATURE_UPDATER.rollback();featureStatus.textContent="FEATURE OVERRIDES REMOVED · REOPEN COSMIC TO RESTORE BUILT-IN FILES";}
+   catch(error){featureStatus.textContent="ROLLBACK FAILED · "+error.message;}
+  });
+  addQuickText(body,"Feature packs are restricted to frontend JavaScript/CSS paths, size-limited, fetched from this COSMIC GitHub repository over HTTPS, and SHA-256 verified before activation. They cannot update native Android permissions or services.");
+  addQuickText(body,"Backend project update history (developer tools):");
+
   for(const [name,path] of [["STATUS","/api/upgrades/status"],["PROJECT","/api/upgrades/project"],["HISTORY","/api/upgrades/history"]]){
    try{const d=await(await fetch(apiBase()+path,{cache:"no-store"})).json();const row=document.createElement("div");row.className="quick-row";const b=document.createElement("b");b.textContent=name;const s=document.createElement("span");s.textContent=JSON.stringify(d).slice(0,900);row.append(b,s);body.append(row);}catch(e){addQuickText(body,name+" check failed: "+e.message);}
   }return;
