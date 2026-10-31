@@ -234,3 +234,9 @@ body:has(#cosmicChatMode:not([hidden])) .cosmic-live-dock{bottom:calc(92px + env
 @media(prefers-reduced-motion:no-preference){
  .hud-main .core-energy{filter:drop-shadow(0 0 12px rgba(255,54,77,.28))}
 }
+
+/* One global voice control: the floating Live orb is shared by every mode. */
+#voiceButton{display:none!important}
+.cosmic-live-orb{cursor:pointer;touch-action:manipulation}
+.cosmic-live-share,.cosmic-live-bubble{cursor:pointer;touch-action:manipulation}
+.cosmic-live-status{user-select:none}
