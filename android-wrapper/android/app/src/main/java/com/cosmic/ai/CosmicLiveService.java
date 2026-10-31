@@ -85,7 +85,6 @@ public class CosmicLiveService extends Service {
     private String resumeHandle = "";
     private volatile String liveModel = "gemini-3.8-live";
     private volatile String liveVoice = "Kore";
-    private volatile String liveVoice = "Kore";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
