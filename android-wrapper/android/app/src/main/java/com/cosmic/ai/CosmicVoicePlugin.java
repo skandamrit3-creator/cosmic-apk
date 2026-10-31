@@ -90,6 +90,24 @@ public class CosmicVoicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openFloatingBubbleSettings(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT < 23 || Settings.canDrawOverlays(getContext())) {
+                CosmicLiveService.refreshFloatingBubble();
+                call.resolve(new JSObject().put("success", true).put("enabled", true));
+                return;
+            }
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getContext().getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            call.resolve(new JSObject().put("success", true).put("openedSettings", true));
+        } catch (Exception e) {
+            call.reject("Could not open floating bubble permission settings: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
     public void startScreenShare(PluginCall call) {
         if (!CosmicLiveService.isRunning()) {
             call.reject("Start Gemini Live before sharing your screen.");
