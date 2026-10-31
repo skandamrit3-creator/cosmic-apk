@@ -8,7 +8,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
   let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
-  let gestureBones=null, conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
+  let gestureBones=null, activeGesture="idle", gestureUntil=0, conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
   localStorage.setItem("cosmic.chat.session.v1",conversationSession);
   localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
   const state={frame:0,style:"human",modelName:"COSMIC Preview",mood:"neutral"};
@@ -126,7 +126,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame;currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=-.08+idle+talk*.35;l.rotation.x=Math.sin(t*.9)*.025;}if(r){r.rotation.z=.08-idle-talk*.55;r.rotation.x=Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:open;mouth.scale.x=mood==="surprised"?.095:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=.105*blink;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame,gesture=Date.now()<gestureUntil?activeGesture:"idle";currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=gesture==="celebrate"?.82:gesture==="explain"?-.42:-.08+idle+talk*.35;l.rotation.x=gesture==="think"?-.45:Math.sin(t*.9)*.025;}if(r){r.rotation.z=gesture==="wave"?-.92:gesture==="celebrate"?-.82:gesture==="explain"?.42:.08-idle-talk*.55;r.rotation.x=gesture==="wave"?Math.sin(t*8)*.22:gesture==="think"?.35:Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:open;mouth.scale.x=mood==="surprised"?.095:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=.105*blink;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
@@ -139,10 +139,12 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
         if(em.getExpression?.("blink"))em.setValue("blink",blink);
         ["happy","sad","angry","surprised","relaxed"].forEach(name=>{if(em.getExpression?.(name))em.setValue(name,state.mood===name?0.72:0);});
       }
-      if(gestureBones){const motion=speaking?1:0.16,t=state.frame,wave=Math.sin(t*2.4)*motion;
+      if(gestureBones){const motion=speaking?1:0.16,t=state.frame,wave=Math.sin(t*2.4)*motion,gesture=Date.now()<gestureUntil?activeGesture:"idle";
         for(const [bone,base,side] of [[gestureBones.right,gestureBones.rightBase,1],[gestureBones.left,gestureBones.leftBase,-1]]){
           if(!bone||!base)continue;
-          bone.rotation.x=base.x+wave*.13;bone.rotation.y=base.y+Math.cos(t*1.8)*motion*.09;bone.rotation.z=base.z+side*(.10+Math.sin(t*1.7)*.07)*motion;
+          bone.rotation.x=base.x+(gesture==="think"&&side<0?-.55:gesture==="celebrate"?-.7:gesture==="wave"&&side>0?-.85:wave*.13);
+          bone.rotation.y=base.y+Math.cos(t*1.8)*motion*.09;
+          bone.rotation.z=base.z+(gesture==="wave"&&side>0?-.9:gesture==="explain"?side*.35:gesture==="celebrate"?side*.7:side*(.10+Math.sin(t*1.7)*.07)*motion);
         }
       }
     }controls.update();renderer.render(scene,camera);};animate();
@@ -178,6 +180,17 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     }
   }
   function setPreview(style){if(currentRoot)scene.remove(currentRoot);currentVrm=null;currentRoot=previewCharacter(style);scene.add(currentRoot);state.style=style;state.modelName=style==="anime"?"Anime-style 3D Preview":"Human-style 3D Preview";badge(state.modelName.toUpperCase());}
+  function commandGesture(text){
+    const value=String(text||"").toLowerCase();
+    activeGesture="idle";gestureUntil=Date.now()+2200;
+    if(/\b(hello|hi|hey|welcome|good morning|good evening)\b/.test(value)){activeGesture="wave";state.mood="happy";}
+    else if(/\b(explain|show|teach|demonstrate|present)\b/.test(value)){activeGesture="explain";state.mood="neutral";}
+    else if(/\b(celebrate|congratulations|congrats|great job|well done|thank you|thanks)\b/.test(value)){activeGesture="celebrate";state.mood="happy";}
+    else if(/\b(think|consider|reason|let me see|hmm)\b/.test(value)){activeGesture="think";state.mood="relaxed";}
+    else if(/\b(sorry|sad|unhappy)\b/.test(value)){state.mood="sad";}
+    else if(/\b(wow|surprise|amazing)\b/.test(value)){state.mood="surprised";}
+  }
+  window.COSMIC_AVATAR_COMMAND=commandGesture;
   function speak(text){const value=String(text||"").trim();if(!value)return;speaking=true;window.COSMIC_AVATAR_TALK?.(true);const native=window.Capacitor?.Plugins?.CosmicVoice;if(native?.speak){native.speak({text:value}).catch(e=>status("Voice error: "+e.message,"error")).finally(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);});setTimeout(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);},Math.max(1800,value.length*65));return;}if(window.speechSynthesis){speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);utterance.onend=utterance.onerror=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);};speechSynthesis.speak(utterance);}else{speaking=false;window.COSMIC_AVATAR_TALK?.(false);status("Text-to-speech is unavailable.","error");}}
   function addConversationMessage(text,kind){
     const log=document.querySelector("#avatarConversationLog");if(!log)return;
@@ -186,7 +199,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   async function sendAvatarMessage(){
     const input=document.querySelector("#avatarConversationInput");const message=input?.value.trim();
     if(!message||conversationBusy)return;
-    conversationBusy=true;conversationSession=localStorage.getItem("cosmic.chat.session.v1")||conversationSession;input.value="";addConversationMessage(message,"user");
+    conversationBusy=true;conversationSession=localStorage.getItem("cosmic.chat.session.v1")||conversationSession;input.value="";addConversationMessage(message,"user");commandGesture(message);
     const waiting=addConversationMessage("COSMIC is thinking…","assistant");
     const send=document.querySelector("#avatarConversationSend"),mic=document.querySelector("#avatarConversationMic");
     if(send)send.disabled=true;if(mic)mic.disabled=true;
