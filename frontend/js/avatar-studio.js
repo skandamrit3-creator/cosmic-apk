@@ -8,10 +8,10 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
   let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
-  let conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
+  let gestureBones=null, conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
   localStorage.setItem("cosmic.chat.session.v1",conversationSession);
   localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
-  const state={frame:0,style:"human",modelName:"COSMIC Preview"};
+  const state={frame:0,style:"human",modelName:"COSMIC Preview",mood:"neutral"};
   const $=(selector,root=document)=>root.querySelector(selector);
   function status(message,type="info"){const el=document.querySelector("#cosmicAvatarStatus");if(el){el.textContent=message;el.dataset.state=type;}}
   function badge(message){const el=document.querySelector("#cosmicAvatarStageState");if(el)el.textContent=message;}
@@ -69,12 +69,19 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
         if(blinkTime>=nextBlink){blinkTime=0;nextBlink=2.1+Math.random()*3.8;}
         const blink=blinkTime<.13?Math.sin(Math.PI*blinkTime/.13):0;
         if(em.getExpression?.("blink"))em.setValue("blink",blink);
+        ["happy","sad","angry","surprised","relaxed"].forEach(name=>{if(em.getExpression?.(name))em.setValue(name,state.mood===name?0.72:0);});
+      }
+      if(gestureBones){const motion=speaking?1:0.16,t=state.frame,wave=Math.sin(t*2.4)*motion;
+        for(const [bone,base,side] of [[gestureBones.right,gestureBones.rightBase,1],[gestureBones.left,gestureBones.leftBase,-1]]){
+          if(!bone||!base)continue;
+          bone.rotation.x=base.x+wave*.13;bone.rotation.y=base.y+Math.cos(t*1.8)*motion*.09;bone.rotation.z=base.z+side*(.10+Math.sin(t*1.7)*.07)*motion;
+        }
       }
     }controls.update();renderer.render(scene,camera);};animate();
     currentRoot=previewCharacter("human");scene.add(currentRoot);
   }
   async function fitAndAdd(gltf,name,blob,save=true){
-    if(currentRoot)scene.remove(currentRoot);currentVrm=gltf.userData.vrm||null;currentRoot=gltf.scene;
+    if(currentRoot)scene.remove(currentRoot);currentVrm=gltf.userData.vrm||null;currentRoot=gltf.scene;gestureBones=null;if(currentVrm?.humanoid){const get=name=>currentVrm.humanoid.getNormalizedBoneNode(name),right=get("rightUpperArm"),left=get("leftUpperArm");gestureBones={right,left,rightBase:right?.rotation.clone(),leftBase:left?.rotation.clone()};}
     const box=new THREE.Box3().setFromObject(currentRoot),size=box.getSize(new THREE.Vector3());
     if(size.y>0){currentRoot.scale.multiplyScalar(1.85/size.y);const fitted=new THREE.Box3().setFromObject(currentRoot);currentRoot.position.y-=fitted.min.y-.12;}
     currentRoot.position.x=0;scene.add(currentRoot);state.modelName=name;
@@ -165,7 +172,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<div class="avatar-upload"><label>01 · FRONT<input type="file" id="avatarPhotoFront" accept="image/jpeg,image/png,image/webp" capture="user"></label><label>02 · LEFT<input type="file" id="avatarPhotoLeft" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>03 · BACK<input type="file" id="avatarPhotoBack" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>04 · RIGHT<input type="file" id="avatarPhotoRight" accept="image/jpeg,image/png,image/webp" capture="environment"></label></div>',
     '<label class="avatar-consent"><input type="checkbox" id="avatarPhotoConsent"><span>I have permission to use these photos and agree to send them to Tripo for cloud 3D generation. This may consume paid credits.</span></label>',
     '<button class="avatar-primary" id="avatarGenerate3D" type="button">CREATE DETAILED 3D AVATAR</button><div class="avatar-status" id="cosmicAvatarStatus" role="status">Checking 3D generation service…</div><button class="avatar-action" id="avatarRig3D" type="button" disabled>MAKE MODEL ANIMATABLE</button>',
-    '<div class="avatar-divider"></div><h3>VOICE & EXPRESSION</h3><textarea id="avatarSpeakText" rows="3" placeholder="Write what your character should say…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><button class="avatar-primary" id="avatarSpeakButton" type="button" style="margin-top:8px">SPEAK AS CHARACTER</button><p class="avatar-help">VRM facial expressions are used when the model provides compatible expression morphs. Generic GLB models do not automatically gain realistic lip-sync.</p>',
+    '<div class="avatar-divider"></div><h3>VOICE & EXPRESSION</h3><label class="avatar-help">LIVE MODEL<select id="cosmicAvatarLiveModel" class="avatar-setting-select"><option value="gemini-3.8-live">Gemini 3.8 Live</option><option value="gemini-3.8-live-extended-thinking">Gemini 3.8 Live · Extended Thinking</option></select></label><label class="avatar-help">SPEAKING VOICE<select id="cosmicAvatarVoice" class="avatar-setting-select"><option>Kore</option><option>Aoede</option><option>Puck</option><option>Charon</option><option>Fenrir</option><option>Leda</option><option>Orus</option><option>Zephyr</option></select></label><label class="avatar-help">EXPRESSION<select id="cosmicAvatarMood" class="avatar-setting-select"><option value="neutral">Neutral</option><option value="happy">Happy</option><option value="sad">Sad</option><option value="surprised">Surprised</option><option value="angry">Angry</option><option value="relaxed">Relaxed</option></select></label><textarea id="avatarSpeakText" rows="3" placeholder="Write what your character should say…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><button class="avatar-primary" id="avatarSpeakButton" type="button" style="margin-top:8px">SPEAK AS CHARACTER</button><p class="avatar-help">VRM facial expressions are used when the model provides compatible expression morphs. Generic GLB models do not automatically gain realistic lip-sync.</p>',
     '<div class="avatar-divider"></div><h3>VOICE CONVERSATION</h3><div class="avatar-conversation-log" id="avatarConversationLog" aria-live="polite"><p>COSMIC is ready. Speak or type a message to start.</p></div><textarea id="avatarConversationInput" rows="2" placeholder="Talk to COSMIC…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><div class="avatar-conversation-actions"><button class="avatar-action" id="avatarConversationMic" type="button">🎙 SPEAK</button><button class="avatar-primary" id="avatarConversationSend" type="button">SEND MESSAGE</button></div><p class="avatar-help">Turn-based voice conversation: Android speech recognition listens, COSMIC replies through the configured AI provider, and the avatar speaks the answer. Use the floating COSMIC Live control for continuous Gemini speech-to-speech conversation, interruptions and shared Chat/Avatar context.</p>',
     '<div class="avatar-divider"></div><h3>BUILT-IN ANIME CHARACTERS</h3><div class="avatar-gallery" id="cosmicAvatarSamples"><button type="button" data-avatar-sample="A" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_A.vrm">AVATAR SAMPLE A</button><button type="button" data-avatar-sample="B" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_B.vrm">AVATAR SAMPLE B</button><button type="button" data-avatar-sample="C" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_C.vrm">AVATAR SAMPLE C</button></div><p class="avatar-help">VRoid sample models A–C. Their use is governed by Pixiv/VRoid sample-model terms, not CC0. <a href="https://vroid.pixiv.help/hc/en-us/articles/4402394424089-VRoidPreset-A-Z" target="_blank" rel="noopener">View usage terms</a>.</p><div class="avatar-divider"></div><h3>MY CHARACTER LIBRARY</h3><div class="avatar-gallery" id="cosmicAvatarLibrary"></div><p class="avatar-help">Imported and generated model files are saved in local IndexedDB on this device.</p><div class="avatar-price-note">Photo-to-3D uses Tripo’s paid API. Add TRIPO_API_KEY to the backend environment. This repo does not bundle photorealistic/anime asset files.</div></aside></div>'
   ].join("");}
@@ -198,6 +205,16 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   }
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
+    const studio=host.querySelector(".avatar-studio-v2"),stage=host.querySelector(".avatar-stage-v2"),panel=host.querySelector(".avatar-panel");
+    host.querySelector("#cosmicAvatarSettings")?.addEventListener("click",()=>studio.classList.toggle("settings-open"));
+    const closeSettings=document.createElement("button");closeSettings.type="button";closeSettings.className="avatar-settings-close";closeSettings.textContent="CLOSE";closeSettings.onclick=()=>studio.classList.remove("settings-open");panel?.prepend(closeSettings);
+    const dock=document.createElement("div");dock.className="avatar-chat-dock";dock.innerHTML='<div class="avatar-chat-log-slot"></div><div class="avatar-chat-row"></div>';
+    const oldLog=panel?.querySelector("#avatarConversationLog"),oldInput=panel?.querySelector("#avatarConversationInput"),oldActions=panel?.querySelector(".avatar-conversation-actions");
+    if(oldLog)dock.querySelector(".avatar-chat-log-slot").append(oldLog);if(oldInput)dock.querySelector(".avatar-chat-row").append(oldInput);if(oldActions)dock.querySelector(".avatar-chat-row").append(oldActions);stage?.append(dock);
+    const lm=host.querySelector("#cosmicAvatarLiveModel"),lv=host.querySelector("#cosmicAvatarVoice"),mm=host.querySelector("#cosmicAvatarMood");
+    if(lm){lm.value=localStorage.getItem("COSMIC_LIVE_MODEL")||"gemini-3.8-live";lm.onchange=()=>{localStorage.setItem("COSMIC_LIVE_MODEL",lm.value);const x=document.querySelector("#cosmicLiveModel");if(x){x.value=lm.value;x.dispatchEvent(new Event("change"));}};}
+    if(lv){lv.value=localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore";lv.onchange=()=>{localStorage.setItem("COSMIC_LIVE_VOICE",lv.value);localStorage.setItem("COSMIC_TTS_VOICE",lv.value);const x=document.querySelector("#cosmicLiveVoice");if(x){x.value=lv.value;x.dispatchEvent(new Event("change"));}};}
+    if(mm)mm.onchange=()=>{state.mood=mm.value;};
     $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f){currentTaskId="";$("#avatarRig3D",host).disabled=true;loadBlob(f,f.name);}});
     host.querySelectorAll("[data-avatar-style]").forEach(b=>b.onclick=()=>{host.querySelectorAll("[data-avatar-style]").forEach(x=>x.classList.toggle("active",x===b));setPreview(b.dataset.avatarStyle);});
     host.querySelectorAll("[data-avatar-preset]").forEach(b=>b.addEventListener("click",()=>generatePreset(b.dataset.avatarPreset,b)));
