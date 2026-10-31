@@ -1,6 +1,14 @@
 name: Build and Release COSMIC Android APK
 
 on:
+  push:
+    branches:
+      - feature/complete-cosmic-systems
+    paths:
+      - "android-wrapper/**"
+      - "frontend/**"
+      - "backend/**"
+      - ".github/workflows/cosmic-android.yml"
   workflow_dispatch:
 
 permissions:
@@ -198,13 +206,13 @@ jobs:
 
       - name: Prepare release APK and update metadata
         env:
-          VERSION_CODE: '12'
-          VERSION_NAME: '2.8.0'
+          VERSION_CODE: '13'
+          VERSION_NAME: '2.9.0'
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: v2.8.0-hotfix2
+          RELEASE_TAG: v2.9.0
         run: |
           mkdir -p release
-          cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.8.0.apk
+          cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.0.apk
           APK_SHA256="$(sha256sum release/COSMIC-2.8.0.apk | awk '{print $1}')"
           export APK_SHA256
           python - <<'PY'
@@ -238,12 +246,12 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/feature/complete-cosmic-systems'
         uses: softprops/action-gh-release@v2
         with:
-          name: COSMIC 2.8.0
-          tag_name: v2.8.0-hotfix2
-          target_commitish: main
+          name: COSMIC 2.9.0
+          tag_name: v2.9.0
+          target_commitish: feature/complete-cosmic-systems
           generate_release_notes: true
           files: |
             release/COSMIC-2.8.0.apk
