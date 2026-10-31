@@ -5,9 +5,9 @@
   const state = { active:false, starting:false, screenShareActive:false, listener:null, lastState:"READY" };
   const dock = document.createElement("aside");
   dock.id = "cosmicLiveDock";
-  dock.innerHTML = '<span class="cosmic-live-indicator" aria-hidden="true"></span><div class="cosmic-live-copy"><b id="cosmicLiveTitle">COSMIC LIVE</b><small id="cosmicLiveStatus">VOICE OFF · READY</small></div><button id="cosmicLiveShare" type="button" hidden>SHARE SCREEN</button><button id="cosmicLiveToggle" type="button" aria-pressed="false">START LIVE</button>';
+  dock.innerHTML = '<span class="cosmic-live-indicator" aria-hidden="true"></span><div class="cosmic-live-copy"><b id="cosmicLiveTitle">COSMIC LIVE</b><small id="cosmicLiveStatus">VOICE OFF · READY</small></div><button id="cosmicLiveBubble" type="button" hidden>ENABLE FLOATING BUBBLE</button><button id="cosmicLiveShare" type="button" hidden>SHARE SCREEN</button><button id="cosmicLiveToggle" type="button" aria-pressed="false">START LIVE</button>';
   document.body.append(dock);
-  const title=dock.querySelector("#cosmicLiveTitle"), status=dock.querySelector("#cosmicLiveStatus"), button=dock.querySelector("#cosmicLiveToggle"), share=dock.querySelector("#cosmicLiveShare");
+  const title=dock.querySelector("#cosmicLiveTitle"), status=dock.querySelector("#cosmicLiveStatus"), button=dock.querySelector("#cosmicLiveToggle"), share=dock.querySelector("#cosmicLiveShare"), bubble=dock.querySelector("#cosmicLiveBubble");
   function paint(message, active=state.active) {
     state.lastState=message||"READY"; state.active=active;
     dock.classList.toggle("is-live",active);
@@ -15,6 +15,7 @@
     button.textContent=state.starting?"CONNECTING…":active?"STOP LIVE":"START LIVE";
     button.setAttribute("aria-pressed",String(active));
     share.hidden=!active||!native()?.startScreenShare;
+    if(!active)bubble.hidden=true;
     status.textContent=state.lastState;
     title.textContent=active?"COSMIC IS LISTENING":"COSMIC LIVE";
   }
@@ -38,6 +39,10 @@
       const active=live||(/STOPPED/.test(message)?false:state.active);
       state.starting=/Starting|RECONNECTING/i.test(message);
       paint(message,active);
+    } else if(type==="bubble_permission_required") {
+      bubble.hidden=false;status.textContent="ALLOW OVERLAY TO SHOW THE FLOATING BUBBLE";
+    } else if(type==="bubble") {
+      bubble.hidden=true;status.textContent="LIVE · FLOATING BUBBLE ACTIVE";
     } else if(type==="error") {
       state.starting=false;paint("ERROR · "+message,false);
     } else if(type==="transcript") {
@@ -81,6 +86,10 @@
     document.documentElement.classList.remove("cosmic-live-speaking");
   }
   button.addEventListener("click",()=>state.active||state.starting?stop():start());
+  bubble.addEventListener("click",async()=>{
+    try{await native()?.openFloatingBubbleSettings?.();status.textContent="RETURN HERE AFTER ALLOWING DISPLAY OVER OTHER APPS";}
+    catch(error){status.textContent="OVERLAY SETUP ERROR · "+(error?.message||error);}
+  });
   share.addEventListener("click",async()=>{
     const plugin=native();
     if(!plugin?.startScreenShare){paint("SCREEN SHARING IS ANDROID ONLY",state.active);return;}
