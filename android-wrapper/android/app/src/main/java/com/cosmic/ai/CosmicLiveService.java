@@ -156,7 +156,7 @@ public class CosmicLiveService extends Service {
             }
             android.content.SharedPreferences.Editor livePrefs = getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
                     .putString("live_model", liveModel).putString("live_voice", liveVoice);
-            if (modelChanged) {
+            if (changed) {
                 resumeHandle = "";
                 livePrefs.remove("resume_handle");
             }
@@ -604,9 +604,18 @@ public class CosmicLiveService extends Service {
                 String token = response.optString("token", "").trim();
                 if (token.isEmpty()) throw new IllegalStateException("Gemini did not issue a Live token.");
                 return token;
-            } catch (java.net.ConnectException error) {
+            } catch (java.net.ConnectException | java.net.SocketTimeoutException error) {
                 lastError = error;
-                if (attempt < 5) Thread.sleep(1000);
+                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+            } catch (IllegalStateException error) {
+                lastError = error;
+                String detail = String.valueOf(error.getMessage());
+                if (detail.contains("HTTP 400") || detail.contains("HTTP 401") ||
+                        detail.contains("HTTP 403") || detail.contains("HTTP 404")) throw error;
+                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+            } catch (java.io.IOException error) {
+                lastError = error;
+                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
             } finally {
                 if (connection != null) connection.disconnect();
             }
