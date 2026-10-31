@@ -43,18 +43,31 @@
     bubbleButton.addEventListener("click", async () => { try { await window.Capacitor?.Plugins?.CosmicVoice?.openFloatingBubbleSettings?.(); setStatus("ALLOW DISPLAY OVER OTHER APPS, THEN RETURN TO COSMIC", "connecting"); } catch (error) { setStatus("BUBBLE SETUP FAILED · "+error.message, "error"); } });
     const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
     setStatus("LIVE VOICE OFF", "idle");
+    if (localStorage.getItem("COSMIC_LIVE_AUTO") === null) {
+      // COSMIC defaults to Live-on. The user can switch it off with the orb.
+      localStorage.setItem("COSMIC_LIVE_AUTO", "true");
+    }
     if (localStorage.getItem("COSMIC_LIVE_AUTO") === "true") {
       state.desired = true;
-      setStatus("TAP TO RESUME LIVE VOICE", "paused");
-      // Permission prompts are not forced at page load. Resume only if the browser
-      // already has permission; otherwise the user taps the single live control.
-      if (typeof nativeVoice?.startLive === "function") {
-        start(true);
-      } else if (navigator.permissions?.query) {
-        navigator.permissions.query({name:"microphone"}).then(p => {
-          if (p.state === "granted" && state.desired) start(true);
-        }).catch(() => {});
-      }
+      setStatus("CHECKING GEMINI LIVE KEY…", "connecting");
+      fetch(API() + "/api/ai/provider-keys", {cache:"no-store"})
+        .then(r => r.json())
+        .then(data => {
+          const configured = (data.providers || []).some(p => p.provider === "gemini" && p.configured);
+          if (!configured) {
+            state.desired = false;
+            setStatus("ADD GEMINI KEY IN API SETUP · LIVE AUTO-START READY", "paused");
+            return;
+          }
+          if (typeof nativeVoice?.startLive === "function") start(true);
+          else if (navigator.permissions?.query) {
+            navigator.permissions.query({name:"microphone"}).then(permission => {
+              if (permission.state === "granted" && state.desired) start(true);
+              else setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused");
+            }).catch(() => setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"));
+          } else setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused");
+        })
+        .catch(() => setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"));
     }
   }
 
