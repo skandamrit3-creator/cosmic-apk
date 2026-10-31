@@ -52,7 +52,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       const eye= sphere(side*.145,2.12,.309,.082,.105,.035,eyeWhite);eyeLids.push(eye);
       sphere(side*.145,2.115,.343,.052,.073,.018,iris);
       sphere(side*.145,2.112,.359,.026,.046,.012,pupil);
-      sphere(side*.16,2.255,.305,.09,.018,.025,hair);
+      const brow=sphere(side*.145,2.255,.305,.09,.018,.025,hair);eyeBrows.push(brow);
       sphere(side*.17,2.145,.371,.014,.018,.008,eyeWhite);
       sphere(side*.405,2.075,.005,.055,.09,.055,skin);
     }
