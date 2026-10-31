@@ -1,0 +1,47 @@
+name: COSMIC Source Validation
+
+on:
+  push:
+    branches:
+      - feature/complete-cosmic-systems
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Validate browser JavaScript
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find frontend/js -maxdepth 1 -type f -name '*.js' ! -name 'avatar-studio.js' -print0 | xargs -0 -n1 node --check
+          node --check --input-type=module < frontend/js/avatar-studio.js
+
+      - name: Validate Python syntax
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m compileall -q backend
+
+      - name: Set up Java and Android SDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+
+      - name: Compile Android Java only (no APK packaging)
+        working-directory: android-wrapper/android
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:compileDebugJavaWithJavac --no-daemon
