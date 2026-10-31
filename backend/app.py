@@ -373,33 +373,37 @@ def generate_image():
     if image_size not in {"512","1K","2K","4K"}:
         return jsonify({"success": False, "error": "Image size must be 512, 1K, 2K or 4K."}), 400
     payload = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseModalities": ["TEXT", "IMAGE"],
-            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": image_size},
+        "model": "gemini-nano-banana-2.1",
+        "input": [{"type": "text", "text": prompt}],
+        "response_format": {
+            "type": "image", "mime_type": "image/png",
+            "aspect_ratio": aspect_ratio, "image_size": image_size,
         },
     }
     try:
         response = requests.post(
-            "https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-image:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
             json=payload,
             timeout=180,
         )
         if not response.ok:
             detail = (response.text or "").replace("\\n", " ")[:400]
-            return jsonify({"success": False, "error": "Gemini image API HTTP "
+            return jsonify({"success": False, "error": "Gemini Nano Banana 2.1 HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
-        encoded = None
-        for candidate in result.get("candidates", []):
-            for part in candidate.get("content", {}).get("parts", []):
-                inline = part.get("inlineData") or part.get("inline_data") or {}
-                if inline.get("data"):
-                    encoded = inline["data"]
+        output_image = result.get("output_image") or {}
+        encoded = output_image.get("data") if isinstance(output_image, dict) else None
+        if not encoded:
+            for step in result.get("steps", []):
+                if step.get("type") != "model_output":
+                    continue
+                for item in step.get("content", []):
+                    if item.get("type") == "image" and item.get("data"):
+                        encoded = item["data"]
+                        break
+                if encoded:
                     break
-            if encoded:
-                break
         if not encoded:
             return jsonify({"success": False, "error": "Gemini completed without returning an image. Try a simpler prompt."}), 502
         image_bytes = base64.b64decode(encoded, validate=True)
@@ -416,7 +420,7 @@ def generate_image():
             "url": "/api/images/generated/" + filename,
             "filename": filename,
             "size_bytes": len(image_bytes),
-            "model": "gemini-3.1-flash-image",
+            "model": "gemini-nano-banana-2.1",
         })
     except (ValueError, TypeError) as exc:
         return jsonify({"success": False, "error": "Could not decode Gemini's image response: " + str(exc)}), 502
