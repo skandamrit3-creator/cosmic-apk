@@ -400,11 +400,11 @@
       try {
         const started = await nativeVoice.startLive();
         state.connecting = false;
-        if (started?.alreadyRunning) {
+        if (started?.connected) {
           state.connected = true;
           setStatus("GEMINI LIVE · SESSION ALREADY ACTIVE", "live");
         } else {
-          setStatus("WAITING FOR GEMINI LIVE…", "connecting");
+          setStatus(started?.alreadyRunning ? "RECONNECTING TO GEMINI LIVE…" : "WAITING FOR GEMINI LIVE…", "connecting");
         }
       } catch (error) {
         state.desired = false; state.connecting = false;
