@@ -30,8 +30,8 @@ public class CosmicBootReceiver extends BroadcastReceiver {
 
         // Android restricts microphone foreground-service launches directly from boot receivers.
         // Ask the user to tap a notification; MainActivity resumes the explicitly opted-in session.
-        boolean resume = context.getSharedPreferences("cosmic_live", Context.MODE_PRIVATE)
-                .getBoolean("voice_auto_resume", false);
+        android.content.SharedPreferences prefs = context.getSharedPreferences("cosmic_live", Context.MODE_PRIVATE);
+        boolean resume = prefs.getBoolean("voice_auto_resume", false) || prefs.getBoolean("wake_word_enabled", false);
         if (!resume) return;
         try {
             NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -45,7 +45,7 @@ public class CosmicBootReceiver extends BroadcastReceiver {
             PendingIntent pending = PendingIntent.getActivity(context, 8061, open,
                     PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0));
             Notification notification = new NotificationCompat.Builder(context, CHANNEL)
-                    .setSmallIcon(context.getApplicationInfo().icon)
+                    .setSmallIcon(android.R.drawable.ic_btn_speak_now)
                     .setContentTitle("COSMIC is ready")
                     .setContentText("Tap to resume your opted-in voice session.")
                     .setContentIntent(pending)
