@@ -10,7 +10,7 @@
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
-    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, nativeMode: false, nativeListener: null
+    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, bubbleActive: false
   };
   let root, orb, status, shareButton, bubbleButton;
 
@@ -25,7 +25,6 @@
     }
     if (shareButton) shareButton.disabled = !state.connected && !state.sharing;
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
-    if (bubbleButton) bubbleButton.hidden = !state.nativeMode;
   }
 
   function mount() {
@@ -43,9 +42,6 @@
     shareButton.addEventListener("click", () => state.sharing ? stopScreenShare() : startScreenShare());
     bubbleButton.addEventListener("click", async () => { try { await window.Capacitor?.Plugins?.CosmicVoice?.openFloatingBubbleSettings?.(); setStatus("ALLOW DISPLAY OVER OTHER APPS, THEN RETURN TO COSMIC", "connecting"); } catch (error) { setStatus("BUBBLE SETUP FAILED · "+error.message, "error"); } });
     const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
-    if (typeof nativeVoice?.addListener === "function") {
-      nativeVoice.addListener("liveEvent", handleNativeEvent).then(handle => { state.nativeListener = handle; }).catch(() => {});
-    }
     setStatus("LIVE VOICE OFF", "idle");
     if (localStorage.getItem("COSMIC_LIVE_AUTO") === "true") {
       state.desired = true;
@@ -58,51 +54,6 @@
         navigator.permissions.query({name:"microphone"}).then(p => {
           if (p.state === "granted" && state.desired) start(true);
         }).catch(() => {});
-      }
-    }
-  }
-
-  function handleNativeEvent(event) {
-    const type = String(event?.type || "");
-    const message = String(event?.message || "");
-    if (type === "state") {
-      if (/LIVE · (GEMINI CONNECTED|LISTENING|SCREEN SHARING)/i.test(message)) {
-        state.desired = true; state.connected = true; state.connecting = false;
-        setStatus(message, "live");
-      } else if (/RECONNECTING/i.test(message)) {
-        state.connected = false; setStatus(message, "connecting");
-      } else if (/STOPPED/i.test(message)) {
-        state.desired = false; state.connected = false; state.connecting = false;
-        localStorage.setItem("COSMIC_LIVE_AUTO", "false"); setStatus(message, "idle");
-      } else {
-        setStatus(message || "GEMINI LIVE", "connecting");
-      }
-    } else if (type === "error") {
-      state.connected = false; state.connecting = false;
-      if (/key is missing|API key|permission denied|permission is required/i.test(message)) {
-        state.desired = false; localStorage.setItem("COSMIC_LIVE_AUTO", "false");
-      }
-      setStatus(message || "GEMINI LIVE ERROR", "error");
-    } else if (type === "transcript") {
-      transcript(message, "assistant");
-    } else if (type === "user_transcript") {
-      transcript(message, "user");
-      document.dispatchEvent(new CustomEvent("cosmic:live-transcript", {detail:{text:message,role:"user"}}));
-    } else if (type === "audio_start") {
-      window.COSMIC_AVATAR_TALK?.(true);
-    } else if (type === "audio_end") {
-      window.COSMIC_AVATAR_TALK?.(false); window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
-    } else if (type === "audio_level") {
-      window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message) || 0);
-    } else if (type === "tool_call") {
-      try {
-        const call = JSON.parse(message);
-        if (call.functionCalls?.length) handleToolCalls(call.functionCalls);
-      } catch (_) {}
-    } else if (type === "bubble_permission_required") {
-      setStatus("ALLOW FLOATING BUBBLE", "paused");
-      if (window.confirm("Allow COSMIC to show its small floating assistant bubble over other apps?")) {
-        window.Capacitor?.Plugins?.CosmicVoice?.openFloatingBubbleSettings?.().catch(error => setStatus(error.message, "error"));
       }
     }
   }
@@ -357,9 +308,14 @@
         state.sharing=false;setStatus("GEMINI LIVE · LISTENING","live");
       } else setStatus(message,state.connected?"live":"connecting");
     } else if(type==="error") {
-      state.connected=false;state.connecting=false;setStatus(message,"error");
+      state.connected=false;state.connecting=false;state.nativeMode=false;
+      if(/key is missing|API key|permission denied|permission is required/i.test(message)){state.desired=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");}
+      setStatus(message,"error");
     } else if(type==="transcript") transcript(message,"assistant");
-    else if(type==="user_transcript") transcript(message,"user");
+    else if(type==="user_transcript") {
+      transcript(message,"user");
+      document.dispatchEvent(new CustomEvent("cosmic:live-transcript",{detail:{text:message,role:"user"}}));
+    }
     else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
     else if(type==="audio_start") window.COSMIC_AVATAR_TALK?.(true);
     else if(type==="audio_end"||type==="turn_complete") {
