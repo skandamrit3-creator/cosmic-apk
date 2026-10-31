@@ -298,58 +298,7 @@
         );
     });
 
-    // Navigation: desktop rail and Android bottom bar share one action map.
-    function showReactorSection(view) {
-        const targets = {
-            command: [".core-stage", "COMMAND CORE"],
-            models: [".right-panel .hud-panel:nth-of-type(2)", "MODEL CONTROL"],
-            memory: [".response-stream", "MEMORY"],
-            research: [".task[data-task='research']", "RESEARCH"],
-            tools: [".task[data-task='coding']", "TOOLS"],
-            devices: [".cosmic-brain-panel", "DEVICES"],
-            settings: ["#cosmicBackendDialog", "CONFIGURATION"]
-        };
-        const entry = targets[view] || targets.command;
-        const target = document.querySelector(entry[0]);
-        if (view === "settings") {
-            document.querySelector("#systemMenu")?.click();
-            return;
-        }
-        if (view === "research" || view === "tools") {
-            document.querySelector(entry[0])?.click();
-            input?.focus();
-        } else if (view === "memory") {
-            const stream = document.querySelector("#responseStream");
-            if (stream) {
-                const note = document.createElement("div");
-                note.className = "stream-item system-message";
-                note.textContent = "MEMORY CENTER: Loading saved memory records…";
-                stream.append(note);
-                stream.scrollTop = stream.scrollHeight;
-            }
-            Promise.all([
-                fetch((window.COSMIC_API_BASE || window.location.origin) + "/api/memory/count"),
-                fetch((window.COSMIC_API_BASE || window.location.origin) + "/api/memories")
-            ]).then(async ([countResponse, listResponse]) => {
-                if (!countResponse.ok || !listResponse.ok) throw new Error("Memory API unavailable");
-                const count = await countResponse.json(), list = await listResponse.json();
-                const note = document.querySelector("#responseStream .system-message:last-child");
-                if (note) note.textContent = "MEMORY CENTER: " + (count.count ?? count.total ?? "Records") + " saved records. " + ((list.memories || list.items || []).length) + " records returned.";
-            }).catch(error => {
-                const note = document.querySelector("#responseStream .system-message:last-child");
-                if (note) note.textContent = "MEMORY CENTER: " + error.message;
-            });
-        } else if (target) {
-            target.scrollIntoView({behavior:"smooth",block:"center"});
-            target.focus?.({preventScroll:true});
-        } else {
-            addMessage("system-message", entry[1] + " is not available in this build.");
-        }
-        $(".rail-item,.mobile-nav-item").forEach(item => item.classList.toggle("active", item.dataset.view === view));
-    }
-    $(".rail-item,.mobile-nav-item").forEach(button => {
-        button.addEventListener("click", () => showReactorSection(button.dataset.view || "command"));
-    });
+    // Mode and section navigation are centralized in cosmic-modes.js to avoid duplicate handlers.
 
     // Initial state
     selectTask("chat");
