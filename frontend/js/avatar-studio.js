@@ -22,14 +22,14 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   function previewCharacter(style){
     const g=new THREE.Group(),anime=style==="anime";
     const skin=new THREE.MeshPhysicalMaterial({color:0xf0d4c7,roughness:.62,clearcoat:.12});
-    const hair=new THREE.MeshStandardMaterial({color:0x30283f,roughness:.78});
-    const hairLight=new THREE.MeshStandardMaterial({color:0x514361,roughness:.72});
-    const outfit=new THREE.MeshStandardMaterial({color:0x596b91,roughness:.64,metalness:.04});
-    const trim=new THREE.MeshStandardMaterial({color:0xc2a9df,metalness:.32,roughness:.4});
+    const hair=new THREE.MeshStandardMaterial({color:0xe7c77f,roughness:.62,metalness:.025});
+    const hairLight=new THREE.MeshStandardMaterial({color:0xffe6a6,roughness:.58});
+    const outfit=new THREE.MeshStandardMaterial({color:0xf0ece4,roughness:.58,metalness:.035});
+    const trim=new THREE.MeshStandardMaterial({color:0xd2ad62,metalness:.48,roughness:.34});
     const eyeWhite=new THREE.MeshStandardMaterial({color:0xfff8f3,roughness:.28});
-    const iris=new THREE.MeshStandardMaterial({color:0x725d9c,roughness:.25,metalness:.05});
+    const iris=new THREE.MeshStandardMaterial({color:0x8062d5,roughness:.22,metalness:.08});
     const pupil=new THREE.MeshStandardMaterial({color:0x211d2d,roughness:.2});
-    const lip=new THREE.MeshStandardMaterial({color:0xa85e70,roughness:.55});
+    const lip=new THREE.MeshStandardMaterial({color:0x9e465b,roughness:.5});
     const sphere=(x,y,z,sx,sy,sz,mat)=>mesh(new THREE.SphereGeometry(1,32,24),mat,x,y,z,sx,sy,sz);
     // Silhouette, tailored jacket and neck
     g.add(mesh(new THREE.CapsuleGeometry(.39,.62,8,28),outfit,0,1.05,0));
@@ -69,6 +69,18 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       g.add(pivot);return pivot;
     };
     const leftArm=arm(-1),rightArm=arm(1);
+    // MYRAA signature black bodice, burgundy shoulder accents and gold ornaments.
+    const black=new THREE.MeshStandardMaterial({color:0x24232b,roughness:.5,metalness:.08});
+    const burgundy=new THREE.MeshStandardMaterial({color:0x8b344b,roughness:.52});
+    const gold=new THREE.MeshStandardMaterial({color:0xd8b56c,metalness:.62,roughness:.28});
+    g.add(mesh(new THREE.CapsuleGeometry(.205,.46,6,20),black,0,1.05,.205,.94,1,.45));
+    for(const side of [-1,1]){
+      const accent=mesh(new THREE.SphereGeometry(1,24,16),burgundy,side*.36,1.43,.015,.17,.105,.21);accent.rotation.z=side*-.2;g.add(accent);
+      const shoulderGold=mesh(new THREE.SphereGeometry(1,20,14),gold,side*.39,1.39,.06,.09,.035,.13);g.add(shoulderGold);
+      const ear=mesh(new THREE.SphereGeometry(1,16,12),gold,side*.39,2.06,.05,.035,.055,.025);g.add(ear);
+    }
+    const pendant=mesh(new THREE.OctahedronGeometry(.075,1),gold,0,1.43,.245);g.add(pendant);
+    const hairRibbon=mesh(new THREE.TorusGeometry(.13,.022,8,32),burgundy,.29,2.31,-.03);hairRibbon.rotation.z=.35;g.add(hairRibbon);
     // Soft collar, jacket seam and understated waist detail
     const collar=mesh(new THREE.TorusGeometry(.19,.026,10,48),trim,0,1.52,.04);collar.rotation.x=Math.PI/2;g.add(collar);
     const waist=mesh(new THREE.TorusGeometry(.31,.012,8,64),trim,0,.73,0);waist.rotation.x=Math.PI/2;g.add(waist);
@@ -171,43 +183,26 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     finally{conversationBusy=false;if(send)send.disabled=false;if(mic)mic.disabled=false;input?.focus();}
   }
   async function listenAvatarMessage(){
-    const input=document.querySelector("#avatarConversationInput");const mic=document.querySelector("#avatarConversationMic");
-    if(!input)return;
-    if(mic)mic.disabled=true;
-    try{
-      const native=window.Capacitor?.Plugins?.CosmicVoice;
-      if(native?.listen){
-        if(mic)mic.textContent="LISTENING…";
-        const result=await native.listen({language:localStorage.getItem("COSMIC_VOICE_LANGUAGE")||"en-IN"});
-        if(result?.text){input.value=result.text;await sendAvatarMessage();}
-        else status("No speech was detected. Try again.","error");
-        return;
-      }
-      const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!Speech)throw new Error("Speech recognition is not available on this device.");
-      const recognition=new Speech();recognition.lang=localStorage.getItem("COSMIC_VOICE_LANGUAGE")||"en-IN";recognition.interimResults=false;
-      recognition.onresult=event=>{input.value=event.results[0][0].transcript;sendAvatarMessage();};
-      recognition.onerror=event=>status("Speech recognition: "+event.error,"error");
-      recognition.start();if(mic)mic.textContent="LISTENING…";
-      recognition.onend=()=>{if(mic){mic.textContent="🎙 SPEAK";mic.disabled=false;}};
-      return;
-    }catch(error){status(error.message||"Voice input failed","error");}
-    finally{if(mic){mic.textContent="🎙 SPEAK";mic.disabled=false;}}
+    const mic=document.querySelector("#avatarConversationMic");
+    if(!window.COSMIC_LIVE?.toggle){status("Gemini Live voice controller is unavailable.","error");return;}
+    try{await window.COSMIC_LIVE.toggle();if(mic)mic.textContent=window.COSMIC_LIVE.listening?"STOP LIVE":"🎙 SPEAK";}
+    catch(error){status("Gemini Live: "+(error.message||error),"error");}
   }
+
   function markup(){return [
     '<div class="avatar-studio-v2">',
     '<header class="avatar-studio-head"><div><h2>COSMIC <span>AVATAR</span></h2><p>Your live AI companion</p></div><div class="avatar-head-actions"><span id="cosmicAvatarModelName">COSMIC 3D Preview</span><button class="avatar-settings-toggle" id="cosmicAvatarSettings" type="button" aria-label="Avatar settings">⚙</button></div></header>',
     '<section class="avatar-stage-v2"><canvas id="cosmicAvatarCanvas" aria-label="Interactive 3D avatar stage"></canvas><div class="avatar-stage-meta"><span>3D VIEWPORT</span><span id="cosmicAvatarStageState">STARTER PREVIEW</span></div><div class="avatar-stage-actions"><button class="avatar-action" id="cosmicAvatarReset" type="button">RESET VIEW</button><button class="avatar-action" id="cosmicAvatarTurn" type="button">AUTO ROTATE</button><a class="avatar-action" id="cosmicAvatarDownload" hidden download="cosmic-avatar.glb">DOWNLOAD MODEL</a></div></section>',
-    '<aside class="avatar-panel"><h3>CHARACTER STYLE</h3><p>Starter meshes are previews. Import a real GLB/VRM or generate a detailed model from multiple photos.</p>',
+    '<aside class="avatar-panel"><h3>MYRAA · CHARACTER</h3><p>MYRAA is an original companion. The built-in model is a procedural preview; a rigged VRM/GLB supplies detailed production geometry and facial morphs.</p>',
 
-    '<div class="avatar-divider"></div><h3>MYRAA · ORIGINAL CHARACTER</h3><p>Generate the custom blonde-haired, violet-eyed anime companion with a detailed ivory, black, burgundy and gold outfit. This creates a real 3D model and may use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="hyderabad_man">HYDERABAD MAN</button><button type="button" data-avatar-preset="hyderabad_woman">HYDERABAD WOMAN</button><button type="button" data-avatar-preset="global_man">REALISTIC MAN</button><button type="button" data-avatar-preset="global_woman">REALISTIC WOMAN</button><button type="button" data-avatar-preset="anime_hero">ANIME HERO</button><button type="button" data-avatar-preset="anime_heroine">GENERATE MYRAA · ORIGINAL 3D CHARACTER</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">Select a character preset to generate a real model.</div>',
+    '<div class="avatar-divider"></div><h3>MYRAA · ORIGINAL CHARACTER</h3><p>Generate the custom blonde-haired, violet-eyed anime companion with a detailed ivory, black, burgundy and gold outfit. This creates a real 3D model and may use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="hyderabad_man">HYDERABAD MAN</button><button type="button" data-avatar-preset="hyderabad_woman">HYDERABAD WOMAN</button><button type="button" data-avatar-preset="global_man">REALISTIC MAN</button><button type="button" data-avatar-preset="global_woman">REALISTIC WOMAN</button><button type="button" data-avatar-preset="anime_hero">ANIME HERO</button><button type="button" data-avatar-preset="anime_heroine">GENERATE MYRAA · ORIGINAL 3D CHARACTER</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">MYRAA generation uses the anime heroine preset when the Tripo service is configured.</div>',
     '<div class="avatar-model-import"><button class="avatar-action" id="cosmicAvatarHumanCreator" type="button">OPEN FREE REAL-HUMAN 3D CREATOR</button><p class="avatar-help">Create and export a rigged human GLB with the free Ara 3D Gen tool, then import it here. Its generator and exported assets have separate licences; check the current terms before redistribution.</p><label class="avatar-action" for="cosmicAvatarModelFile">IMPORT GLB / VRM</label><input id="cosmicAvatarModelFile" type="file" accept=".glb,.gltf,.vrm,model/gltf-binary,model/gltf+json"></div>',
     '<div class="avatar-divider"></div><h3>CREATE YOUR 3D TWIN</h3><p>Use photos of the same person, in consistent light. Front is required; two or more views are needed, and four are recommended.</p>',
     '<div class="avatar-upload"><label>01 · FRONT<input type="file" id="avatarPhotoFront" accept="image/jpeg,image/png,image/webp" capture="user"></label><label>02 · LEFT<input type="file" id="avatarPhotoLeft" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>03 · BACK<input type="file" id="avatarPhotoBack" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>04 · RIGHT<input type="file" id="avatarPhotoRight" accept="image/jpeg,image/png,image/webp" capture="environment"></label></div>',
     '<label class="avatar-consent"><input type="checkbox" id="avatarPhotoConsent"><span>I have permission to use these photos and agree to send them to Tripo for cloud 3D generation. This may consume paid credits.</span></label>',
     '<button class="avatar-primary" id="avatarGenerate3D" type="button">CREATE DETAILED 3D AVATAR</button><div class="avatar-status" id="cosmicAvatarStatus" role="status">Checking 3D generation service…</div><button class="avatar-action" id="avatarRig3D" type="button" disabled>MAKE MODEL ANIMATABLE</button>',
     '<div class="avatar-divider"></div><h3>VOICE & EXPRESSION</h3><label class="avatar-help">LIVE MODEL<select id="cosmicAvatarLiveModel" class="avatar-setting-select"><option value="gemini-3.8-live">Gemini 3.8 Live</option><option value="gemini-3.8-live-extended-thinking">Gemini 3.8 Live · Extended Thinking</option></select></label><label class="avatar-help">SPEAKING VOICE<select id="cosmicAvatarVoice" class="avatar-setting-select"><option>Kore</option><option>Aoede</option><option>Puck</option><option>Charon</option><option>Fenrir</option><option>Leda</option><option>Orus</option><option>Zephyr</option></select></label><label class="avatar-help">EXPRESSION<select id="cosmicAvatarMood" class="avatar-setting-select"><option value="neutral">Neutral</option><option value="happy">Happy</option><option value="sad">Sad</option><option value="surprised">Surprised</option><option value="angry">Angry</option><option value="relaxed">Relaxed</option></select></label><textarea id="avatarSpeakText" rows="3" placeholder="Write what your character should say…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><button class="avatar-primary" id="avatarSpeakButton" type="button" style="margin-top:8px">SPEAK AS CHARACTER</button><p class="avatar-help">VRM facial expressions are used when the model provides compatible expression morphs. Generic GLB models do not automatically gain realistic lip-sync.</p>',
-    '<div class="avatar-divider"></div><h3>VOICE CONVERSATION</h3><div class="avatar-conversation-log" id="avatarConversationLog" aria-live="polite"><p>COSMIC is ready. Speak or type a message to start.</p></div><textarea id="avatarConversationInput" rows="2" placeholder="Talk to COSMIC…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><div class="avatar-conversation-actions"><button class="avatar-action" id="avatarConversationMic" type="button">🎙 SPEAK</button><button class="avatar-primary" id="avatarConversationSend" type="button">SEND MESSAGE</button></div><p class="avatar-help">Turn-based voice conversation: Android speech recognition listens, COSMIC replies through the configured AI provider, and the avatar speaks the answer. Use the floating COSMIC Live control for continuous Gemini speech-to-speech conversation, interruptions and shared Chat/Avatar context.</p>',
+    '<div class="avatar-divider"></div><h3>VOICE CONVERSATION</h3><div class="avatar-conversation-log" id="avatarConversationLog" aria-live="polite"><p>COSMIC is ready. Speak or type a message to start.</p></div><textarea id="avatarConversationInput" rows="2" placeholder="Talk to COSMIC…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><div class="avatar-conversation-actions"><button class="avatar-action" id="avatarConversationMic" type="button">🎙 SPEAK</button><button class="avatar-primary" id="avatarConversationSend" type="button">SEND MESSAGE</button></div><p class="avatar-help">The microphone uses the same Gemini Live session as Chat. No Android SpeechRecognizer or browser dictation fallback is used.</p>',
     '<div class="avatar-divider"></div><h3>BUILT-IN ANIME CHARACTERS</h3><div class="avatar-gallery" id="cosmicAvatarSamples"><button type="button" data-avatar-sample="A" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_A.vrm">AVATAR SAMPLE A</button><button type="button" data-avatar-sample="B" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_B.vrm">AVATAR SAMPLE B</button><button type="button" data-avatar-sample="C" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_C.vrm">AVATAR SAMPLE C</button></div><p class="avatar-help">VRoid sample models A–C. Their use is governed by Pixiv/VRoid sample-model terms, not CC0. <a href="https://vroid.pixiv.help/hc/en-us/articles/4402394424089-VRoidPreset-A-Z" target="_blank" rel="noopener">View usage terms</a>.</p><div class="avatar-divider"></div><h3>MY CHARACTER LIBRARY</h3><div class="avatar-gallery" id="cosmicAvatarLibrary"></div><p class="avatar-help">Imported and generated model files are saved in local IndexedDB on this device.</p><div class="avatar-price-note">Photo-to-3D uses Tripo’s paid API. Add TRIPO_API_KEY to the backend environment. This repo does not bundle photorealistic/anime asset files.</div></aside></div>'
   ].join("");}
   async function loadFirstCharacter(){
