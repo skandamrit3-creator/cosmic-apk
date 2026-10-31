@@ -91,6 +91,7 @@ public class CosmicLiveService extends Service {
     private TextView bubbleView;
 
     public static boolean isRunning() { CosmicLiveService service = instance; return service != null && service.running.get(); }
+    public static boolean isReady() { CosmicLiveService service = instance; return service != null && service.ready.get(); }
 
     public static boolean sendToolResponses(String responsesJson) {
         CosmicLiveService service = instance;
