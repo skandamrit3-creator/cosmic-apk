@@ -40,7 +40,7 @@
     const modelSelect = root.querySelector("#cosmicLiveModel");
     const voiceSelect = root.querySelector("#cosmicLiveVoice");
     modelSelect.value = liveModel(); voiceSelect.value = liveVoice();
-    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
+    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); state.resumeHandle=""; if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
     voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("VOICE SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live voice changed"); });
     shareButton = root.querySelector("#cosmicLiveShare");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
