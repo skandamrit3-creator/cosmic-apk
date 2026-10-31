@@ -155,19 +155,6 @@ body{margin:0}
 .cosmic-generated-image{display:block;width:min(100%,760px);height:auto;max-height:70dvh;object-fit:contain;margin:4px 0 10px;border-radius:16px;border:1px solid var(--c-line);background:#050b12}
 .cosmic-message-tools a{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border:1px solid var(--c-line);border-radius:9px;background:rgba(142,220,241,.09);color:#dff7ff;text-decoration:none;font-size:10px;font-weight:750;letter-spacing:.05em}
 
-#cosmicLiveDock{position:fixed;z-index:9800;right:18px;bottom:18px;display:flex;align-items:center;gap:10px;min-width:220px;max-width:calc(100vw - 28px);padding:10px 12px;border:1px solid rgba(144,202,225,.24);border-radius:17px;background:rgba(5,16,28,.94);box-shadow:0 12px 38px rgba(0,0,0,.38);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:#eaf6ff}
-.cosmic-live-indicator{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:#718092;box-shadow:0 0 0 4px rgba(113,128,146,.13)}
-.cosmic-live-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
-.cosmic-live-copy b{font-size:10px;letter-spacing:.13em}
-.cosmic-live-copy small{font-size:8px;letter-spacing:.06em;color:#9fb4c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#cosmicLiveToggle{min-height:38px;padding:8px 12px;border:1px solid rgba(146,207,231,.28);border-radius:11px;background:rgba(143,206,231,.1);color:#e5f7ff;font-size:9px;font-weight:800;letter-spacing:.08em;white-space:nowrap}
-#cosmicLiveDock.is-live .cosmic-live-indicator{background:#5fe0ad;box-shadow:0 0 0 4px rgba(95,224,173,.14),0 0 16px rgba(95,224,173,.6)}
-#cosmicLiveDock.is-live #cosmicLiveToggle{background:rgba(238,105,115,.12);border-color:rgba(238,105,115,.38);color:#ffd8dc}
-#cosmicLiveDock.is-starting .cosmic-live-indicator{background:#f0c47b;animation:cosmicPulse 1.1s infinite}
-@keyframes cosmicPulse{50%{opacity:.35;transform:scale(.75)}}
-@media(max-width:850px){#cosmicLiveDock{right:12px;bottom:calc(var(--cosmic-bottom-nav-height) + var(--cosmic-safe-bottom) + 12px);min-width:205px;padding:8px 10px}}
-@media(max-width:390px){#cosmicLiveDock{left:10px;right:10px;max-width:none;min-width:0}#cosmicLiveToggle{padding:8px 10px}}
-
 /* Always-available Gemini Live dock */
 .cosmic-live-dock{
  position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));
@@ -203,14 +190,6 @@ body{margin:0}
  .cosmic-live-share{font-size:7px;padding:0 8px}
 }
 @media(max-width:390px){.cosmic-live-status{max-width:78px}.cosmic-live-share{max-width:75px;white-space:normal;line-height:1.1}}
-
-#cosmicLiveShare{min-height:36px;padding:7px 10px;border:1px solid rgba(124,194,220,.24);border-radius:10px;background:rgba(124,194,220,.08);color:#cbeeff;font-size:8px;font-weight:800;letter-spacing:.05em;white-space:nowrap}
-#cosmicLiveShare[hidden]{display:none!important}
-#cosmicLiveDock{flex-wrap:wrap}
-@media(max-width:420px){#cosmicLiveDock{gap:6px}#cosmicLiveShare{order:3;flex:1 1 100%}}
-
-#cosmicLiveBubble{min-height:36px;padding:7px 10px;border:1px solid rgba(235,188,120,.34);border-radius:10px;background:rgba(235,188,120,.1);color:#ffe1b7;font-size:8px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
-#cosmicLiveBubble[hidden]{display:none!important}
 
 .cosmic-chat-head-actions #cosmicBrainToggle{border-color:rgba(143,224,190,.28);background:rgba(95,194,145,.09);color:#b7f1d2}
 .cosmic-chat-head-actions #cosmicBrainToggle.is-off{border-color:rgba(240,173,154,.28);background:rgba(200,100,100,.08);color:#f3b8ae}
