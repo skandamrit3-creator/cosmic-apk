@@ -333,6 +333,49 @@
     send({toolResponse:{functionResponses:responses}});
   }
 
+  function handleNativeEvent(event) {
+    const type=event?.type||"", message=event?.message||"";
+    if(type==="state") {
+      if(message==="LIVE · STOPPED") {
+        state.desired=false;state.connected=false;state.connecting=false;state.sharing=false;
+        state.nativeMode=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");
+        setStatus("LIVE VOICE OFF","idle");
+      } else if(/RECONNECTING/i.test(message)) {
+        state.connected=false;state.desired=true;setStatus(message,"connecting");
+      } else if(/GEMINI CONNECTED|LISTENING|SCREEN SHARING/i.test(message)) {
+        state.desired=true;state.connected=true;state.connecting=false;setStatus(message,"live");
+      } else if(/SCREEN SHARE STOPPED/i.test(message)) {
+        state.sharing=false;setStatus("GEMINI LIVE · LISTENING","live");
+      } else setStatus(message,state.connected?"live":"connecting");
+    } else if(type==="error") {
+      state.connected=false;state.connecting=false;setStatus(message,"error");
+    } else if(type==="transcript") transcript(message,"assistant");
+    else if(type==="user_transcript") transcript(message,"user");
+    else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
+    else if(type==="audio_start") window.COSMIC_AVATAR_TALK?.(true);
+    else if(type==="audio_end"||type==="turn_complete") {
+      window.COSMIC_AVATAR_TALK?.(false);
+      window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
+    } else if(type==="tool_call") {
+      try { const payload=JSON.parse(message); if(payload.functionCalls?.length)handleToolCalls(payload.functionCalls); }
+      catch(error) { setStatus("DEVICE TOOL ERROR · "+error.message,"error"); }
+    } else if(type==="bubble_permission_required") {
+      if(bubbleButton)bubbleButton.hidden=false;
+      setStatus("ALLOW DISPLAY OVER OTHER APPS FOR THE FLOATING BUBBLE","connecting");
+    } else if(type==="bubble") {
+      if(bubbleButton)bubbleButton.hidden=true;
+      setStatus("LIVE · FLOATING BUBBLE ACTIVE","live");
+    }
+  }
+
+  function bindNativeEvents() {
+    const plugin=window.Capacitor?.Plugins?.CosmicVoice;
+    if(!plugin?.addListener||state.nativeListener)return;
+    plugin.addListener("liveEvent",handleNativeEvent)
+      .then(handle=>{state.nativeListener=handle;})
+      .catch(error=>console.warn("COSMIC native Live events unavailable:",error));
+  }
+
   function startAudioPump() {
     if (!state.processor || !state.context) return;
     state.processor.onaudioprocess = event => {
