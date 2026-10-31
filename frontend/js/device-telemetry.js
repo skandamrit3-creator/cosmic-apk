@@ -9,13 +9,13 @@
  async function sample(){
   const api=plugin();
   if(typeof api?.getDeviceMetrics!=="function"){
-   paint(find("CORE"),null);paint(find("NETWORK"),null,"GPU");paint(find("MEMORY"),null,"RAM");
+   paint(find("CPU")||find("CORE"),null);paint(find("NETWORK"),null,"GPU");paint(find("MEMORY"),null,"RAM");
    const status=document.getElementById("coreLoad");if(status)status.textContent="ANDROID SENSOR BRIDGE REQUIRED";
    return;
   }
   try{
    const m=await api.getDeviceMetrics();
-   paint(find("CORE"),m.cpuPercent>=0?m.cpuPercent:null,"CPU");
+   paint(find("CPU")||find("CORE"),m.cpuPercent>=0?m.cpuPercent:null,"CPU");
    const ram=find("MEMORY");paint(ram,m.ramPercent>=0?m.ramPercent:null,"RAM");
    if(ram){const out=ram.querySelector("b");if(out&&m.ramTotalBytes)out.title=fmt(m.ramUsedBytes)+" / "+fmt(m.ramTotalBytes);}
    const storage=find("NETWORK");paint(storage,m.storagePercent>=0?m.storagePercent:null,"STORAGE");
