@@ -151,3 +151,6 @@ body{margin:0}
  .cosmic-chat-head-actions{grid-column:2;grid-row:1}
  .cosmic-chat-msg{max-width:95%;font-size:14px;padding:12px 13px}
 }
+
+.cosmic-generated-image{display:block;width:min(100%,760px);height:auto;max-height:70dvh;object-fit:contain;margin:4px 0 10px;border-radius:16px;border:1px solid var(--c-line);background:#050b12}
+.cosmic-message-tools a{display:inline-flex;align-items:center;min-height:34px;padding:7px 11px;border:1px solid var(--c-line);border-radius:9px;background:rgba(142,220,241,.09);color:#dff7ff;text-decoration:none;font-size:10px;font-weight:750;letter-spacing:.05em}
