@@ -40,8 +40,8 @@
     const modelSelect = root.querySelector("#cosmicLiveModel");
     const voiceSelect = root.querySelector("#cosmicLiveVoice");
     modelSelect.value = liveModel(); voiceSelect.value = liveVoice();
-    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); if (state.desired) { stop(); start(false); } });
-    voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (state.desired) { stop(); start(false); } });
+    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
+    voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("VOICE SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live voice changed"); });
     shareButton = root.querySelector("#cosmicLiveShare");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
@@ -179,7 +179,7 @@
   async function getToken() {
     const response = await fetch(API() + "/api/ai/live-token", {
       method:"POST", headers:{"Content-Type":"application/json"}, cache:"no-store",
-      body:JSON.stringify({})
+      body:JSON.stringify({model:liveModel()})
     });
     const data = await response.json();
     if (!response.ok || !data.success || !data.token) throw new Error(data.error || "Gemini Live token unavailable.");
