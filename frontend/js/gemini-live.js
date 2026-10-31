@@ -10,7 +10,7 @@
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
-    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null
+    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false
   };
   let root, orb, status, shareButton;
 
@@ -286,6 +286,11 @@
 
   async function prepareAudio() {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error("Microphone capture is unavailable in this browser.");
+    const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
+    if (typeof nativeVoice?.startLiveService === "function") {
+      await nativeVoice.startLiveService();
+      state.voiceService = true;
+    }
     state.stream = await navigator.mediaDevices.getUserMedia({
       audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true},
       video:false
@@ -342,6 +347,10 @@
   }
 
   function cleanupAudio() {
+    if (state.voiceService) {
+      state.voiceService = false;
+      try { window.Capacitor?.Plugins?.CosmicVoice?.stopLiveService?.(); } catch (_) {}
+    }
     if (state.processor) { state.processor.onaudioprocess = null; try { state.processor.disconnect(); } catch (_) {} }
     if (state.source) { try { state.source.disconnect(); } catch (_) {} }
     if (state.silentGain) { try { state.silentGain.disconnect(); } catch (_) {} }
