@@ -9,8 +9,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUT = Path(os.environ.get("COSMIC_FEATURE_OUT", "/tmp/cosmic-feature-pack"))
 ASSET_DIR = OUT / "assets"
-FILES = sorted((ROOT / "frontend" / folder).glob("*.css" if folder == "css" else "*.js")
-               for folder in ("css", "js"))
+FILES = [sorted((ROOT / "frontend" / folder).glob("*.css" if folder == "css" else "*.js"))
+         for folder in ("css", "js")]
 OUT.mkdir(parents=True, exist_ok=True)
 ASSET_DIR.mkdir(parents=True, exist_ok=True)
 manifest_files = []
