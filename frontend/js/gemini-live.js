@@ -3,7 +3,8 @@
 (() => {
   "use strict";
   const API = () => String(window.COSMIC_API_BASE || window.location.origin).replace(/\/$/, "");
-  const MODEL = "models/gemini-3.8-live";
+  const liveModel = () => ["gemini-3.8-live","gemini-3.8-live-extended-thinking"].includes(localStorage.getItem("COSMIC_LIVE_MODEL")) ? localStorage.getItem("COSMIC_LIVE_MODEL") : "gemini-3.8-live";
+  const liveVoice = () => ["Kore","Aoede","Puck","Charon","Fenrir","Leda","Orus","Zephyr"].includes(localStorage.getItem("COSMIC_LIVE_VOICE")) ? localStorage.getItem("COSMIC_LIVE_VOICE") : "Kore";
   const WS_BASE = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
   const state = {
     desired: false, connected: false, connecting: false, sharing: false,
@@ -32,10 +33,15 @@
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button>';
+    root.innerHTML = '<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model" title="Live model"><option value="gemini-3.8-live">3.8 LIVE · FAST</option><option value="gemini-3.8-live-extended-thinking">3.8 LIVE · THINK</option></select><select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice" title="Voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select><div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
+    const modelSelect = root.querySelector("#cosmicLiveModel");
+    const voiceSelect = root.querySelector("#cosmicLiveVoice");
+    modelSelect.value = liveModel(); voiceSelect.value = liveVoice();
+    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); if (state.desired) { stop(); start(false); } });
+    voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (state.desired) { stop(); start(false); } });
     shareButton = root.querySelector("#cosmicLiveShare");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
@@ -191,7 +197,7 @@
       socket.onopen = () => {
         const config = {
           responseModalities:["AUDIO"],
-          speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:"Aoede"}}},
+          speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}},
           systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked."}]},
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
@@ -206,7 +212,7 @@
           ]}]
         };
         socket.send(JSON.stringify({setup:{
-          model:MODEL,
+          model:"models/"+liveModel(),
           responseModalities:config.responseModalities,
           speechConfig:config.speechConfig,
           systemInstruction:config.systemInstruction,
@@ -411,7 +417,7 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "true");
       setStatus("STARTING ANDROID GEMINI LIVE…", "connecting");
       try {
-        const started = await nativeVoice.startLive();
+        const started = await nativeVoice.startLive({model:liveModel(),voice:liveVoice()});
         state.connecting = false;
         if (started?.connected) {
           state.connected = true;
