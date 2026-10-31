@@ -6,7 +6,7 @@ from backend.database.connection import init_db, get_connection
 from backend.core.kernel.kernel import process_message
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
 from backend.integrations.tripo import TripoService, TripoError
-import os, platform, time, base64, uuid, requests
+import os, platform, time, base64, uuid, requests, datetime
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -212,6 +212,56 @@ def ai_provider_status():
     """Live API reachability check; never returns API keys."""
     from backend.ai.gateway.gateway import AIGateway
     return jsonify({"success": True, "providers": AIGateway().provider_status()})
+
+@app.post("/api/ai/live-token")
+def create_gemini_live_token():
+    """Mint a short-lived, single-use Gemini Live token; never expose the long-lived API key."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Live tokens can only be requested by the local COSMIC app."}), 403
+    key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not key:
+        return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP first."}), 400
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    model = "models/gemini-3.8-live"
+    locked_config = {
+        "responseModalities": ["AUDIO"],
+        "sessionResumption": {},
+        "contextWindowCompression": {"slidingWindow": {}},
+    }
+    try:
+        response = requests.post(
+            "https://generativelanguage.googleapis.com/v1beta/auth_tokens",
+            headers={"x-goog-api-key": key, "Content-Type": "application/json"},
+            json={
+                "uses": 1,
+                "expireTime": (now + datetime.timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                "newSessionExpireTime": (now + datetime.timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                "liveConnectConstraints": {
+                    "model": model,
+                    "config": locked_config,
+                },
+            },
+            timeout=15,
+        )
+        if not response.ok:
+            detail = (response.text or "").replace("\\n", " ")[:350]
+            return jsonify({"success": False, "error": "Gemini Live token request failed (HTTP "
+                + str(response.status_code) + "): " + detail}), 502
+        data = response.json()
+        token = data.get("name")
+        if not token:
+            return jsonify({"success": False, "error": "Gemini did not return a Live token."}), 502
+        return jsonify({
+            "success": True,
+            "token": token,
+            "model": model,
+            "expires_in_seconds": 1800,
+            "config": locked_config,
+        })
+    except requests.RequestException as exc:
+        return jsonify({"success": False, "error": "Gemini Live token request failed: " + str(exc)[:240]}), 502
+
 
 @app.get("/api/ai/provider-keys")
 def ai_provider_keys():
