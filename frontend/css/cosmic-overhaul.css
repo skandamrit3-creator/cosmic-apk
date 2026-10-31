@@ -246,3 +246,5 @@ body:has(#cosmicChatMode:not([hidden])) .cosmic-live-dock{bottom:calc(92px + env
 .cosmic-live-voice{max-width:76px}
 @media(max-width:850px){.cosmic-live-choice{max-width:106px;font-size:7px}.cosmic-live-voice{max-width:66px}}
 @media(max-width:390px){.cosmic-live-choice{max-width:92px}.cosmic-live-voice{max-width:58px}}
+
+#voiceButton,.cosmic-voice-language{display:none!important}
