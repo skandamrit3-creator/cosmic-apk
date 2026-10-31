@@ -67,11 +67,13 @@ public class CosmicVoicePlugin extends Plugin {
 
     private void startLiveService(PluginCall call) {
         try {
+            boolean alreadyRunning = CosmicLiveService.isRunning();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
             intent.setAction(CosmicLiveService.ACTION_START);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
             else getContext().startService(intent);
-            call.resolve(new JSObject().put("success", true).put("message", "Gemini Live starting"));
+            call.resolve(new JSObject().put("success", true).put("alreadyRunning", alreadyRunning)
+                    .put("message", alreadyRunning ? "Gemini Live already running" : "Gemini Live starting"));
         } catch (Exception e) {
             call.reject("Could not start Gemini Live: " + e.getMessage());
         }
