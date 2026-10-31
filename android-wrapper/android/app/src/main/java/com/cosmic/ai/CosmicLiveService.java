@@ -73,7 +73,7 @@ public class CosmicLiveService extends Service {
         instance = this;
         createChannel();
         Notification notification = notification("Starting Gemini Live…");
-        if (Build.VERSION.SDK_INT >= 29) {
+        if (Build.VERSION.SDK_INT >= 34) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
         } else {
             startForeground(NOTIFICATION_ID, notification);
@@ -120,6 +120,8 @@ public class CosmicLiveService extends Service {
                             JSONObject config = new JSONObject();
                             config.put("model", "models/gemini-3.8-live");
                             config.put("responseModalities", new JSONArray().put("AUDIO"));
+                            config.put("inputAudioTranscription", new JSONObject());
+                            config.put("outputAudioTranscription", new JSONObject());
                             config.put("contextWindowCompression", new JSONObject().put("slidingWindow", new JSONObject()));
                             JSONObject resume = new JSONObject();
                             if (!resumeHandle.isEmpty()) resume.put("handle", resumeHandle);
@@ -174,6 +176,16 @@ public class CosmicLiveService extends Service {
                                             if (!encoded.isEmpty() && player != null) {
                                                 byte[] pcm = Base64.decode(encoded, Base64.DEFAULT);
                                                 player.write(pcm, 0, pcm.length);
+                                                double sum = 0;
+                                                int samples = pcm.length / 2;
+                                                for (int sample = 0; sample < samples; sample++) {
+                                                    int lo = pcm[sample * 2] & 0xff;
+                                                    int hi = pcm[sample * 2 + 1];
+                                                    short value = (short) ((hi << 8) | lo);
+                                                    sum += (double) value * value;
+                                                }
+                                                double rms = samples == 0 ? 0 : Math.sqrt(sum / samples);
+                                                emit("audio_level", String.valueOf(Math.min(1.0, rms / 9000.0)));
                                             }
                                         }
                                         if (part != null && part.has("text")) emit("transcript", part.optString("text"));
