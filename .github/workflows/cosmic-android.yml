@@ -139,6 +139,17 @@ jobs:
           mkdir -p android-wrapper/www
           cp -a frontend/. android-wrapper/www/
 
+      - name: Bundle Python backend source for Android
+        run: |
+          PYTHON_SRC="android-wrapper/android/app/src/main/python"
+          mkdir -p "$PYTHON_SRC"
+          rm -rf "$PYTHON_SRC/backend"
+          cp -a backend "$PYTHON_SRC/backend"
+          find "$PYTHON_SRC/backend" -type d -name __pycache__ -prune -exec rm -rf {} +
+          find "$PYTHON_SRC/backend" -type f -name '*.pyc' -delete
+          test -f "$PYTHON_SRC/backend/app.py"
+          test -f "$PYTHON_SRC/backend/__init__.py"
+
       - name: Sync Capacitor Android project
         working-directory: android-wrapper
         run: npx cap sync android
