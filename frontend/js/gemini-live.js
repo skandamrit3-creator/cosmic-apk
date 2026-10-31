@@ -379,8 +379,8 @@
 
   function bindNativeEvents() {
     const plugin=window.Capacitor?.Plugins?.CosmicVoice;
-    if(!plugin?.addListener||state.nativeListener)return;
-    plugin.addListener("liveEvent",handleNativeEvent)
+    if(!plugin?.addListener||state.nativeListener)return Promise.resolve();
+    return plugin.addListener("liveEvent",handleNativeEvent)
       .then(handle=>{state.nativeListener=handle;})
       .catch(error=>console.warn("COSMIC native Live events unavailable:",error));
   }
@@ -626,9 +626,10 @@
   window.addEventListener("pagehide", () => {
     if (!state.desired) cleanupAudio();
   });
-  bindNativeEvents();
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",mount,{once:true});
-  else mount();
+  const nativeEventsReady = bindNativeEvents();
+  const boot = () => Promise.resolve(nativeEventsReady).finally(mount);
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",boot,{once:true});
+  else boot();
   window.COSMIC_LIVE = {
     start, stop, toggle:() => state.desired ? stop() : start(false),
     sendText, startScreenShare, stopScreenShare,
