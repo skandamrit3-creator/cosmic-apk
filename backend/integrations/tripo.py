@@ -102,10 +102,21 @@ class TripoService:
                 "full body including hands and shoes, studio soft lighting, isolated character, no text."
             ),
             "anime_heroine": (
-                "High-quality full-body 3D anime-style adult female heroine character, expressive stylized face, "
-                "large anime eyes, carefully sculpted hair, detailed layered elegant outfit, realistic 3D "
-                "materials and fabric, clean stylized proportions, neutral A-pose, symmetrical anatomy, "
-                "full body including hands and shoes, studio soft lighting, isolated character, no text."
+                "Create MYRAA, an original premium 3D anime companion heroine, adult woman, full-body "
+                "character with elegant stylized anime proportions and high-end game-character quality. "
+                "She has long layered golden-blonde hair with soft side-swept bangs, individual sculpted "
+                "hair strands and a few long side locks; luminous violet-purple eyes, refined expressive "
+                "face, gentle confident expression, subtle blush, small natural mouth. Outfit: elegant "
+                "white fitted high-collar jacket and bodice with black tailored panels and trim, deep "
+                "burgundy-red shoulder cape accents, narrow gold necktie/ribbon and tasteful gold "
+                "ornaments, dark fitted waist and skirt/shorts panels, coordinated black gloves/arm "
+                "details; intricate but clean fabric seams, embroidery and PBR materials. Palette: "
+                "ivory, charcoal black, deep wine red, muted gold. Fully visible head to toe, both arms "
+                "slightly away from torso in a clean neutral A-pose, palms relaxed and fingers separated "
+                "naturally for animation rigging, symmetrical anatomy, two hands and five fingers each, "
+                "feet fully visible, no props, no weapons, no text, no logos, no extra limbs. "
+                "High-quality detailed 3D anime game render, soft studio key light, subtle rim light, "
+                "clean neutral background, production-ready humanoid topology and realistic cloth detail."
             ),
         }
         prompt = presets.get(str(preset_name or "").strip().lower())
