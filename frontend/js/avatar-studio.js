@@ -8,6 +8,8 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
   let currentTaskId="",speaking=false,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
+  let conversationBusy=false, conversationSession=localStorage.getItem("cosmic.avatar.session.v1")||("avatar-"+Date.now().toString(36));
+  localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
   const state={frame:0,style:"human",modelName:"COSMIC Preview"};
   const $=(selector,root=document)=>root.querySelector(selector);
   function status(message,type="info"){const el=document.querySelector("#cosmicAvatarStatus");if(el){el.textContent=message;el.dataset.state=type;}}
@@ -101,6 +103,51 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   }
   function setPreview(style){if(currentRoot)scene.remove(currentRoot);currentVrm=null;currentRoot=previewCharacter(style);scene.add(currentRoot);state.style=style;state.modelName=style==="anime"?"Anime-style 3D Preview":"Human-style 3D Preview";badge(state.modelName.toUpperCase());}
   function speak(text){const value=String(text||"").trim();if(!value)return;speaking=true;window.COSMIC_AVATAR_TALK?.(true);const native=window.Capacitor?.Plugins?.CosmicVoice;if(native?.speak){native.speak({text:value}).catch(e=>status("Voice error: "+e.message,"error")).finally(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);});setTimeout(()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);},Math.max(1800,value.length*65));return;}if(window.speechSynthesis){speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);utterance.onend=utterance.onerror=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);};speechSynthesis.speak(utterance);}else{speaking=false;window.COSMIC_AVATAR_TALK?.(false);status("Text-to-speech is unavailable.","error");}}
+  function addConversationMessage(text,kind){
+    const log=document.querySelector("#avatarConversationLog");if(!log)return;
+    const item=document.createElement("div");item.className="avatar-conversation-message "+kind;item.textContent=String(text||"");log.append(item);log.scrollTop=log.scrollHeight;return item;
+  }
+  async function sendAvatarMessage(){
+    const input=document.querySelector("#avatarConversationInput");const message=input?.value.trim();
+    if(!message||conversationBusy)return;
+    conversationBusy=true;input.value="";addConversationMessage(message,"user");
+    const waiting=addConversationMessage("COSMIC is thinking…","assistant");
+    const send=document.querySelector("#avatarConversationSend"),mic=document.querySelector("#avatarConversationMic");
+    if(send)send.disabled=true;if(mic)mic.disabled=true;
+    try{
+      const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({message,provider:"auto",model:"auto",mode:"auto",task:"chat",session_id:conversationSession})});
+      const data=await response.json();if(!response.ok||data.success===false)throw new Error(data.error||"HTTP "+response.status);
+      const answer=data.message||data.response||data.text||"COSMIC returned an empty reply.";
+      waiting.textContent=answer;speak(answer);
+      status("Conversation connected · "+(data.provider||"AI provider"),"success");
+    }catch(error){waiting.classList.add("error");waiting.textContent="API ERROR: "+error.message;status("Conversation failed: "+error.message,"error");}
+    finally{conversationBusy=false;if(send)send.disabled=false;if(mic)mic.disabled=false;input?.focus();}
+  }
+  async function listenAvatarMessage(){
+    const input=document.querySelector("#avatarConversationInput");const mic=document.querySelector("#avatarConversationMic");
+    if(!input)return;
+    if(mic)mic.disabled=true;
+    try{
+      const native=window.Capacitor?.Plugins?.CosmicVoice;
+      if(native?.listen){
+        if(mic)mic.textContent="LISTENING…";
+        const result=await native.listen({language:localStorage.getItem("COSMIC_VOICE_LANGUAGE")||"en-IN"});
+        if(result?.text){input.value=result.text;await sendAvatarMessage();}
+        else status("No speech was detected. Try again.","error");
+        return;
+      }
+      const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
+      if(!Speech)throw new Error("Speech recognition is not available on this device.");
+      const recognition=new Speech();recognition.lang=localStorage.getItem("COSMIC_VOICE_LANGUAGE")||"en-IN";recognition.interimResults=false;
+      recognition.onresult=event=>{input.value=event.results[0][0].transcript;sendAvatarMessage();};
+      recognition.onerror=event=>status("Speech recognition: "+event.error,"error");
+      recognition.start();if(mic)mic.textContent="LISTENING…";
+      recognition.onend=()=>{if(mic){mic.textContent="🎙 SPEAK";mic.disabled=false;}};
+      return;
+    }catch(error){status(error.message||"Voice input failed","error");}
+    finally{if(mic){mic.textContent="🎙 SPEAK";mic.disabled=false;}}
+  }
   function markup(){return [
     '<div class="avatar-studio-v2">',
     '<header class="avatar-studio-head"><div><h2>Avatar Studio</h2><p>Real human models, anime/VRM characters and your own photo-based 3D twin.</p></div><div class="avatar-stage-meta"><span id="cosmicAvatarModelName">COSMIC 3D Preview</span></div></header>',
@@ -114,6 +161,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<label class="avatar-consent"><input type="checkbox" id="avatarPhotoConsent"><span>I have permission to use these photos and agree to send them to Tripo for cloud 3D generation. This may consume paid credits.</span></label>',
     '<button class="avatar-primary" id="avatarGenerate3D" type="button">CREATE DETAILED 3D AVATAR</button><div class="avatar-status" id="cosmicAvatarStatus" role="status">Checking 3D generation service…</div><button class="avatar-action" id="avatarRig3D" type="button" disabled>MAKE MODEL ANIMATABLE</button>',
     '<div class="avatar-divider"></div><h3>VOICE & EXPRESSION</h3><textarea id="avatarSpeakText" rows="3" placeholder="Write what your character should say…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><button class="avatar-primary" id="avatarSpeakButton" type="button" style="margin-top:8px">SPEAK AS CHARACTER</button><p class="avatar-help">VRM facial expressions are used when the model provides compatible expression morphs. Generic GLB models do not automatically gain realistic lip-sync.</p>',
+    '<div class="avatar-divider"></div><h3>VOICE CONVERSATION</h3><div class="avatar-conversation-log" id="avatarConversationLog" aria-live="polite"><p>COSMIC is ready. Speak or type a message to start.</p></div><textarea id="avatarConversationInput" rows="2" placeholder="Talk to COSMIC…" style="width:100%;padding:11px;border-radius:11px;border:1px solid var(--c-line);background:#081522;color:#f4f8fc"></textarea><div class="avatar-conversation-actions"><button class="avatar-action" id="avatarConversationMic" type="button">🎙 SPEAK</button><button class="avatar-primary" id="avatarConversationSend" type="button">SEND MESSAGE</button></div><p class="avatar-help">Turn-based voice conversation: Android speech recognition listens, COSMIC replies through the configured AI provider, and the avatar speaks the answer. Continuous Gemini Live audio streaming is a separate feature and is not enabled yet.</p>',
     '<div class="avatar-divider"></div><h3>BUILT-IN ANIME CHARACTERS</h3><div class="avatar-gallery" id="cosmicAvatarSamples"><button type="button" data-avatar-sample="A" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_A.vrm">AVATAR SAMPLE A</button><button type="button" data-avatar-sample="B" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_B.vrm">AVATAR SAMPLE B</button><button type="button" data-avatar-sample="C" data-url="https://cdn.jsdelivr.net/gh/madjin/vrm-samples@master/vroid/stable/AvatarSample_C.vrm">AVATAR SAMPLE C</button></div><p class="avatar-help">VRoid sample models A–C. Their use is governed by Pixiv/VRoid sample-model terms, not CC0. <a href="https://vroid.pixiv.help/hc/en-us/articles/4402394424089-VRoidPreset-A-Z" target="_blank" rel="noopener">View usage terms</a>.</p><div class="avatar-divider"></div><h3>MY CHARACTER LIBRARY</h3><div class="avatar-gallery" id="cosmicAvatarLibrary"></div><p class="avatar-help">Imported and generated model files are saved in local IndexedDB on this device.</p><div class="avatar-price-note">Photo-to-3D uses Tripo’s paid API. Add TRIPO_API_KEY to the backend environment. This repo does not bundle photorealistic/anime asset files.</div></aside></div>'
   ].join("");}
   async function loadFirstCharacter(){
@@ -152,6 +200,9 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     $("#cosmicAvatarReset",host).onclick=()=>{camera.position.set(0,1.5,5.2);controls.target.set(0,1.2,0);controls.update();};
     $("#cosmicAvatarTurn",host).onclick=()=>{rotate=!rotate;controls.autoRotate=rotate;$("#cosmicAvatarTurn",host).textContent=rotate?"STOP ROTATION":"AUTO ROTATE";};
     $("#avatarSpeakButton",host).onclick=()=>speak($("#avatarSpeakText",host).value);
+    $("#avatarConversationSend",host).onclick=sendAvatarMessage;
+    $("#avatarConversationMic",host).onclick=listenAvatarMessage;
+    $("#avatarConversationInput",host).addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendAvatarMessage();}});
     $("#avatarGenerate3D",host).onclick=generatePhotos;$("#avatarRig3D",host).onclick=rigModel;
     refreshLibrary();checkProvider();loadFirstCharacter();
     $("#cosmicAvatarHumanCreator",host).onclick=()=>window.open("https://ara3dgen.com","_blank","noopener");
