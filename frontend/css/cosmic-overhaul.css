@@ -211,3 +211,8 @@ body{margin:0}
 
 #cosmicLiveBubble{min-height:36px;padding:7px 10px;border:1px solid rgba(235,188,120,.34);border-radius:10px;background:rgba(235,188,120,.1);color:#ffe1b7;font-size:8px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
 #cosmicLiveBubble[hidden]{display:none!important}
+
+.cosmic-chat-head-actions #cosmicBrainToggle{border-color:rgba(143,224,190,.28);background:rgba(95,194,145,.09);color:#b7f1d2}
+.cosmic-chat-head-actions #cosmicBrainToggle.is-off{border-color:rgba(240,173,154,.28);background:rgba(200,100,100,.08);color:#f3b8ae}
+body:has(#cosmicChatMode:not([hidden])) .cosmic-live-dock{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+@media(min-width:851px){body:has(#cosmicChatMode:not([hidden])) .cosmic-live-dock{bottom:24px}}
