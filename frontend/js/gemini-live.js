@@ -24,6 +24,7 @@
       orb.title = state.desired ? "Stop live conversation" : "Start live conversation";
     }
     if (shareButton) shareButton.disabled = !state.connected && !state.sharing;
+    if (bubbleButton) bubbleButton.hidden = !state.nativeMode;
   }
 
   function mount() {
@@ -131,6 +132,12 @@
   }
 
   function send(payload) {
+    if (state.nativeMode && payload?.toolResponse?.functionResponses) {
+      const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+      plugin?.sendLiveToolResponse?.({responses:JSON.stringify(payload.toolResponse.functionResponses)})
+        .catch(error => setStatus("DEVICE TOOL RESPONSE FAILED · "+error.message, "error"));
+      return true;
+    }
     if (state.socket?.readyState === WebSocket.OPEN) {
       state.socket.send(JSON.stringify(payload));
       return true;
