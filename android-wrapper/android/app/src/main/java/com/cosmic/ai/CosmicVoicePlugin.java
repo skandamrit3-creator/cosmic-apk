@@ -9,7 +9,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Build;
-import android.os.Build;
 import android.os.Environment;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
@@ -189,45 +188,6 @@ public class CosmicVoicePlugin extends Plugin {
         if (getPermissionState("microphone") == PermissionState.GRANTED)
             startRecognition(call);
         else call.reject("Microphone permission denied");
-    }
-
-    @PluginMethod
-    public void startLiveService(PluginCall call) {
-        if (getPermissionState("microphone") != PermissionState.GRANTED) {
-            requestPermissionForAlias("microphone", call, "liveMicPermission");
-            return;
-        }
-        startLiveServiceNow(call);
-    }
-
-    @PermissionCallback
-    private void liveMicPermission(PluginCall call) {
-        if (getPermissionState("microphone") == PermissionState.GRANTED) startLiveServiceNow(call);
-        else call.reject("Microphone permission is required for background Live voice.");
-    }
-
-    private void startLiveServiceNow(PluginCall call) {
-        try {
-            Intent intent = new Intent(getContext(), CosmicLiveVoiceService.class);
-            intent.setAction(CosmicLiveVoiceService.ACTION_START);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
-            else getContext().startService(intent);
-            call.resolve(new JSObject().put("success", true));
-        } catch (Exception error) {
-            call.reject("Could not start the microphone foreground service: " + error.getMessage());
-        }
-    }
-
-    @PluginMethod
-    public void stopLiveService(PluginCall call) {
-        try {
-            Intent intent = new Intent(getContext(), CosmicLiveVoiceService.class);
-            intent.setAction(CosmicLiveVoiceService.ACTION_STOP);
-            getContext().startService(intent);
-            call.resolve(new JSObject().put("success", true));
-        } catch (Exception error) {
-            call.reject("Could not stop the microphone foreground service: " + error.getMessage());
-        }
     }
 
     private void startRecognition(PluginCall call) {
