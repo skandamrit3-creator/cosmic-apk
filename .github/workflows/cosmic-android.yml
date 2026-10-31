@@ -201,10 +201,10 @@ jobs:
 
       - name: Prepare release APK and update metadata
         env:
-          VERSION_CODE: '11'
+          VERSION_CODE: '12'
           VERSION_NAME: '2.8.0'
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: v2.8.0-hotfix1
+          RELEASE_TAG: v2.8.0-hotfix2
         run: |
           mkdir -p release
           cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.8.0.apk
@@ -245,7 +245,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: COSMIC 2.8.0
-          tag_name: v2.8.0-hotfix1
+          tag_name: v2.8.0-hotfix2
           target_commitish: main
           generate_release_notes: true
           files: |
