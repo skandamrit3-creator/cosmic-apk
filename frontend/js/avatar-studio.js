@@ -21,26 +21,60 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   function mesh(geometry,material,x,y,z,sx=1,sy=1,sz=1){const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.scale.set(sx,sy,sz);m.castShadow=true;m.receiveShadow=true;return m;}
   function previewCharacter(style){
     const g=new THREE.Group(),anime=style==="anime";
-    const skin=new THREE.MeshPhysicalMaterial({color:anime?0xe8cabc:0xb98065,roughness:.7,clearcoat:.08});
-    const hair=new THREE.MeshStandardMaterial({color:anime?0x322744:0x282b39,roughness:.82});
-    const clothes=new THREE.MeshStandardMaterial({color:anime?0x657aa5:0x426c7d,roughness:.66,metalness:.06});
-    const dark=new THREE.MeshStandardMaterial({color:anime?0x252037:0x18232d,roughness:.35});
-    const lip=new THREE.MeshStandardMaterial({color:0x874e5c,roughness:.6});
-    g.add(mesh(new THREE.CapsuleGeometry(.44,.64,6,24),clothes,0,1.02,0));
-    g.add(mesh(new THREE.CapsuleGeometry(.12,.2,5,16),skin,0,1.68,0));
-    g.add(mesh(new THREE.SphereGeometry(1,40,32),skin,0,2.08,0,.4,.51,.35));
-    g.add(mesh(new THREE.SphereGeometry(1,32,24),hair,0,2.42,-.035,.43,.28,.37));
-    g.add(mesh(new THREE.SphereGeometry(1,24,16),hair,-.29,2.23,.13,.1,.2,.17));
-    g.add(mesh(new THREE.SphereGeometry(1,24,16),hair,.29,2.23,.13,.1,.2,.17));
-    const eye=anime?.072:.052;
-    g.add(mesh(new THREE.SphereGeometry(1,20,16),dark,-.145,2.12,.322,eye,anime?.1:.05,.022));
-    g.add(mesh(new THREE.SphereGeometry(1,20,16),dark,.145,2.12,.322,eye,anime?.1:.05,.022));
-    g.add(mesh(new THREE.SphereGeometry(1,16,12),skin,-.43,2.09,0,.065,.095,.06));
-    g.add(mesh(new THREE.SphereGeometry(1,16,12),skin,.43,2.09,0,.065,.095,.06));
-    g.add(mesh(new THREE.SphereGeometry(1,20,12),lip,0,1.94,.33,.09,.025,.018));
-    g.add(mesh(new THREE.CylinderGeometry(.58,.68,.1,64),new THREE.MeshStandardMaterial({color:0x26394c,metalness:.35,roughness:.5}),0,.12,0));
-    const halo=mesh(new THREE.TorusGeometry(.8,.012,10,100),new THREE.MeshBasicMaterial({color:anime?0xb7a4ef:0x8edcf1,transparent:true,opacity:.6}),0,.2,0);halo.rotation.x=Math.PI/2;g.add(halo);
-    g.userData.preview=true;g.userData.style=style;return g;
+    const skin=new THREE.MeshPhysicalMaterial({color:0xf0d4c7,roughness:.62,clearcoat:.12});
+    const hair=new THREE.MeshStandardMaterial({color:0x30283f,roughness:.78});
+    const hairLight=new THREE.MeshStandardMaterial({color:0x514361,roughness:.72});
+    const outfit=new THREE.MeshStandardMaterial({color:0x596b91,roughness:.64,metalness:.04});
+    const trim=new THREE.MeshStandardMaterial({color:0xc2a9df,metalness:.32,roughness:.4});
+    const eyeWhite=new THREE.MeshStandardMaterial({color:0xfff8f3,roughness:.28});
+    const iris=new THREE.MeshStandardMaterial({color:0x725d9c,roughness:.25,metalness:.05});
+    const pupil=new THREE.MeshStandardMaterial({color:0x211d2d,roughness:.2});
+    const lip=new THREE.MeshStandardMaterial({color:0xa85e70,roughness:.55});
+    const sphere=(x,y,z,sx,sy,sz,mat)=>mesh(new THREE.SphereGeometry(1,32,24),mat,x,y,z,sx,sy,sz);
+    // Silhouette, tailored jacket and neck
+    g.add(mesh(new THREE.CapsuleGeometry(.39,.62,8,28),outfit,0,1.05,0));
+    g.add(mesh(new THREE.CapsuleGeometry(.115,.19,6,18),skin,0,1.65,0));
+    g.add(mesh(new THREE.CapsuleGeometry(.40,.72,8,28),hair,0,1.99,-.17,.98,1.05,.72));
+    // Face and layered hair cap
+    sphere(0,2.08,.015,.385,.49,.33,skin);
+    sphere(0,2.42,-.075,.425,.27,.37,hair);
+    sphere(-.32,2.15,-.015,.105,.25,.19,hair);
+    sphere(.32,2.15,-.015,.105,.25,.19,hair);
+    // Fringes frame the forehead rather than covering the eyes
+    for(let i=0;i<5;i++){
+      const x=-.27+i*.135;
+      const bang=sphere(x,2.34,.245,.105,.23,.105,i%2?hair:hairLight);
+      bang.rotation.z=(i-2)*-.11;
+    }
+    // Eyes with iris highlights, brows and a small nose
+    for(const side of [-1,1]){
+      sphere(side*.145,2.12,.309,.082,.105,.035,eyeWhite);
+      sphere(side*.145,2.115,.343,.052,.073,.018,iris);
+      sphere(side*.145,2.112,.359,.026,.046,.012,pupil);
+      sphere(side*.16,2.255,.305,.09,.018,.025,hair);
+      sphere(side*.17,2.145,.371,.014,.018,.008,eyeWhite);
+      sphere(side*.405,2.075,.005,.055,.09,.055,skin);
+    }
+    sphere(0,2.005,.337,.027,.04,.025,skin);
+    const mouth=sphere(0,1.91,.326,.075,.018,.014,lip);
+    // Shoulders, articulated upper arms and hands
+    const arm=(side)=>{
+      const pivot=new THREE.Group();pivot.position.set(side*.39,1.42,0);
+      const upper=mesh(new THREE.CapsuleGeometry(.105,.35,6,16),outfit,side*.045,-.22,0);
+      upper.rotation.z=side*-.12;pivot.add(upper);
+      const fore=mesh(new THREE.CapsuleGeometry(.082,.31,6,16),skin,side*.09,-.52,.035);
+      fore.rotation.z=side*-.16;pivot.add(fore);
+      sphere(side*.13,1,0,.09,.095,.085,skin);
+      const hand=sphere(side*.13,-.72,.045,.075,.105,.045,skin);pivot.add(hand);
+      g.add(pivot);return pivot;
+    };
+    const leftArm=arm(-1),rightArm=arm(1);
+    // Soft collar, jacket seam and understated waist detail
+    const collar=mesh(new THREE.TorusGeometry(.19,.026,10,48),trim,0,1.52,.04);collar.rotation.x=Math.PI/2;g.add(collar);
+    const waist=mesh(new THREE.TorusGeometry(.31,.012,8,64),trim,0,.73,0);waist.rotation.x=Math.PI/2;g.add(waist);
+    const halo=mesh(new THREE.TorusGeometry(.82,.009,8,100),new THREE.MeshBasicMaterial({color:0xb8a6df,transparent:true,opacity:.32}),0,.15,0);halo.rotation.x=Math.PI/2;g.add(halo);
+    g.userData.preview=true;g.userData.style=style;g.userData.leftArm=leftArm;g.userData.rightArm=rightArm;g.userData.mouth=mouth;
+    return g;
   }
   function initScene(canvas){
     if(renderer)return;
@@ -58,7 +92,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview)currentRoot.rotation.y=Math.sin(state.frame*.22)*.06;if(currentVrm){
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame;currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=-.08+idle+talk*.35;l.rotation.x=Math.sin(t*.9)*.025;}if(r){r.rotation.z=.08-idle-talk*.55;r.rotation.x=Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;if(mouth)mouth.scale.y=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;}if(currentVrm){
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
