@@ -24,6 +24,7 @@
       orb.title = state.desired ? "Stop live conversation" : "Start live conversation";
     }
     if (shareButton) shareButton.disabled = !state.connected && !state.sharing;
+    if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode;
   }
 
@@ -32,7 +33,7 @@
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button">FLOATING BUBBLE</button>';
+    root.innerHTML = '<div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
@@ -338,7 +339,7 @@
     if(type==="state") {
       if(message==="LIVE · STOPPED") {
         state.desired=false;state.connected=false;state.connecting=false;state.sharing=false;
-        state.nativeMode=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");
+        state.nativeMode=false;state.bubbleActive=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");
         setStatus("LIVE VOICE OFF","idle");
       } else if(/RECONNECTING/i.test(message)) {
         state.connected=false;state.desired=true;setStatus(message,"connecting");
@@ -360,10 +361,10 @@
       try { const payload=JSON.parse(message); if(payload.functionCalls?.length)handleToolCalls(payload.functionCalls); }
       catch(error) { setStatus("DEVICE TOOL ERROR · "+error.message,"error"); }
     } else if(type==="bubble_permission_required") {
-      if(bubbleButton)bubbleButton.hidden=false;
+      state.bubbleActive=false;if(bubbleButton)bubbleButton.hidden=false;
       setStatus("ALLOW DISPLAY OVER OTHER APPS FOR THE FLOATING BUBBLE","connecting");
     } else if(type==="bubble") {
-      if(bubbleButton)bubbleButton.hidden=true;
+      state.bubbleActive=true;if(bubbleButton)bubbleButton.hidden=true;
       setStatus("LIVE · FLOATING BUBBLE ACTIVE","live");
     }
   }
@@ -516,6 +517,16 @@
 
   async function startScreenShare() {
     if (!state.connected) { setStatus("START LIVE VOICE BEFORE SHARING", "paused"); return; }
+    if (state.nativeMode) {
+      const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
+      try {
+        await nativeVoice.startScreenShare();
+        state.nativeScreen = true; state.sharing = true;
+        shareButton.textContent = "STOP SHARING";
+        setStatus("ANDROID SCREEN SHARING · 1 FPS", "live");
+      } catch (error) { setStatus("ANDROID SCREEN SHARE FAILED · " + (error.message || "permission denied"), "error"); }
+      return;
+    }
     const nativeScreen = window.Capacitor?.Plugins?.CosmicScreen;
     if (typeof nativeScreen?.startScreenShare === "function") {
       try {
@@ -566,9 +577,13 @@
   function stopScreenShare() {
     if (state.nativeScreen) {
       state.nativeScreen = false;
-      const plugin = window.Capacitor?.Plugins?.CosmicScreen;
-      try { plugin?.stopScreenShare?.(); } catch (_) {}
-      if (state.nativeScreenHandle) { state.nativeScreenHandle.remove(); state.nativeScreenHandle = null; }
+      if (state.nativeMode) {
+        try { window.Capacitor?.Plugins?.CosmicVoice?.stopScreenShare?.(); } catch (_) {}
+      } else {
+        const plugin = window.Capacitor?.Plugins?.CosmicScreen;
+        try { plugin?.stopScreenShare?.(); } catch (_) {}
+        if (state.nativeScreenHandle) { state.nativeScreenHandle.remove(); state.nativeScreenHandle = null; }
+      }
     }
     if (state.screenTimer) clearInterval(state.screenTimer);
     state.screenTimer = 0;
@@ -598,6 +613,7 @@
   window.addEventListener("pagehide", () => {
     if (!state.desired) cleanupAudio();
   });
+  bindNativeEvents();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",mount,{once:true});
   else mount();
   window.COSMIC_LIVE = {
