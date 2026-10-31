@@ -552,9 +552,11 @@
 (() => {
   const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform()) || /^(capacitor|ionic):\/\//i.test(window.location.protocol);
   const configured = window.localStorage.getItem("COSMIC_API_BASE");
-  window.COSMIC_API_BASE = configured || (isNativeApp
+  // The Capacitor app and its Python backend run on the same Android phone.
+  // Never let a stale browser/dev-server URL override the native loopback URL.
+  window.COSMIC_API_BASE = isNativeApp
     ? "http://127.0.0.1:8059"
-    : window.location.origin);
+    : (configured || window.location.origin);
 })();
 </script>
 <script id="COSMIC_BACKEND_SETTINGS">
