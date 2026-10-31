@@ -11,7 +11,11 @@
   };
   const parse = (raw) => {
     const text = String(raw || "").trim();
-    let m = text.match(/^(?:cosmic[, ]*)?(?:please )?(?:open|launch|start) (?:the )?(.+?)(?: app)?[.!]?$/i);
+    let m = text.match(/^(?:cosmic[, ]*)?(?:please )?download (https?:\/\/\S+)(?:\s+as\s+(.+))?[.!]?$/i);
+    if (m) return {type:"download", url:m[1].replace(/[.!?]+$/,""), fileName:(m[2]||"").trim()};
+    m = text.match(/^(?:cosmic[, ]*)?(?:please )?(?:open|visit) (https?:\/\/\S+)[.!]?$/i);
+    if (m) return {type:"url", url:m[1].replace(/[.!?]+$/,"")};
+    m = text.match(/^(?:cosmic[, ]*)?(?:please )?(?:open|launch|start) (?:the )?(.+?)(?: app)?[.!]?$/i);
     if (m) return {type:"launch", name:m[1].replace(/\s+app$/i,"").trim()};
     if (/^(?:cosmic[, ]*)?(?:go )?back[.!]?$/i.test(text)) return {type:"back"};
     if (/^(?:cosmic[, ]*)?(?:open|show) (?:phone )?settings[.!]?$/i.test(text)) return {type:"launch",name:"settings"};
@@ -30,6 +34,14 @@
         if (typeof plugin.launchApp !== "function") throw new Error("App-launch permission bridge unavailable");
         await plugin.launchApp({name:intent.name});
         status("Opened " + intent.name);
+      } else if (intent.type === "url") {
+        if (typeof plugin.openUrl !== "function") throw new Error("Browser bridge unavailable in this APK");
+        await plugin.openUrl({url:intent.url});
+        status("Opened link in Android: " + intent.url);
+      } else if (intent.type === "download") {
+        if (typeof plugin.downloadFile !== "function") throw new Error("Download bridge unavailable in this APK");
+        const result = await plugin.downloadFile({url:intent.url,fileName:intent.fileName});
+        status("Download started: " + (result.fileName || intent.url));
       } else if (intent.type === "back") {
         if (typeof plugin.systemAction !== "function") throw new Error("Navigation bridge unavailable");
         await plugin.systemAction({action:"back"});
@@ -46,7 +58,7 @@
     const panel = document.createElement("section");
     panel.id = "cosmicBrainPanel";
     panel.className = "cosmic-brain-panel";
-    panel.innerHTML = '<div class="brain-head"><div><small>PERSONAL DEVICE CONTROLLER</small><h2>◈ COSMIC BRAIN</h2></div><label class="brain-toggle"><input id="brainEnabled" type="checkbox" checked><span>ENABLED</span></label></div><p>Voice and text commands for Android actions. Each action uses the permissions Android grants to COSMIC.</p><div class="brain-actions"><button type="button" data-brain-action="accessibility">ACCESSIBILITY PERMISSION</button><button type="button" data-brain-action="app-settings">APP PERMISSIONS</button></div><div class="brain-status"><span>LAST ACTION</span><strong id="brainStatus">Ready</strong></div><small class="brain-note">Opening apps and in-app navigation are supported by the current native bridge. Screen-wide automation, notification access, calls and messages need additional native services and your explicit Android approval.</small>';
+    panel.innerHTML = '<div class="brain-head"><div><small>PERSONAL DEVICE CONTROLLER</small><h2>◈ COSMIC BRAIN</h2></div><label class="brain-toggle"><input id="brainEnabled" type="checkbox" checked><span>ENABLED</span></label></div><p>Voice and text commands for Android actions. Each action uses the permissions Android grants to COSMIC.</p><div class="brain-actions"><button type="button" data-brain-action="accessibility">ACCESSIBILITY PERMISSION</button><button type="button" data-brain-action="app-settings">APP PERMISSIONS</button></div><div class="brain-status"><span>LAST ACTION</span><strong id="brainStatus">Ready</strong></div><small class="brain-note">Open installed apps, open web links and download direct HTTP/HTTPS files are supported. Screen-wide control, notification access, calls and messages need additional Android services and your explicit approval.</small>';
     const stage = document.querySelector(".core-stage");
     const command = document.querySelector(".command-zone");
     if (stage && command) stage.insertBefore(panel, command);
