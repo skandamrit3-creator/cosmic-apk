@@ -43,7 +43,11 @@
  async function install(){
   const {release,manifest}=lastManifest||await latestRelease();
   if(!("caches" in window))throw new Error("Secure local feature cache is unavailable.");
-  if(!navigator.serviceWorker?.controller)await registerWorker();
+  if(!navigator.serviceWorker?.controller){
+   await registerWorker();
+   await navigator.serviceWorker.ready;
+   if(!navigator.serviceWorker.controller)throw new Error("Close and reopen COSMIC once so its feature service worker can activate, then retry.");
+  }
   const assets=new Map((release.assets||[]).map(x=>[x.name,x]));
   const cache=await caches.open(CACHE);
   const prepared=[];
