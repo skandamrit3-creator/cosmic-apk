@@ -207,6 +207,35 @@ def ai_models():
 
 
 
+@app.post("/api/ai/test-provider")
+def ai_test_provider():
+    """Perform a real, minimal chat completion with one selected provider."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Provider tests are local-app only."}), 403
+    data = request.get_json(silent=True) or {}
+    provider = str(data.get("provider", "")).strip().lower()
+    allowed = {"gemini", "openai", "groq", "mistral", "openrouter"}
+    if provider not in allowed:
+        return jsonify({"success": False, "error": "Choose a supported chat provider."}), 400
+    from backend.ai.gateway.gateway import AIGateway, load_saved_provider_keys, CONFIG
+    load_saved_provider_keys()
+    key = os.getenv(CONFIG[provider]["key"], "").strip()
+    if not key:
+        return jsonify({"success": False, "provider": provider, "tested": False,
+                        "status": "not_configured", "error": "API key is not configured."}), 400
+    model = str(data.get("model", "auto")).strip() or "auto"
+    result = AIGateway().chat(
+        "Reply with exactly: COSMIC CONNECTION OK",
+        history=[], provider=provider, model=model, mode="manual"
+    )
+    if result.get("success") and result.get("verified"):
+        return jsonify({"success": True, "provider": provider,
+                        "model": result.get("model"), "tested": True,
+                        "status": "working", "reply": result.get("message", "")})
+    return jsonify({"success": False, "provider": provider, "tested": True,
+                    "status": "api_error", "error": result.get("error", "Provider test failed.")}), 502
+
+
 @app.get("/api/ai/provider-status")
 def ai_provider_status():
     """Live API reachability check; never returns API keys."""
