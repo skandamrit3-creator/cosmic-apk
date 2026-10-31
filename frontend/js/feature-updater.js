@@ -19,10 +19,12 @@
   if(!release)throw new Error("No published COSMIC feature pack is available yet.");
   const asset=(release.assets||[]).find(x=>x.name==="cosmic-feature-manifest.json");
   if(!asset)throw new Error("Latest feature release has no manifest.");
-  const r=await fetch(asset.browser_download_url,{cache:"no-store"});
+  const manifestUrl=new URL(asset.browser_download_url);
+  if(manifestUrl.protocol!=="https:"||manifestUrl.hostname!=="github.com"||!manifestUrl.pathname.startsWith("/"+OWNER+"/"+REPO+"/releases/download/"))throw new Error("Blocked untrusted feature manifest URL.");
+  const r=await fetch(manifestUrl.href,{cache:"no-store"});
   if(!r.ok)throw new Error("Feature manifest download HTTP "+r.status);
   const manifest=await r.json();
-  if(manifest.schema!==1||!Array.isArray(manifest.files)||!String(manifest.version||"").startsWith("features-"))throw new Error("Unsupported feature manifest.");
+  if(manifest.schema!==1||!Array.isArray(manifest.files)||manifest.version!==release.tag_name||!String(manifest.version||"").startsWith("features-"))throw new Error("Unsupported or mismatched feature manifest.");
   if(Number(manifest.min_version_code||0)>MIN_APP_VERSION)throw new Error("This feature pack requires a newer Android app version.");
   lastManifest={release,manifest};
   return {release,manifest};
