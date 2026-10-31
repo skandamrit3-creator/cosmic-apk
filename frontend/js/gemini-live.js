@@ -444,9 +444,14 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "true");
       setStatus("STARTING ANDROID GEMINI LIVE…", "connecting");
       try {
-        await nativeVoice.startLive();
+        const started = await nativeVoice.startLive();
         state.connecting = false;
-        setStatus("WAITING FOR GEMINI LIVE…", "connecting");
+        if (started?.alreadyRunning) {
+          state.connected = true;
+          setStatus("GEMINI LIVE · SESSION ALREADY ACTIVE", "live");
+        } else {
+          setStatus("WAITING FOR GEMINI LIVE…", "connecting");
+        }
       } catch (error) {
         state.desired = false; state.connecting = false;
         localStorage.setItem("COSMIC_LIVE_AUTO", "false");
