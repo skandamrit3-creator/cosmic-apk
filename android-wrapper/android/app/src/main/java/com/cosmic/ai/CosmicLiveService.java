@@ -85,6 +85,7 @@ public class CosmicLiveService extends Service {
     private String resumeHandle = "";
     private volatile String liveModel = "gemini-3.8-live";
     private volatile String liveVoice = "Kore";
+    private volatile String liveVoice = "Kore";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -137,14 +138,24 @@ public class CosmicLiveService extends Service {
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_START.equals(intent.getAction())) {
             String requestedModel = intent.getStringExtra("live_model");
+            String requestedVoice = intent.getStringExtra("live_voice");
+            boolean changed = false;
             if ("gemini-3.8-live".equals(requestedModel) ||
                     "gemini-3.8-live-extended-thinking".equals(requestedModel)) {
-                boolean changed = !requestedModel.equals(liveModel);
+                changed |= !requestedModel.equals(liveModel);
                 liveModel = requestedModel;
-                getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
-                        .putString("live_model", liveModel).apply();
-                if (changed && socket != null) socket.close(1012, "COSMIC Live model changed");
             }
+            if (requestedVoice != null && ("Kore".equals(requestedVoice) ||
+                    "Aoede".equals(requestedVoice) || "Puck".equals(requestedVoice) ||
+                    "Charon".equals(requestedVoice) || "Fenrir".equals(requestedVoice) ||
+                    "Leda".equals(requestedVoice) || "Orus".equals(requestedVoice) ||
+                    "Zephyr".equals(requestedVoice))) {
+                changed |= !requestedVoice.equals(liveVoice);
+                liveVoice = requestedVoice;
+            }
+            getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
+                    .putString("live_model", liveModel).putString("live_voice", liveVoice).apply();
+            if (changed && socket != null) socket.close(1012, "COSMIC Live voice settings changed");
             String requestedVoice = intent.getStringExtra("live_voice");
             if (requestedVoice != null && java.util.Arrays.asList(
                     "Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr"
@@ -185,6 +196,7 @@ public class CosmicLiveService extends Service {
         try {
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
+            liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
             liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
             showFloatingBubble();
             prepareAudio();
