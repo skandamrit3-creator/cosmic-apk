@@ -26,12 +26,16 @@ jobs:
           set -euo pipefail
           find frontend/js -maxdepth 1 -type f -name '*.js' ! -name 'avatar-studio.js' -print0 | xargs -0 -n1 node --check
           node --check --input-type=module < frontend/js/avatar-studio.js
+          node --check frontend/cosmic-feature-sw.js
 
       - name: Validate Python syntax
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m compileall -q backend
+      - run: |
+          python -m compileall -q backend
+          python -m py_compile tools/build_feature_pack.py
+          COSMIC_FEATURE_OUT="$RUNNER_TEMP/feature-pack-smoke-test" python tools/build_feature_pack.py
 
       - name: Set up Java and Android SDK
         uses: actions/setup-java@v4
