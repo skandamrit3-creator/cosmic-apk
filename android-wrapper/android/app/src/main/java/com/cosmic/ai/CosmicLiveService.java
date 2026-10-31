@@ -53,6 +53,7 @@ public class CosmicLiveService extends Service {
     private AudioTrack player;
     private Thread sessionThread;
     private String apiKey;
+    private String resumeHandle = "";
 
     public static boolean sendText(String text) {
         CosmicLiveService service = instance;
@@ -99,6 +100,7 @@ public class CosmicLiveService extends Service {
                 stopLive();
                 return;
             }
+            resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             prepareAudio();
             client = new OkHttpClient.Builder()
                     .pingInterval(20, TimeUnit.SECONDS)
@@ -118,6 +120,10 @@ public class CosmicLiveService extends Service {
                             JSONObject config = new JSONObject();
                             config.put("model", "models/gemini-3.8-live");
                             config.put("responseModalities", new JSONArray().put("AUDIO"));
+                            config.put("contextWindowCompression", new JSONObject().put("slidingWindow", new JSONObject()));
+                            JSONObject resume = new JSONObject();
+                            if (!resumeHandle.isEmpty()) resume.put("handle", resumeHandle);
+                            config.put("sessionResumption", resume);
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
                                             "You are COSMIC, a fast, warm, highly capable personal assistant. Speak naturally and concisely. You can answer questions and help plan actions. Never claim to have performed a phone action unless a connected tool confirms it. The user can interrupt you at any time."))));
@@ -138,6 +144,14 @@ public class CosmicLiveService extends Service {
                                 configured.countDown();
                                 emit("state", "LIVE · GEMINI CONNECTED");
                                 return;
+                            }
+                            JSONObject resumeUpdate = root.optJSONObject("sessionResumptionUpdate");
+                            if (resumeUpdate != null && resumeUpdate.optBoolean("resumable", false)) {
+                                String handle = resumeUpdate.optString("newHandle", "");
+                                if (!handle.isEmpty()) {
+                                    resumeHandle = handle;
+                                    getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().putString("resume_handle", handle).apply();
+                                }
                             }
                             JSONObject server = root.optJSONObject("serverContent");
                             if (server != null) {
@@ -164,7 +178,7 @@ public class CosmicLiveService extends Service {
                                         if (part != null && part.has("text")) emit("transcript", part.optString("text"));
                                     }
                                 }
-                                if (server.optBoolean("turnComplete", false)) emit("turn_complete", "");
+                                if (server.optBoolean("turnComplete", false)) { emit("audio_end", ""); emit("turn_complete", ""); }
                             }
                             if (root.has("error")) emit("error", root.optJSONObject("error").toString());
                         } catch (Exception e) {
@@ -266,6 +280,8 @@ public class CosmicLiveService extends Service {
         socket = null;
         if (ws != null) ws.close(1000, "user stopped");
         releaseAudio();
+        getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().remove("resume_handle").apply();
+        emit("audio_end", "");
         emit("state", "LIVE · STOPPED");
         stopForeground(STOP_FOREGROUND_REMOVE);
         stopSelf();
