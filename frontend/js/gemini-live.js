@@ -251,6 +251,7 @@
       try {
         let result;
         const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+        if (call.name !== "switch_mode" && window.COSMIC_BRAIN?.state?.enabled === false) throw new Error("COSMIC Brain is paused. Turn BRAIN ON to allow device actions.");
         if (call.name === "switch_mode") {
           const mode = String(args.mode || "").toLowerCase();
           if (!["reactor","chat","avatar"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
