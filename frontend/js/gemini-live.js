@@ -170,7 +170,13 @@
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
           inputAudioTranscription:{},
-          outputAudioTranscription:{}
+          outputAudioTranscription:{},
+          tools:[{functionDeclarations:[
+            {name:"open_app",description:"Open an installed Android application by its visible name.",parameters:{type:"OBJECT",properties:{name:{type:"STRING",description:"Visible app name, such as YouTube or Chrome"}},required:["name"]}},
+            {name:"open_url",description:"Open an HTTP or HTTPS website or deep link in the available browser.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Complete http or https URL"}},required:["url"]}},
+            {name:"download_file",description:"Download a file from a direct HTTP or HTTPS URL using the device download manager.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Direct HTTP or HTTPS file URL"},fileName:{type:"STRING",description:"Optional filename"}},required:["url"]}},
+            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat or Avatar mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar"]}},required:["mode"]}}
+          ]}]
         };
         socket.send(JSON.stringify({setup:{
           model:MODEL,
@@ -180,7 +186,8 @@
           sessionResumption:config.sessionResumption,
           contextWindowCompression:config.contextWindowCompression,
           inputAudioTranscription:config.inputAudioTranscription,
-          outputAudioTranscription:config.outputAudioTranscription
+          outputAudioTranscription:config.outputAudioTranscription,
+          tools:config.tools
         }}));
       };
       socket.onerror = () => { clearTimeout(timeout); reject(new Error("Gemini Live WebSocket connection failed.")); };
@@ -198,6 +205,7 @@
         if (message.sessionResumptionUpdate?.resumable && message.sessionResumptionUpdate.newHandle) {
           state.resumeHandle = message.sessionResumptionUpdate.newHandle;
         }
+        if (message.toolCall?.functionCalls?.length) handleToolCalls(message.toolCall.functionCalls);
         const content = message.serverContent;
         if (content) {
           if (content.interrupted) stopPlayback();
@@ -218,6 +226,48 @@
         if (state.desired && generation === state.generation) scheduleReconnect(generation);
       };
     });
+  }
+
+  async function handleToolCalls(calls) {
+    const responses = [];
+    for (const call of calls) {
+      const args = call.args || {};
+      try {
+        let result;
+        const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+        if (call.name === "switch_mode") {
+          const mode = String(args.mode || "").toLowerCase();
+          if (!["reactor","chat","avatar"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
+          const tab = document.querySelector('[data-cosmic-mode="' + mode + '"]');
+          if (!tab) throw new Error("Mode control is unavailable.");
+          tab.click(); result = {success:true,mode};
+        } else if (call.name === "open_app") {
+          const name = String(args.name || "").trim().slice(0,80);
+          if (!name || typeof plugin?.launchApp !== "function") throw new Error("Android app launching is unavailable in this client.");
+          await plugin.launchApp({name}); result = {success:true,opened:name};
+        } else if (call.name === "open_url") {
+          const url = new URL(String(args.url || ""));
+          if (!["http:","https:"].includes(url.protocol)) throw new Error("Only HTTP and HTTPS links are allowed.");
+          if (typeof plugin?.openUrl === "function") await plugin.openUrl({url:url.href});
+          else window.open(url.href,"_blank","noopener");
+          result = {success:true,url:url.href};
+        } else if (call.name === "download_file") {
+          const url = new URL(String(args.url || ""));
+          if (!["http:","https:"].includes(url.protocol)) throw new Error("Only HTTP and HTTPS downloads are allowed.");
+          if (typeof plugin?.downloadFile !== "function") throw new Error("Native downloads are unavailable in this client.");
+          const fileName = String(args.fileName || "").slice(0,120);
+          result = await plugin.downloadFile({url:url.href,fileName});
+        } else {
+          throw new Error("Unknown COSMIC action.");
+        }
+        responses.push({name:call.name,id:call.id,response:{result}});
+        transcript("Action completed: " + call.name, "assistant");
+      } catch (error) {
+        responses.push({name:call.name,id:call.id,response:{error:String(error.message || error)}});
+        transcript("Action needs attention: " + String(error.message || error), "assistant");
+      }
+    }
+    send({toolResponse:{functionResponses:responses}});
   }
 
   function startAudioPump() {
