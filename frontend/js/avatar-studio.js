@@ -77,6 +77,9 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       g.add(pivot);return pivot;
     };
     const leftArm=arm(-1),rightArm=arm(1);
+    const black=new THREE.MeshStandardMaterial({color:0x24232b,roughness:.5,metalness:.08});
+    const burgundy=new THREE.MeshStandardMaterial({color:0x8b344b,roughness:.52});
+    const gold=new THREE.MeshStandardMaterial({color:0xd8b56c,metalness:.62,roughness:.28});
     // Full-body silhouette: tailored waist, layered skirt, legs and boots.
     g.add(mesh(new THREE.CylinderGeometry(.30,.43,.42,40),outfit,0,.62,0));
     g.add(mesh(new THREE.CapsuleGeometry(.105,.54,8,20),black,-.145,.22,.015));
@@ -92,9 +95,6 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       sideLock.rotation.z=side*.16;g.add(sideLock);
     }
     // MYRAA signature black bodice, burgundy shoulder accents and gold ornaments.
-    const black=new THREE.MeshStandardMaterial({color:0x24232b,roughness:.5,metalness:.08});
-    const burgundy=new THREE.MeshStandardMaterial({color:0x8b344b,roughness:.52});
-    const gold=new THREE.MeshStandardMaterial({color:0xd8b56c,metalness:.62,roughness:.28});
     g.add(mesh(new THREE.CapsuleGeometry(.205,.46,6,20),black,0,1.05,.205,.94,1,.45));
     for(const side of [-1,1]){
       const accent=mesh(new THREE.SphereGeometry(1,24,16),burgundy,side*.36,1.43,.015,.17,.105,.21);accent.rotation.z=side*-.2;g.add(accent);
