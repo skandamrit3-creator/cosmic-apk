@@ -83,6 +83,7 @@ public class CosmicLiveService extends Service {
     private AutomaticGainControl gainControl;
     private Thread sessionThread;
     private String resumeHandle = "";
+    private volatile String liveModel = "gemini-3.8-live";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -133,6 +134,17 @@ public class CosmicLiveService extends Service {
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && ACTION_START.equals(intent.getAction())) {
+            String requestedModel = intent.getStringExtra("live_model");
+            if ("gemini-3.8-live".equals(requestedModel) ||
+                    "gemini-3.8-live-extended-thinking".equals(requestedModel)) {
+                boolean changed = !requestedModel.equals(liveModel);
+                liveModel = requestedModel;
+                getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
+                        .putString("live_model", liveModel).apply();
+                if (changed && socket != null) socket.close(1012, "COSMIC Live model changed");
+            }
+        }
         if (intent != null && ACTION_SCREEN_STOP.equals(intent.getAction())) {
             stopScreenCapture();
             return START_STICKY;
@@ -161,6 +173,7 @@ public class CosmicLiveService extends Service {
     private void runSession() {
         try {
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
+            liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
             showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
@@ -180,7 +193,7 @@ public class CosmicLiveService extends Service {
                         try {
                             JSONObject setup = new JSONObject();
                             JSONObject config = new JSONObject();
-                            config.put("model", "models/gemini-3.8-live");
+                            config.put("model", "models/" + liveModel);
                             config.put("responseModalities", new JSONArray().put("AUDIO"));
                             config.put("inputAudioTranscription", new JSONObject());
                             config.put("outputAudioTranscription", new JSONObject());
@@ -552,7 +565,7 @@ public class CosmicLiveService extends Service {
                 connection.setDoOutput(true);
                 connection.setRequestProperty("Content-Type", "application/json");
                 try (OutputStream output = connection.getOutputStream()) {
-                    output.write("{}".getBytes(StandardCharsets.UTF_8));
+                    output.write(new JSONObject().put("model", liveModel).toString().getBytes(StandardCharsets.UTF_8));
                 }
                 int code = connection.getResponseCode();
                 InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
