@@ -38,6 +38,8 @@
       if(message)appendTranscript(message,"assistant");
     } else if(type==="user_transcript") {
       if(message)appendTranscript(message,"user");
+    } else if(type==="audio_level") {
+      window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
     } else if(type==="audio_start") {
       window.COSMIC_AVATAR_TALK?.(true);
       document.documentElement.classList.add("cosmic-live-speaking");
@@ -74,6 +76,7 @@
   button.addEventListener("click",()=>state.active||state.starting?stop():start());
   window.COSMIC_LIVE={
     start,stop,
+    toggle(){return state.active||state.starting?stop():start();},
     get active(){return state.active||state.starting;},
     async sendText(text){const plugin=native();if(!plugin?.sendLiveText)throw new Error("Native Gemini Live is unavailable.");return plugin.sendLiveText({text:String(text||"")});},
     onEvent
