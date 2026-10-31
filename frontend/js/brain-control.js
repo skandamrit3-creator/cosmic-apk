@@ -53,6 +53,33 @@
     } finally { state.busy = false; }
     return true;
   }
+  async function handleTool(name,args) {
+    const plugin=native();
+    if(!plugin)throw new Error("Android action bridge is unavailable.");
+    args=args&&typeof args==="object"?args:{};
+    if(name==="open_app"){
+      const app=String(args.app_name||"").trim().slice(0,100);
+      if(!app)throw new Error("App name is missing.");
+      await plugin.launchApp({name:app});status("Opened "+app);return {success:true,action:"open_app",app};
+    }
+    if(name==="open_url"){
+      const raw=String(args.url||"").trim();const url=new URL(raw);
+      if(!["http:","https:"].includes(url.protocol))throw new Error("Only HTTP and HTTPS links can be opened.");
+      await plugin.openUrl({url:url.href});status("Opened "+url.hostname);return {success:true,action:"open_url",url:url.href};
+    }
+    if(name==="download_file"){
+      const raw=String(args.url||"").trim();const url=new URL(raw);
+      if(!["http:","https:"].includes(url.protocol))throw new Error("Only HTTP and HTTPS files can be downloaded.");
+      const fileName=String(args.file_name||"").slice(0,120);
+      const result=await plugin.downloadFile({url:url.href,fileName});
+      status("Download started: "+(result.fileName||url.hostname));return {success:true,action:"download_file",fileName:result.fileName};
+    }
+    if(name==="navigate_back"){
+      await plugin.systemAction({action:"back"});status("Navigated back");return {success:true,action:"navigate_back"};
+    }
+    throw new Error("COSMIC has no approved device tool named "+name+".");
+  }
+
   function mount() {
     if (document.getElementById("cosmicBrainPanel")) return;
     const panel = document.createElement("section");
@@ -77,6 +104,6 @@
     }));
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded",mount,{once:true}); else mount();
-  window.COSMIC_BRAIN = {handle, state, parse};
+  window.COSMIC_BRAIN = {handle, handleTool, state, parse};
   document.addEventListener("cosmic:brain-error",e => console.warn("COSMIC Brain:",e.detail?.message));
 })();
