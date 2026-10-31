@@ -3,3 +3,5 @@ Publish the current allow-listed frontend feature pack.
 Refresh after MYRAA mode and reboot-resume updates.
 
 Include opt-in speech, image and avatar provider test controls.
+
+Refresh immersive MYRAA stage, responsive conversation dock, procedural expressions, and mode-specific graphite-violet themes.
