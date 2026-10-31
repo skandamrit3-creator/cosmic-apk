@@ -10,9 +10,9 @@
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
-    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null
+    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, nativeMode: false, nativeListener: null
   };
-  let root, orb, status, shareButton;
+  let root, orb, status, shareButton, bubbleButton;
 
   function setStatus(value, mode) {
     if (status) { status.textContent = value; status.dataset.state = mode || "idle"; }
@@ -31,13 +31,15 @@
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button>';
+    root.innerHTML = '<div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button">FLOATING BUBBLE</button>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
     shareButton = root.querySelector("#cosmicLiveShare");
+    bubbleButton = root.querySelector("#cosmicLiveBubble");
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
     shareButton.addEventListener("click", () => state.sharing ? stopScreenShare() : startScreenShare());
+    bubbleButton.addEventListener("click", async () => { try { await window.Capacitor?.Plugins?.CosmicVoice?.openFloatingBubbleSettings?.(); setStatus("ALLOW DISPLAY OVER OTHER APPS, THEN RETURN TO COSMIC", "connecting"); } catch (error) { setStatus("BUBBLE SETUP FAILED · "+error.message, "error"); } });
     const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
     if (typeof nativeVoice?.addListener === "function") {
       nativeVoice.addListener("liveEvent", handleNativeEvent).then(handle => { state.nativeListener = handle; }).catch(() => {});
