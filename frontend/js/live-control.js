@@ -31,6 +31,32 @@
       log.scrollTop=log.scrollHeight;
     });
   }
+  async function handleToolCall(raw) {
+    let payload;
+    try { payload=JSON.parse(raw); } catch(_) { return; }
+    const calls=Array.isArray(payload.functionCalls)?payload.functionCalls:[];
+    const responses=[];
+    for(const call of calls) {
+      const name=String(call.name||"");
+      const args=call.args||{};
+      let result;
+      const summary=name==="open_app"?"Open "+String(args.app_name||"an app"):
+        name==="open_url"?"Open "+String(args.url||"a website"):
+        name==="download_file"?"Download "+String(args.url||"a file"):
+        name==="navigate_back"?"Navigate back":"Run "+name;
+      if(!window.confirm("COSMIC wants permission to: "+summary+". Allow this action?")) {
+        result={success:false,cancelled:true,message:"User denied this action."};
+      } else {
+        try {
+          if(!window.COSMIC_BRAIN?.handleTool)throw new Error("COSMIC Brain device tools are unavailable.");
+          result=await window.COSMIC_BRAIN.handleTool(name,args);
+        } catch(error) { result={success:false,error:error?.message||String(error)}; }
+      }
+      responses.push({id:call.id,name,response:{result}});
+    }
+    try { await native()?.sendLiveToolResponse?.({responses:JSON.stringify(responses)}); }
+    catch(error) { status.textContent="TOOL RESPONSE ERROR · "+(error?.message||error); }
+  }
   function onEvent(event) {
     const type=event?.type||"", message=event?.message||"";
     if(type==="state") {
@@ -41,6 +67,8 @@
       const active=live||(!stopped&&state.active);
       state.starting=/Starting|RECONNECTING/i.test(message);
       paint(message,active);
+    } else if(type==="tool_call") {
+      handleToolCall(message);
     } else if(type==="bubble_permission_required") {
       bubble.hidden=false;status.textContent="ALLOW OVERLAY TO SHOW THE FLOATING BUBBLE";
     } else if(type==="bubble") {
@@ -109,6 +137,7 @@
     async stopScreenShare(){return native()?.stopScreenShare?.();},
     get active(){return state.active||state.starting;},
     async sendText(text){const plugin=native();if(!plugin?.sendLiveText)throw new Error("Native Gemini Live is unavailable.");return plugin.sendLiveText({text:String(text||"")});},
+    async sendLiveToolResponse(responses){const plugin=native();if(!plugin?.sendLiveToolResponse)throw new Error("Native Gemini Live tool bridge is unavailable.");return plugin.sendLiveToolResponse({responses:String(responses||"[]")});},
     onEvent
   };
   if(native()?.addListener) {
