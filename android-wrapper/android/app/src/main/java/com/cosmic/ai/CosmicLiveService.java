@@ -188,7 +188,6 @@ public class CosmicLiveService extends Service {
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
             liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
-            liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
             showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
