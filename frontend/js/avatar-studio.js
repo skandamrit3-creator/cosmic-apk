@@ -67,9 +67,30 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       fore.rotation.z=side*-.16;pivot.add(fore);
       sphere(side*.13,1,0,.09,.095,.085,skin);
       const hand=sphere(side*.13,-.72,.045,.075,.105,.045,skin);pivot.add(hand);
+      for(let finger=0;finger<4;finger++){
+        const fx=side*.13+(finger-1.5)*.034;
+        const digit=mesh(new THREE.CapsuleGeometry(.014,.075,4,10),skin,fx,-.83,.05,.9,1,.9);
+        digit.rotation.z=(finger-1.5)*.07;pivot.add(digit);
+      }
+      const thumb=mesh(new THREE.CapsuleGeometry(.018,.065,4,10),skin,side*.22,-.75,.065);
+      thumb.rotation.z=side*.75;pivot.add(thumb);
       g.add(pivot);return pivot;
     };
     const leftArm=arm(-1),rightArm=arm(1);
+    // Full-body silhouette: tailored waist, layered skirt, legs and boots.
+    g.add(mesh(new THREE.CylinderGeometry(.30,.43,.42,40),outfit,0,.62,0));
+    g.add(mesh(new THREE.CapsuleGeometry(.105,.54,8,20),black,-.145,.22,.015));
+    g.add(mesh(new THREE.CapsuleGeometry(.105,.54,8,20),black,.145,.22,.015));
+    g.add(mesh(new THREE.CylinderGeometry(.12,.145,.25,28),black,-.145,.055,.035));
+    g.add(mesh(new THREE.CylinderGeometry(.12,.145,.25,28),black,.145,.055,.035));
+    const skirtTrim=mesh(new THREE.TorusGeometry(.39,.018,8,64),trim,0,.42,0);skirtTrim.rotation.x=Math.PI/2;g.add(skirtTrim);
+    // Long layered blonde locks fall behind both shoulders.
+    for(const side of [-1,1]){
+      const lock=mesh(new THREE.CapsuleGeometry(.075,.58,8,18),hair,side*.34,1.63,-.19,.88,1,.8);
+      lock.rotation.z=side*.12;g.add(lock);
+      const sideLock=mesh(new THREE.CapsuleGeometry(.045,.42,8,16),hairLight,side*.39,1.77,.02,.85,1,.75);
+      sideLock.rotation.z=side*.16;g.add(sideLock);
+    }
     // MYRAA signature black bodice, burgundy shoulder accents and gold ornaments.
     const black=new THREE.MeshStandardMaterial({color:0x24232b,roughness:.5,metalness:.08});
     const burgundy=new THREE.MeshStandardMaterial({color:0x8b344b,roughness:.52});
@@ -218,9 +239,10 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     }catch(error){console.warn("Could not restore saved avatar:",error);}
     const title=document.querySelector("#cosmicAvatarModelName");
     const stage=document.querySelector("#cosmicAvatarStageState");
+    setPreview("anime");
     if(title)title.textContent="MYRAA · ORIGINAL 3D COMPANION";
-    if(stage)stage.textContent="CHARACTER NOT GENERATED YET";
-    status("Your original MYRAA character is ready to generate. No generic sample avatar will be substituted.","info");
+    if(stage)stage.textContent="MYRAA · PROCEDURAL 3D PREVIEW";
+    status("MYRAA preview loaded. Generate the detailed rigged heroine from the dedicated MYRAA preset when Tripo is configured.","info");
   }
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
