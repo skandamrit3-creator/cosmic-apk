@@ -198,10 +198,21 @@ def model_catalog():
             })
     gemini_configured = bool(os.getenv(CONFIG["gemini"]["key"], "").strip())
     for model_id, label, task, status in GEMINI_SPECIALIST_MODELS + RETIRED_GEMINI_ENTRIES:
+        if status == "retired":
+            integration = "retired"
+        elif task == "live" and model_id in {"gemini-3.8-live", "gemini-3.8-live-extended-thinking"}:
+            integration = "live"
+        elif task == "tts" and model_id in {"gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"}:
+            integration = "tts"
+        elif task == "image" and model_id == "gemini-nano-banana-2.1":
+            integration = "image"
+        else:
+            integration = "catalog"
         result.append({
             "provider": "gemini", "id": model_id, "label": label,
             "configured": gemini_configured, "task": task,
             "chat_compatible": False, "status": status,
+            "integration": integration,
         })
     return result
 
