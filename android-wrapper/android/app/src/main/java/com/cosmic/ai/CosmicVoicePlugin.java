@@ -37,6 +37,8 @@ import java.util.*;
 public class CosmicVoicePlugin extends Plugin {
     private TextToSpeech tts;
     private BroadcastReceiver liveReceiver;
+    private long lastCpuTotal = -1L;
+    private long lastCpuIdle = -1L;
 
     @Override
     public void load() {
