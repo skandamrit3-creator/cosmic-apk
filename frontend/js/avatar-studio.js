@@ -8,7 +8,8 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
   let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
-  let conversationBusy=false, conversationSession=localStorage.getItem("cosmic.avatar.session.v1")||("avatar-"+Date.now().toString(36));
+  let conversationBusy=false, conversationSession=localStorage.getItem("cosmic.chat.session.v1")||localStorage.getItem("cosmic.avatar.session.v1")||("chat-"+Date.now().toString(36));
+  localStorage.setItem("cosmic.chat.session.v1",conversationSession);
   localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
   const state={frame:0,style:"human",modelName:"COSMIC Preview"};
   const $=(selector,root=document)=>root.querySelector(selector);
@@ -110,7 +111,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   async function sendAvatarMessage(){
     const input=document.querySelector("#avatarConversationInput");const message=input?.value.trim();
     if(!message||conversationBusy)return;
-    conversationBusy=true;input.value="";addConversationMessage(message,"user");
+    conversationBusy=true;conversationSession=localStorage.getItem("cosmic.chat.session.v1")||conversationSession;input.value="";addConversationMessage(message,"user");
     const waiting=addConversationMessage("COSMIC is thinking…","assistant");
     const send=document.querySelector("#avatarConversationSend"),mic=document.querySelector("#avatarConversationMic");
     if(send)send.disabled=true;if(mic)mic.disabled=true;
