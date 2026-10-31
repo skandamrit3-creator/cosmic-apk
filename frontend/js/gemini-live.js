@@ -166,6 +166,7 @@
     const value = String(text || "").trim();
     if (!value) return;
     state.lastTranscript = value;
+    window.COSMIC_AVATAR_COMMAND?.(value);
     document.dispatchEvent(new CustomEvent("cosmic:live-transcript", {detail:{text:value,role}}));
     const chat = document.getElementById("cosmicChatLog");
     const avatar = document.getElementById("avatarConversationLog");
