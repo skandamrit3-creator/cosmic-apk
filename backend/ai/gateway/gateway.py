@@ -194,7 +194,7 @@ def model_catalog():
             result.append({
                 "provider": provider, "id": model_id, "label": label,
                 "configured": configured, "task": "chat",
-                "chat_compatible": True, "status": "active",
+                "chat_compatible": True, "status": "active", "integration": "chat",
             })
     gemini_configured = bool(os.getenv(CONFIG["gemini"]["key"], "").strip())
     for model_id, label, task, status in GEMINI_SPECIALIST_MODELS + RETIRED_GEMINI_ENTRIES:
