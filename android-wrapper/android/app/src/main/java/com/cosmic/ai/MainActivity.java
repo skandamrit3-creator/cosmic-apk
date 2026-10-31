@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(CosmicVoicePlugin.class);
+        registerPlugin(CosmicScreenSharePlugin.class);
         registerPlugin(CosmicBackendPlugin.class);
         super.onCreate(savedInstanceState);
         startCosmicBackend();
