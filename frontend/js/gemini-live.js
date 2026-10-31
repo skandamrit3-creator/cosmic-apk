@@ -307,7 +307,7 @@
           if (!tab) throw new Error("Mode control is unavailable.");
           tab.click(); result = {success:true,mode};
         } else if (call.name === "open_app") {
-          const name = String(args.name || "").trim().slice(0,80);
+          const name = String(args.name || args.app_name || "").trim().slice(0,80);
           if (!name || typeof plugin?.launchApp !== "function") throw new Error("Android app launching is unavailable in this client.");
           await plugin.launchApp({name}); result = {success:true,opened:name};
         } else if (call.name === "open_url") {
@@ -321,11 +321,14 @@
           if (!["http:","https:"].includes(url.protocol)) throw new Error("Only HTTP and HTTPS downloads are allowed.");
           if (!window.confirm("Allow COSMIC to download this file?\\n"+url.href)) throw new Error("Download cancelled by user.");
           if (typeof plugin?.downloadFile !== "function") throw new Error("Native downloads are unavailable in this client.");
-          const fileName = String(args.fileName || "").slice(0,120);
+          const fileName = String(args.fileName || args.file_name || "").slice(0,120);
           result = await plugin.downloadFile({url:url.href,fileName});
         } else if (call.name === "navigate_back") {
           if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable in this client.");
           await plugin.systemAction({action:"back"}); result = {success:true,action:"navigate_back"};
+        } else if (call.name === "navigate_back") {
+          if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable.");
+          await plugin.systemAction({action:"back"}); result = {success:true};
         } else {
           throw new Error("Unknown COSMIC action.");
         }
