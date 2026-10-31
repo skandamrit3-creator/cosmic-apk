@@ -3,6 +3,7 @@ package com.cosmic.ai;
 import android.Manifest;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.media.projection.MediaProjectionManager;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -85,6 +86,52 @@ public class CosmicVoicePlugin extends Plugin {
             call.resolve(new JSObject().put("success", true));
         } catch (Exception e) {
             call.reject("Could not stop Gemini Live: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void startScreenShare(PluginCall call) {
+        if (!CosmicLiveService.isRunning()) {
+            call.reject("Start Gemini Live before sharing your screen.");
+            return;
+        }
+        try {
+            MediaProjectionManager manager = (MediaProjectionManager) getContext()
+                    .getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+            startActivityForResult(call, manager.createScreenCaptureIntent(), "screenShareResult");
+        } catch (Exception e) {
+            call.reject("Could not request Android screen sharing permission: " + e.getMessage());
+        }
+    }
+
+    @ActivityCallback
+    private void screenShareResult(PluginCall call, ActivityResult result) {
+        if (result == null || result.getResultCode() != Activity.RESULT_OK || result.getData() == null) {
+            call.reject("Screen sharing was cancelled.");
+            return;
+        }
+        try {
+            Intent service = new Intent(getContext(), CosmicLiveService.class);
+            service.setAction(CosmicLiveService.ACTION_SCREEN_START);
+            service.putExtra("projection_result", result.getResultCode());
+            service.putExtra("projection_data", result.getData());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(service);
+            else getContext().startService(service);
+            call.resolve(new JSObject().put("success", true).put("message", "Screen sharing started with Android approval."));
+        } catch (Exception e) {
+            call.reject("Could not start screen sharing: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void stopScreenShare(PluginCall call) {
+        try {
+            Intent service = new Intent(getContext(), CosmicLiveService.class);
+            service.setAction(CosmicLiveService.ACTION_SCREEN_STOP);
+            getContext().startService(service);
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) {
+            call.reject("Could not stop screen sharing: " + e.getMessage());
         }
     }
 
