@@ -9,7 +9,7 @@ const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace
 function showMode(mode){
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
  const isReactor=mode==="reactor";
- if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=!isReactor;
+ if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=false;
  chat.hidden=mode!=="chat";avatar.hidden=mode!=="avatar";
  if(mode==="chat"&&!chat.dataset.ready){
   chat.dataset.ready="1";
@@ -102,9 +102,34 @@ async function openQuick(view){
   addQuickText(body,"Device actions require their Android bridge and permissions. COSMIC will report unsupported actions instead of pretending they ran.");return;
  }
  if(view==="settings"){
-  addQuickText(body,"The backend connection dialog verifies /api/health and /api/ai/models before saving.");
-  addQuickButton(body,"OPEN BACKEND CONNECTION",()=>{panel.hidden=true;document.querySelector("#systemMenu")?.click();});
-  addQuickText(body,"On the same Android phone, the default local backend is http://127.0.0.1:8059. A different computer needs its LAN or public address.");return;
+  addQuickText(body,"AI PROVIDER KEYS · saved only in this device's private COSMIC app storage. Never paste keys into chat.");
+  const status=document.createElement("p");status.className="cosmic-key-status";status.textContent="Checking configured providers…";body.append(status);
+  const grid=document.createElement("div");grid.className="cosmic-key-grid";body.append(grid);
+  const providers=[["gemini","Google Gemini"],["groq","Groq"],["mistral","Mistral"],["openrouter","OpenRouter"]];
+  const fields={};
+  providers.forEach(([id,label])=>{
+   const row=document.createElement("label");row.className="cosmic-key-row";
+   const name=document.createElement("span");name.textContent=label;row.append(name);
+   const input=document.createElement("input");input.type="password";input.autocomplete="off";input.spellcheck=false;input.placeholder="Paste "+label+" API key";input.setAttribute("aria-label",label+" API key");fields[id]=input;row.append(input);
+   const state=document.createElement("small");state.dataset.provider=id;state.textContent="Checking…";row.append(state);
+   const clear=document.createElement("button");clear.type="button";clear.textContent="REMOVE";clear.onclick=async()=>{
+    clear.disabled=true;try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({clear:[id]})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);state.textContent="NOT CONFIGURED";status.textContent=label+" key removed from this device.";}catch(e){status.textContent="Could not remove key: "+e.message;}finally{clear.disabled=false;}
+   };row.append(clear);grid.append(row);
+  });
+  const actions=document.createElement("div");actions.className="cosmic-key-actions";body.append(actions);
+  const save=addQuickButton(actions,"SAVE API KEYS",async()=>{
+   const keys={};for(const [id,input] of Object.entries(fields)){if(input.value.trim())keys[id]=input.value.trim();}
+   if(!Object.keys(keys).length){status.textContent="Paste at least one API key before saving.";return;}
+   save.disabled=true;status.textContent="Saving keys to this device…";
+   try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keys})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);Object.values(fields).forEach(input=>input.value="");status.textContent="Saved. Testing provider connections…";await refreshStatus();}
+   catch(e){status.textContent="SAVE FAILED: "+e.message;}finally{save.disabled=false;}
+  });
+  const test=addQuickButton(actions,"TEST PROVIDERS",async()=>{test.disabled=true;status.textContent="Sending live provider checks…";try{const r=await fetch(apiBase()+"/api/ai/provider-status",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);(d.providers||[]).forEach(p=>{const el=grid.querySelector('[data-provider="'+p.provider+'"]');if(el)el.textContent=p.status.replaceAll("_"," ").toUpperCase()+(p.http_status?" · HTTP "+p.http_status:"");});status.textContent="Provider checks finished. Only REACHABLE means the API accepted the check.";}catch(e){status.textContent="TEST FAILED: "+e.message;}finally{test.disabled=false;}});
+  async function refreshStatus(){try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);(d.providers||[]).forEach(p=>{const el=grid.querySelector('[data-provider="'+p.provider+'"]');if(el)el.textContent=p.configured?"KEY SAVED · NOT YET TESTED":"KEY MISSING";});status.textContent="Add your own provider keys, then test them. COSMIC does not include free API credits."; }catch(e){status.textContent="KEY SETTINGS UNAVAILABLE: "+e.message;}}
+  refreshStatus();
+  addQuickText(body,"A provider needs its own API key and may charge or enforce free-tier limits. Keys are not supplied by the APK.");
+  addQuickButton(body,"BACKEND CONNECTION",()=>{panel.hidden=true;document.querySelector("#systemMenu")?.click();});
+  return;
  }
  if(view==="updates"){
   addQuickText(body,"Upgrade checks use the backend upgrade manager. Applying code changes is a separate, approval-gated operation.");
