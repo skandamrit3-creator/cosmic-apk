@@ -213,6 +213,35 @@ def ai_provider_status():
     from backend.ai.gateway.gateway import AIGateway
     return jsonify({"success": True, "providers": AIGateway().provider_status()})
 
+@app.get("/api/ai/provider-keys")
+def ai_provider_keys():
+    """Return key-presence flags only; never expose saved credentials."""
+    from backend.ai.gateway.gateway import CONFIG
+    return jsonify({"success": True, "providers": [
+        {"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())}
+        for provider, cfg in CONFIG.items()
+    ]})
+
+
+@app.post("/api/ai/provider-keys")
+def save_ai_provider_keys():
+    """Save keys entered locally in the COSMIC app. This endpoint is loopback-only."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "For safety, configure API keys from the device running COSMIC."}), 403
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"success": False, "error": "JSON object required"}), 400
+    try:
+        from backend.ai.gateway.gateway import save_provider_keys
+        providers = save_provider_keys(data.get("keys"), data.get("clear", []))
+        return jsonify({"success": True, "providers": providers,
+                        "message": "Provider key settings saved on this device."})
+    except (TypeError, ValueError) as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except OSError:
+        app.logger.exception("Could not save COSMIC provider keys")
+        return jsonify({"success": False, "error": "Could not save provider keys to app storage."}), 500
+
 @app.post("/api/chat")
 def chat():
     data = request.get_json(silent=True)
