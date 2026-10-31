@@ -37,6 +37,7 @@ async function command(text){
  window.COSMIC?.executeCommand?.();
 }
 function stop(){
+ if(window.COSMIC_LIVE?.listening)window.COSMIC_LIVE.stop();
  listening=false;nativeLoop=false;loopGeneration++;
  try{recognition?.stop();}catch(_){}recognition=null;
  if(button){button.disabled=false;button.setAttribute("aria-pressed","false");button.title="Start live voice control";button.innerHTML="<span>◌</span>";}
@@ -73,6 +74,11 @@ function startBrowserRecognition(){
 function start(){
  if(listening)return;
  listening=true;loopGeneration++;const generation=loopGeneration;
+ if(window.COSMIC_LIVE){
+  languageSelect();
+  if(button){button.disabled=false;button.setAttribute("aria-pressed","true");button.title="Stop Gemini Live voice";button.innerHTML="<span>■</span>";}
+  window.COSMIC_LIVE.start();return;
+ }
  if(button){button.disabled=false;button.setAttribute("aria-pressed","true");button.title="Stop live voice control";button.innerHTML="<span>■</span>";}
  languageSelect();
  if(api()?.listen){nativeLoop=true;runNativeLoop(generation);return;}
@@ -84,6 +90,16 @@ if(button){
  button.addEventListener("click",event=>{event.preventDefault();if(listening)stop();else start();});
  languageSelect();
 }
+document.addEventListener("cosmic:live-state",event=>{
+ const mode=event.detail?.state;
+ if(mode==="live"||mode==="connecting"){listening=true;if(button){button.setAttribute("aria-pressed","true");button.innerHTML="<span>■</span>";}}
+ else if(mode==="idle"||mode==="error"){listening=false;if(button){button.setAttribute("aria-pressed","false");button.innerHTML="<span>◌</span>";}}
+});
+document.addEventListener("cosmic:live-transcript",event=>{
+ if(event.detail?.role!=="user")return;
+ const text=String(event.detail.text||"").trim();
+ if(/^(stop listening|stop voice|turn off microphone|mute cosmic)$/i.test(text))window.COSMIC_LIVE?.stop();
+});
 document.addEventListener("cosmic:reply",event=>{
  const text=event.detail?.text;if(text&&api()?.speak)api().speak({text}).catch(()=>{});
 });
