@@ -10,7 +10,7 @@
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
-    screenVideo: null, screenTimer: 0, lastTranscript: ""
+    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null
   };
   let root, orb, status, shareButton;
 
@@ -375,6 +375,23 @@
 
   async function startScreenShare() {
     if (!state.connected) { setStatus("START LIVE VOICE BEFORE SHARING", "paused"); return; }
+    const nativeScreen = window.Capacitor?.Plugins?.CosmicScreen;
+    if (typeof nativeScreen?.startScreenShare === "function") {
+      try {
+        state.nativeScreenHandle = await nativeScreen.addListener("screenFrame", frame => {
+          if (state.connected && state.sharing && frame?.data) send({realtimeInput:{video:{data:frame.data,mimeType:"image/jpeg"}}});
+        });
+        await nativeScreen.startScreenShare();
+        state.nativeScreen = true; state.sharing = true;
+        shareButton.textContent = "STOP SHARING";
+        setStatus("ANDROID SCREEN SHARING · 1 FPS", "live");
+        return;
+      } catch (error) {
+        if (state.nativeScreenHandle) { state.nativeScreenHandle.remove(); state.nativeScreenHandle = null; }
+        setStatus("ANDROID SCREEN SHARE FAILED · " + (error.message || "permission denied"), "error");
+        return;
+      }
+    }
     if (!navigator.mediaDevices?.getDisplayMedia) {
       setStatus("SCREEN SHARING IS NOT AVAILABLE IN THIS APP VIEW", "error");
       return;
@@ -406,6 +423,12 @@
   }
 
   function stopScreenShare() {
+    if (state.nativeScreen) {
+      state.nativeScreen = false;
+      const plugin = window.Capacitor?.Plugins?.CosmicScreen;
+      try { plugin?.stopScreenShare?.(); } catch (_) {}
+      if (state.nativeScreenHandle) { state.nativeScreenHandle.remove(); state.nativeScreenHandle = null; }
+    }
     if (state.screenTimer) clearInterval(state.screenTimer);
     state.screenTimer = 0;
     if (state.screenStream) state.screenStream.getTracks().forEach(track => track.stop());
