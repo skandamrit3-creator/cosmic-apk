@@ -30,6 +30,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const iris=new THREE.MeshStandardMaterial({color:0x8062d5,roughness:.22,metalness:.08});
     const pupil=new THREE.MeshStandardMaterial({color:0x211d2d,roughness:.2});
     const lip=new THREE.MeshStandardMaterial({color:0x9e465b,roughness:.5});
+    const eyeLids=[];
     const sphere=(x,y,z,sx,sy,sz,mat)=>mesh(new THREE.SphereGeometry(1,32,24),mat,x,y,z,sx,sy,sz);
     // Silhouette, tailored jacket and neck
     g.add(mesh(new THREE.CapsuleGeometry(.39,.62,8,28),outfit,0,1.05,0));
@@ -48,7 +49,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     }
     // Eyes with iris highlights, brows and a small nose
     for(const side of [-1,1]){
-      sphere(side*.145,2.12,.309,.082,.105,.035,eyeWhite);
+      const eye= sphere(side*.145,2.12,.309,.082,.105,.035,eyeWhite);eyeLids.push(eye);
       sphere(side*.145,2.115,.343,.052,.073,.018,iris);
       sphere(side*.145,2.112,.359,.026,.046,.012,pupil);
       sphere(side*.16,2.255,.305,.09,.018,.025,hair);
@@ -85,7 +86,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const collar=mesh(new THREE.TorusGeometry(.19,.026,10,48),trim,0,1.52,.04);collar.rotation.x=Math.PI/2;g.add(collar);
     const waist=mesh(new THREE.TorusGeometry(.31,.012,8,64),trim,0,.73,0);waist.rotation.x=Math.PI/2;g.add(waist);
     const halo=mesh(new THREE.TorusGeometry(.82,.009,8,100),new THREE.MeshBasicMaterial({color:0xb8a6df,transparent:true,opacity:.32}),0,.15,0);halo.rotation.x=Math.PI/2;g.add(halo);
-    g.userData.preview=true;g.userData.style=style;g.userData.leftArm=leftArm;g.userData.rightArm=rightArm;g.userData.mouth=mouth;
+    g.userData.preview=true;g.userData.style=style;g.userData.leftArm=leftArm;g.userData.rightArm=rightArm;g.userData.mouth=mouth;g.userData.eyeLids=eyeLids;
     return g;
   }
   function initScene(canvas){
@@ -104,7 +105,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame;currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=-.08+idle+talk*.35;l.rotation.x=Math.sin(t*.9)*.025;}if(r){r.rotation.z=.08-idle-talk*.55;r.rotation.x=Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;if(mouth)mouth.scale.y=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;}if(currentVrm){
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame;currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=-.08+idle+talk*.35;l.rotation.x=Math.sin(t*.9)*.025;}if(r){r.rotation.z=.08-idle-talk*.55;r.rotation.x=Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:open;mouth.scale.x=mood==="surprised"?.095:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=.105*blink;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
@@ -195,7 +196,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<section class="avatar-stage-v2"><canvas id="cosmicAvatarCanvas" aria-label="Interactive 3D avatar stage"></canvas><div class="avatar-stage-meta"><span>3D VIEWPORT</span><span id="cosmicAvatarStageState">STARTER PREVIEW</span></div><div class="avatar-stage-actions"><button class="avatar-action" id="cosmicAvatarReset" type="button">RESET VIEW</button><button class="avatar-action" id="cosmicAvatarTurn" type="button">AUTO ROTATE</button><a class="avatar-action" id="cosmicAvatarDownload" hidden download="cosmic-avatar.glb">DOWNLOAD MODEL</a></div></section>',
     '<aside class="avatar-panel"><h3>MYRAA · CHARACTER</h3><p>MYRAA is an original companion. The built-in model is a procedural preview; a rigged VRM/GLB supplies detailed production geometry and facial morphs.</p>',
 
-    '<div class="avatar-divider"></div><h3>MYRAA · ORIGINAL CHARACTER</h3><p>Generate the custom blonde-haired, violet-eyed anime companion with a detailed ivory, black, burgundy and gold outfit. This creates a real 3D model and may use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="hyderabad_man">HYDERABAD MAN</button><button type="button" data-avatar-preset="hyderabad_woman">HYDERABAD WOMAN</button><button type="button" data-avatar-preset="global_man">REALISTIC MAN</button><button type="button" data-avatar-preset="global_woman">REALISTIC WOMAN</button><button type="button" data-avatar-preset="anime_hero">ANIME HERO</button><button type="button" data-avatar-preset="anime_heroine">GENERATE MYRAA · ORIGINAL 3D CHARACTER</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">MYRAA generation uses the anime heroine preset when the Tripo service is configured.</div>',
+    '<div class="avatar-divider"></div><h3>MYRAA · ORIGINAL CHARACTER</h3><p>Generate the custom blonde-haired, violet-eyed anime companion with a detailed ivory, black, burgundy and gold outfit. This creates a real 3D model and may use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="anime_heroine">GENERATE MYRAA · ORIGINAL 3D CHARACTER</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">MYRAA generation uses the anime heroine preset when the Tripo service is configured.</div>',
     '<div class="avatar-model-import"><button class="avatar-action" id="cosmicAvatarHumanCreator" type="button">OPEN FREE REAL-HUMAN 3D CREATOR</button><p class="avatar-help">Create and export a rigged human GLB with the free Ara 3D Gen tool, then import it here. Its generator and exported assets have separate licences; check the current terms before redistribution.</p><label class="avatar-action" for="cosmicAvatarModelFile">IMPORT GLB / VRM</label><input id="cosmicAvatarModelFile" type="file" accept=".glb,.gltf,.vrm,model/gltf-binary,model/gltf+json"></div>',
     '<div class="avatar-divider"></div><h3>CREATE YOUR 3D TWIN</h3><p>Use photos of the same person, in consistent light. Front is required; two or more views are needed, and four are recommended.</p>',
     '<div class="avatar-upload"><label>01 · FRONT<input type="file" id="avatarPhotoFront" accept="image/jpeg,image/png,image/webp" capture="user"></label><label>02 · LEFT<input type="file" id="avatarPhotoLeft" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>03 · BACK<input type="file" id="avatarPhotoBack" accept="image/jpeg,image/png,image/webp" capture="environment"></label><label>04 · RIGHT<input type="file" id="avatarPhotoRight" accept="image/jpeg,image/png,image/webp" capture="environment"></label></div>',
@@ -232,7 +233,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const lm=host.querySelector("#cosmicAvatarLiveModel"),lv=host.querySelector("#cosmicAvatarVoice"),mm=host.querySelector("#cosmicAvatarMood");
     if(lm){lm.value=localStorage.getItem("COSMIC_LIVE_MODEL")||"gemini-3.8-live";lm.onchange=()=>{localStorage.setItem("COSMIC_LIVE_MODEL",lm.value);const x=document.querySelector("#cosmicLiveModel");if(x){x.value=lm.value;x.dispatchEvent(new Event("change"));}};}
     if(lv){lv.value=localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore";lv.onchange=()=>{localStorage.setItem("COSMIC_LIVE_VOICE",lv.value);localStorage.setItem("COSMIC_TTS_VOICE",lv.value);const x=document.querySelector("#cosmicLiveVoice");if(x){x.value=lv.value;x.dispatchEvent(new Event("change"));}};}
-    if(mm)mm.onchange=()=>{state.mood=mm.value;};
+    if(mm)mm.onchange=()=>{state.mood=mm.value;status("MYRAA expression: "+mm.options[mm.selectedIndex].text,"success");};
     $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f){currentTaskId="";$("#avatarRig3D",host).disabled=true;loadBlob(f,f.name);}});
 
     host.querySelectorAll("[data-avatar-preset]").forEach(b=>b.addEventListener("click",()=>generatePreset(b.dataset.avatarPreset,b)));
