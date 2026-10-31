@@ -54,6 +54,10 @@ jobs:
       - name: Install Capacitor dependencies
         working-directory: android-wrapper
         run: npm install
+      - name: Copy COSMIC frontend into Capacitor webDir
+        run: |
+          mkdir -p android-wrapper/www
+          cp -a frontend/. android-wrapper/www/
       - name: Sync Capacitor Android project
         working-directory: android-wrapper
         run: npx cap sync android
