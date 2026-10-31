@@ -1,3 +1,5 @@
 Publish the current allow-listed frontend feature pack.
 
 Refresh after MYRAA mode and reboot-resume updates.
+
+Include opt-in speech, image and avatar provider test controls.
