@@ -7,7 +7,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   "use strict";
   const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
   let mounted=false,renderer,scene,camera,controls,clock,loader,currentRoot,currentVrm;
-  let currentTaskId="",speaking=false,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
+  let currentTaskId="",speaking=false,audioLevel=0,rotate=false,dbPromise,currentDownloadUrl="",nextBlink=2.5,blinkTime=0;
   let conversationBusy=false, conversationSession=localStorage.getItem("cosmic.avatar.session.v1")||("avatar-"+Date.now().toString(36));
   localStorage.setItem("cosmic.avatar.session.v1",conversationSession);
   const state={frame:0,style:"human",modelName:"COSMIC Preview"};
@@ -61,7 +61,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
-        const pulse=speaking?Math.max(0,Math.sin(state.frame*10)):0;
+        const pulse=speaking?Math.max(audioLevel,Math.max(0,Math.sin(state.frame*10))*.18):0;
         const visemes={aa:.12+.62*pulse,ih:.08+.24*Math.max(0,Math.sin(state.frame*10+1.2)),ou:.05+.2*Math.max(0,Math.sin(state.frame*10+2.4)),ee:.04+.18*Math.max(0,Math.sin(state.frame*10+3.1)),oh:.04+.2*Math.max(0,Math.sin(state.frame*10+4.2))};
         Object.entries(visemes).forEach(([name,value])=>{if(em.getExpression?.(name))em.setValue(name,speaking?value:0);});
         blinkTime+=dt;
@@ -291,5 +291,6 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   }
   function mount(){const host=document.getElementById("cosmicAvatarMode");if(!host)return;const obs=new MutationObserver(()=>{if(host.dataset.ready==="1"&&host.dataset.avatarV2!=="1")buildUI(host);});obs.observe(host,{childList:true});if(host.dataset.ready==="1")buildUI(host);}
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount();
-  window.COSMIC_AVATAR_TALK=on=>{speaking=!!on;};
+  window.COSMIC_AVATAR_TALK=on=>{speaking=!!on;if(!on)audioLevel=0;};
+   window.COSMIC_AVATAR_AUDIO_LEVEL=value=>{audioLevel=Math.max(0,Math.min(1,Number(value)||0));};
 })();
