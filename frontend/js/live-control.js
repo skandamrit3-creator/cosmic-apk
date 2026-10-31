@@ -15,6 +15,7 @@
     button.textContent=state.starting?"CONNECTING…":active?"STOP LIVE":"START LIVE";
     button.setAttribute("aria-pressed",String(active));
     share.hidden=!active||!native()?.startScreenShare;
+    share.textContent=state.screenShareActive?"STOP SHARING":"SHARE SCREEN";
     if(!active)bubble.hidden=true;
     status.textContent=state.lastState;
     title.textContent=active?"COSMIC IS LISTENING":"COSMIC LIVE";
@@ -35,8 +36,9 @@
     if(type==="state") {
       if(/SCREEN SHARING/i.test(message))state.screenShareActive=true;
       if(/SCREEN SHARE STOPPED/i.test(message)){state.screenShareActive=false;share.textContent="SHARE SCREEN";}
-      const live=/LISTENING|CONNECTED|RECONNECTING/i.test(message);
-      const active=live||(/STOPPED/.test(message)?false:state.active);
+      const live=/LISTENING|CONNECTED|RECONNECTING|SCREEN SHARING/i.test(message);
+      const stopped=/^LIVE · STOPPED$/i.test(message);
+      const active=live||(!stopped&&state.active);
       state.starting=/Starting|RECONNECTING/i.test(message);
       paint(message,active);
     } else if(type==="bubble_permission_required") {
