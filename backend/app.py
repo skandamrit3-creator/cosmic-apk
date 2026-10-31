@@ -210,7 +210,8 @@ def ai_models():
 @app.get("/api/ai/provider-status")
 def ai_provider_status():
     """Live API reachability check; never returns API keys."""
-    from backend.ai.gateway.gateway import AIGateway
+    from backend.ai.gateway.gateway import AIGateway, load_saved_provider_keys
+    load_saved_provider_keys()
     return jsonify({"success": True, "providers": AIGateway().provider_status()})
 
 @app.post("/api/ai/live-token")
@@ -276,8 +277,9 @@ def create_gemini_live_token():
 
 @app.get("/api/ai/provider-keys")
 def ai_provider_keys():
-    """Return key-presence flags only; never expose saved credentials."""
-    from backend.ai.gateway.gateway import CONFIG
+    """Return key-presence flags only; load device-saved keys before reporting."""
+    from backend.ai.gateway.gateway import CONFIG, load_saved_provider_keys
+    load_saved_provider_keys()
     return jsonify({"success": True, "providers": [
         {"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())}
         for provider, cfg in CONFIG.items()
