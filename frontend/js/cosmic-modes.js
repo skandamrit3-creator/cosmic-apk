@@ -7,6 +7,8 @@ let busy=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat
 localStorage.setItem("cosmic.chat.session.v1",sessionId);
 const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/$/,"");
 function showMode(mode){
+ document.documentElement.dataset.cosmicMode=mode;
+ document.body.dataset.cosmicMode=mode;
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
  const isReactor=mode==="reactor";
  if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=!isReactor;
