@@ -26,7 +26,7 @@ import androidx.core.app.NotificationCompat;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
-import java.util.Base64;
+import android.util.Base64;
 
 public class CosmicScreenShareService extends Service {
     public static final String ACTION_START = "com.cosmic.ai.screen.START";
@@ -140,7 +140,7 @@ public class CosmicScreenShareService extends Service {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             frame.compress(Bitmap.CompressFormat.JPEG, 58, output);
             frame.recycle();
-            String encoded = Base64.getEncoder().encodeToString(output.toByteArray());
+            String encoded = Base64.encodeToString(output.toByteArray(), Base64.NO_WRAP);
             Intent event = new Intent(ACTION_FRAME);
             event.setPackage(getPackageName());
             event.putExtra("data", encoded);
@@ -155,7 +155,7 @@ public class CosmicScreenShareService extends Service {
     private void stopCapture() {
         if (display != null) { display.release(); display = null; }
         if (reader != null) { reader.setOnImageAvailableListener(null, null); reader.close(); reader = null; }
-        if (projection != null) { try { projection.stop(); } catch (Exception ignored) {} projection = null; }
+        if (projection != null) { MediaProjection active = projection; projection = null; try { active.stop(); } catch (Exception ignored) {} }
         if (thread != null) { thread.quitSafely(); thread = null; handler = null; }
     }
 
