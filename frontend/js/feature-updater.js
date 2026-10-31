@@ -52,7 +52,9 @@
    total+=file.size;if(total>15*1024*1024)throw new Error("Feature pack exceeds the 15 MB safety limit.");
    const asset=assets.get(file.asset_name);
    if(!asset)throw new Error("Missing feature asset: "+file.asset_name);
-   const assetUrl=new URL(asset.browser_download_url);\n   if(assetUrl.protocol!=="https:"||assetUrl.hostname!=="github.com"||!assetUrl.pathname.startsWith("/"+OWNER+"/"+REPO+"/releases/download/"))throw new Error("Blocked untrusted feature asset URL.");\n   const response=await fetch(assetUrl.href,{cache:"no-store"});
+   const assetUrl=new URL(asset.browser_download_url);
+   if(assetUrl.protocol!=="https:"||assetUrl.hostname!=="github.com"||!assetUrl.pathname.startsWith("/"+OWNER+"/"+REPO+"/releases/download/"))throw new Error("Blocked untrusted feature asset URL.");
+   const response=await fetch(assetUrl.href,{cache:"no-store"});
    if(!response.ok)throw new Error("Could not download "+file.path+" · HTTP "+response.status);
    const bytes=await response.arrayBuffer();
    if(bytes.byteLength!==file.size)throw new Error("Size check failed for "+file.path);
