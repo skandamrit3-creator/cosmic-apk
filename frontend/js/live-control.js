@@ -2,7 +2,7 @@
 (() => {
   "use strict";
   const native = () => window.Capacitor?.Plugins?.CosmicVoice;
-  const state = { active:false, starting:false, listener:null, lastState:"READY" };
+  const state = { active:false, starting:false, screenShareActive:false, listener:null, lastState:"READY" };
   const dock = document.createElement("aside");
   dock.id = "cosmicLiveDock";
   dock.innerHTML = '<span class="cosmic-live-indicator" aria-hidden="true"></span><div class="cosmic-live-copy"><b id="cosmicLiveTitle">COSMIC LIVE</b><small id="cosmicLiveStatus">VOICE OFF · READY</small></div><button id="cosmicLiveShare" type="button" hidden>SHARE SCREEN</button><button id="cosmicLiveToggle" type="button" aria-pressed="false">START LIVE</button>';
@@ -19,16 +19,21 @@
     title.textContent=active?"COSMIC IS LISTENING":"COSMIC LIVE";
   }
   function appendTranscript(text, role) {
-    const log=document.querySelector("#cosmicChatLog");
-    if(!log||!text)return;
-    let el=log.querySelector(role==="assistant"?".cosmic-live-current-assistant":".cosmic-live-current-user");
-    if(!el){el=document.createElement("div");el.className="cosmic-chat-msg "+(role==="assistant"?"assistant cosmic-live-current-assistant":"user cosmic-live-current-user");log.append(el);}
-    el.textContent+=(el.textContent?" ":"")+text;
-    log.scrollTop=log.scrollHeight;
+    if(!text)return;
+    const selector=role==="assistant"?".cosmic-live-current-assistant":".cosmic-live-current-user";
+    const targets=[document.querySelector("#cosmicChatLog"),document.querySelector("#avatarConversationLog")].filter(Boolean);
+    targets.forEach(log=>{
+      let el=log.querySelector(selector);
+      if(!el){el=document.createElement("div");el.className=(log.id==="avatarConversationLog"?"avatar-conversation-message ":"cosmic-chat-msg ")+(role==="assistant"?"assistant cosmic-live-current-assistant":"user cosmic-live-current-user");log.append(el);}
+      el.textContent+=(el.textContent?" ":"")+text;
+      log.scrollTop=log.scrollHeight;
+    });
   }
   function onEvent(event) {
     const type=event?.type||"", message=event?.message||"";
     if(type==="state") {
+      if(/SCREEN SHARING/i.test(message))state.screenShareActive=true;
+      if(/SCREEN SHARE STOPPED/i.test(message)){state.screenShareActive=false;share.textContent="SHARE SCREEN";}
       const live=/LISTENING|CONNECTED|RECONNECTING/i.test(message);
       const active=live||(/STOPPED/.test(message)?false:state.active);
       state.starting=/Starting|RECONNECTING/i.test(message);
@@ -45,6 +50,7 @@
       window.COSMIC_AVATAR_TALK?.(true);
       document.documentElement.classList.add("cosmic-live-speaking");
     } else if(type==="audio_end"||type==="turn_complete") {
+      document.querySelectorAll(".cosmic-live-current-assistant,.cosmic-live-current-user").forEach(el=>el.classList.remove("cosmic-live-current-assistant","cosmic-live-current-user"));
       window.COSMIC_AVATAR_TALK?.(false);
       document.documentElement.classList.remove("cosmic-live-speaking");
     }
@@ -79,8 +85,10 @@
     const plugin=native();
     if(!plugin?.startScreenShare){paint("SCREEN SHARING IS ANDROID ONLY",state.active);return;}
     share.disabled=true;
-    try{await plugin.startScreenShare();share.textContent="SCREEN SHARING";status.textContent="LIVE · SCREEN SHARING";}
-    catch(error){status.textContent="SCREEN SHARE ERROR · "+(error?.message||error);}
+    try{
+      if(state.screenShareActive){await plugin.stopScreenShare();state.screenShareActive=false;share.textContent="SHARE SCREEN";status.textContent="LIVE · SCREEN SHARE STOPPED";}
+      else{await plugin.startScreenShare();state.screenShareActive=true;share.textContent="STOP SHARING";status.textContent="LIVE · SCREEN SHARING";}
+    }catch(error){status.textContent="SCREEN SHARE ERROR · "+(error?.message||error);}
     finally{share.disabled=false;}
   });
   window.COSMIC_LIVE={
