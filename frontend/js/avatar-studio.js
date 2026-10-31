@@ -78,7 +78,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
         }
       }
     }controls.update();renderer.render(scene,camera);};animate();
-    currentRoot=previewCharacter("human");scene.add(currentRoot);
+    currentRoot=null;
   }
   async function fitAndAdd(gltf,name,blob,save=true){
     if(currentRoot)scene.remove(currentRoot);currentVrm=gltf.userData.vrm||null;currentRoot=gltf.scene;gestureBones=null;if(currentVrm?.humanoid){const get=name=>currentVrm.humanoid.getNormalizedBoneNode(name),right=get("rightUpperArm"),left=get("leftUpperArm");gestureBones={right,left,rightBase:right?.rotation.clone(),leftBase:left?.rotation.clone()};}
@@ -165,7 +165,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     '<header class="avatar-studio-head"><div><h2>COSMIC <span>AVATAR</span></h2><p>Your live AI companion</p></div><div class="avatar-head-actions"><span id="cosmicAvatarModelName">COSMIC 3D Preview</span><button class="avatar-settings-toggle" id="cosmicAvatarSettings" type="button" aria-label="Avatar settings">⚙</button></div></header>',
     '<section class="avatar-stage-v2"><canvas id="cosmicAvatarCanvas" aria-label="Interactive 3D avatar stage"></canvas><div class="avatar-stage-meta"><span>3D VIEWPORT</span><span id="cosmicAvatarStageState">STARTER PREVIEW</span></div><div class="avatar-stage-actions"><button class="avatar-action" id="cosmicAvatarReset" type="button">RESET VIEW</button><button class="avatar-action" id="cosmicAvatarTurn" type="button">AUTO ROTATE</button><a class="avatar-action" id="cosmicAvatarDownload" hidden download="cosmic-avatar.glb">DOWNLOAD MODEL</a></div></section>',
     '<aside class="avatar-panel"><h3>CHARACTER STYLE</h3><p>Starter meshes are previews. Import a real GLB/VRM or generate a detailed model from multiple photos.</p>',
-    '<div class="avatar-segment"><button type="button" class="active" data-avatar-style="human">HUMAN PREVIEW</button><button type="button" data-avatar-style="anime">ANIME PREVIEW</button></div>',
+
     '<div class="avatar-divider"></div><h3>MYRAA · ORIGINAL CHARACTER</h3><p>Generate the custom blonde-haired, violet-eyed anime companion with a detailed ivory, black, burgundy and gold outfit. This creates a real 3D model and may use paid Tripo credits.</p><div class="avatar-preset-grid"><button type="button" data-avatar-preset="hyderabad_man">HYDERABAD MAN</button><button type="button" data-avatar-preset="hyderabad_woman">HYDERABAD WOMAN</button><button type="button" data-avatar-preset="global_man">REALISTIC MAN</button><button type="button" data-avatar-preset="global_woman">REALISTIC WOMAN</button><button type="button" data-avatar-preset="anime_hero">ANIME HERO</button><button type="button" data-avatar-preset="anime_heroine">GENERATE MYRAA · ORIGINAL 3D CHARACTER</button></div><div class="avatar-status" id="cosmicPresetStatus" role="status">Select a character preset to generate a real model.</div>',
     '<div class="avatar-model-import"><button class="avatar-action" id="cosmicAvatarHumanCreator" type="button">OPEN FREE REAL-HUMAN 3D CREATOR</button><p class="avatar-help">Create and export a rigged human GLB with the free Ara 3D Gen tool, then import it here. Its generator and exported assets have separate licences; check the current terms before redistribution.</p><label class="avatar-action" for="cosmicAvatarModelFile">IMPORT GLB / VRM</label><input id="cosmicAvatarModelFile" type="file" accept=".glb,.gltf,.vrm,model/gltf-binary,model/gltf+json"></div>',
     '<div class="avatar-divider"></div><h3>CREATE YOUR 3D TWIN</h3><p>Use photos of the same person, in consistent light. Front is required; two or more views are needed, and four are recommended.</p>',
@@ -205,7 +205,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     if(lv){lv.value=localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore";lv.onchange=()=>{localStorage.setItem("COSMIC_LIVE_VOICE",lv.value);localStorage.setItem("COSMIC_TTS_VOICE",lv.value);const x=document.querySelector("#cosmicLiveVoice");if(x){x.value=lv.value;x.dispatchEvent(new Event("change"));}};}
     if(mm)mm.onchange=()=>{state.mood=mm.value;};
     $("#cosmicAvatarModelFile",host).addEventListener("change",e=>{const f=e.target.files?.[0];if(f){currentTaskId="";$("#avatarRig3D",host).disabled=true;loadBlob(f,f.name);}});
-    host.querySelectorAll("[data-avatar-style]").forEach(b=>b.onclick=()=>{host.querySelectorAll("[data-avatar-style]").forEach(x=>x.classList.toggle("active",x===b));setPreview(b.dataset.avatarStyle);});
+
     host.querySelectorAll("[data-avatar-preset]").forEach(b=>b.addEventListener("click",()=>generatePreset(b.dataset.avatarPreset,b)));
     host.querySelectorAll("[data-avatar-sample]").forEach(b=>b.onclick=async()=>{try{status("Loading "+b.dataset.avatarSample+" VRM model from the sample library…");await loadUrl(b.dataset.url,"VRoid Avatar Sample "+b.dataset.avatarSample);}catch(e){status("Could not load sample avatar: "+e.message,"error");}});
     $("#cosmicAvatarReset",host).onclick=()=>{camera.position.set(0,1.5,5.2);controls.target.set(0,1.2,0);controls.update();};
