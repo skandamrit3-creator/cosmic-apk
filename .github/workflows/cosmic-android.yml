@@ -119,11 +119,24 @@ jobs:
                   log.seek(0)
                   print(log.read())
                   raise SystemExit("COSMIC backend did not start.")
-              for route in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/avatar/3d/status"]:
+              for route in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/ai/provider-keys", "/api/avatar/3d/status"]:
                   with urllib.request.urlopen(base + route, timeout=10) as response:
                       if response.status != 200:
                           raise SystemExit(route + " returned HTTP " + str(response.status))
-              print("Frontend assets and browser/backend routes passed.")
+              import json
+              save_req = urllib.request.Request(base + "/api/ai/provider-keys",
+                  data=json.dumps({"keys":{"gemini":"cosmic-ci-placeholder"}}).encode(),
+                  headers={"Content-Type":"application/json"}, method="POST")
+              with urllib.request.urlopen(save_req, timeout=10) as response:
+                  saved = json.loads(response.read().decode())
+              assert saved.get("success") is True, "Provider-key save route failed."
+              clear_req = urllib.request.Request(base + "/api/ai/provider-keys",
+                  data=json.dumps({"clear":["gemini"]}).encode(),
+                  headers={"Content-Type":"application/json"}, method="POST")
+              with urllib.request.urlopen(clear_req, timeout=10) as response:
+                  cleared = json.loads(response.read().decode())
+              assert cleared.get("success") is True, "Provider-key clear route failed."
+              print("Frontend assets, backend routes and local provider-key settings passed.")
           finally:
               server.terminate()
               try: server.wait(timeout=10)
