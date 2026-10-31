@@ -85,3 +85,6 @@ body:has(.hud-main:not([hidden])) .mode-switch{margin-bottom:12px}
 }
 @media(max-width:480px){.mode-tab{padding:0 12px;font-size:9px}.cosmic-chat-brand{min-width:0}.cosmic-chat-controls select{max-width:43vw}.cosmic-chat-compose{gap:5px;padding:6px}.cosmic-chat-compose button{padding:0 11px}.avatar-stage-v2{min-height:470px}.avatar-chat-dock{max-height:38%}.avatar-chat-row button{padding:0 9px;font-size:9px}}
 @media(prefers-reduced-motion:reduce){.avatar-panel{transition:none}}
+
+.avatar-settings-toggle{width:40px;height:40px;border:1px solid var(--cx-line);border-radius:12px;background:#ffffff08;color:#e5ddf1;font-size:17px;cursor:pointer}
+.avatar-settings-toggle:focus-visible,.avatar-action:focus-visible,.avatar-panel button:focus-visible{outline:2px solid var(--cx-violet);outline-offset:2px}
