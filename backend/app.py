@@ -298,6 +298,9 @@ def generate_gemini_speech():
     voice = str(data.get("voice", "Kore"))
     if voice not in {"Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr"}:
         voice = "Kore"
+    model = str(data.get("model", "gemini-3.8-flash-lite-tts"))
+    if model not in {"gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"}:
+        model = "gemini-3.8-flash-lite-tts"
     from backend.ai.gateway.gateway import load_saved_provider_keys
     load_saved_provider_keys()
     key = os.getenv("GEMINI_API_KEY", "").strip()
@@ -305,7 +308,7 @@ def generate_gemini_speech():
         return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP first."}), 400
     try:
         response = requests.post(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
             json={
                 "contents": [{"role": "user", "parts": [{"text": text}]}],
@@ -337,7 +340,7 @@ def generate_gemini_speech():
             return jsonify({"success": False, "error": "Gemini TTS audio was empty or too large."}), 502
         return Response(audio, mimetype="audio/wav", headers={
             "Cache-Control": "no-store", "X-COSMIC-Voice": voice,
-            "X-COSMIC-Model": "gemini-3.8-flash-tts",
+            "X-COSMIC-Model": model,
         })
     except requests.RequestException as exc:
         return jsonify({"success": False, "error": "Gemini TTS request failed: " + str(exc)[:220]}), 502
