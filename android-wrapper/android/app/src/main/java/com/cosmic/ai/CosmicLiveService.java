@@ -354,6 +354,7 @@ public class CosmicLiveService extends Service {
     }
 
     private void showFloatingBubble() {
+        if (Looper.myLooper() != Looper.getMainLooper()) { new Handler(Looper.getMainLooper()).post(this::showFloatingBubble); return; }
         if (Build.VERSION.SDK_INT < 23 || !Settings.canDrawOverlays(this)) {
             emit("bubble_permission_required", "Allow COSMIC to display its floating assistant bubble.");
             return;
@@ -418,6 +419,7 @@ public class CosmicLiveService extends Service {
     }
 
     private void hideFloatingBubble() {
+        if (Looper.myLooper() != Looper.getMainLooper()) { new Handler(Looper.getMainLooper()).post(this::hideFloatingBubble); return; }
         try { if (bubbleView != null && windowManager != null) windowManager.removeView(bubbleView); } catch (Exception ignored) {}
         bubbleView = null;
     }
@@ -567,13 +569,19 @@ public class CosmicLiveService extends Service {
     }
 
     private Notification notification(String message) {
+        Intent stopIntent = new Intent(this, CosmicLiveService.class);
+        stopIntent.setAction(ACTION_STOP);
+        PendingIntent stopPending = PendingIntent.getService(this, NOTIFICATION_ID, stopIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         return new NotificationCompat.Builder(this, CHANNEL)
                 .setSmallIcon(getApplicationInfo().icon)
                 .setContentTitle("COSMIC · Gemini Live")
                 .setContentText(message)
                 .setOngoing(true)
                 .setCategory(NotificationCompat.CATEGORY_SERVICE)
-                .setPriority(NotificationCompat.PRIORITY_LOW).build();
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .addAction(android.R.drawable.ic_media_pause, "STOP LISTENING", stopPending)
+                .build();
     }
 
     private void createChannel() {
