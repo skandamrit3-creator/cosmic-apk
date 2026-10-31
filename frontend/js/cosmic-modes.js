@@ -56,6 +56,9 @@ async function sendChat(e){
  add(message,"user");input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
+  if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(message)){
+   wait.className="cosmic-chat-msg system";wait.textContent="DEVICE ACTION · "+(window.COSMIC_BRAIN.state.lastAction||"Command processed");state.textContent="DEVICE ACTION";return;
+  }
   const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,task:"chat",mode:chat.querySelector("#cosmicChatProvider")?.value==="auto"?"auto":"manual",provider:chat.querySelector("#cosmicChatProvider")?.value||"auto",model:chat.querySelector("#cosmicChatModel")?.value||"auto",session_id:sessionId})});
   const data=await response.json();if(!response.ok||data.success===false)throw new Error(data.error||data.message||"HTTP "+response.status);
   wait.replaceChildren();renderRichText(wait,data.message||data.response||data.text||"COSMIC returned an empty response.");const tools=document.createElement("div");tools.className="cosmic-message-tools";const speak=document.createElement("button");speak.type="button";speak.textContent="🔊 SPEAK";speak.onclick=()=>speakText(data.message||data.response||data.text||"");const edit=document.createElement("button");edit.type="button";edit.textContent="EDIT PROMPT";edit.onclick=()=>{input.value=lastPrompt;input.focus();};tools.append(speak,edit);if(data.provider){const tag=document.createElement("span");tag.className="cosmic-model-tag";tag.textContent=data.provider+" · "+(data.model||"");tools.append(tag);}wait.append(tools);state.textContent="CONNECTED";
