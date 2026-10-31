@@ -20,6 +20,14 @@ import android.graphics.Bitmap;
 import android.graphics.PixelFormat;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
+import android.view.Gravity;
+import android.view.View;
+import android.view.MotionEvent;
+import android.widget.TextView;
+import android.graphics.drawable.GradientDrawable;
+import android.provider.Settings;
+import android.net.Uri;
+import android.app.PendingIntent;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Build;
@@ -71,6 +79,8 @@ public class CosmicLiveService extends Service {
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
     private long lastFrameAt = 0;
+    private WindowManager windowManager;
+    private TextView bubbleView;
 
     public static boolean isRunning() { CosmicLiveService service = instance; return service != null && service.running.get(); }
 
@@ -134,6 +144,7 @@ public class CosmicLiveService extends Service {
                 return;
             }
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
+            showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
                     .pingInterval(20, TimeUnit.SECONDS)
@@ -293,6 +304,80 @@ public class CosmicLiveService extends Service {
         }
     }
 
+    public static void refreshFloatingBubble() {
+        CosmicLiveService service = instance;
+        if (service != null) service.showFloatingBubble();
+    }
+
+    private void showFloatingBubble() {
+        if (Build.VERSION.SDK_INT < 23 || !Settings.canDrawOverlays(this)) {
+            emit("bubble_permission_required", "Allow COSMIC to display its floating assistant bubble.");
+            return;
+        }
+        if (bubbleView != null) return;
+        try {
+            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+            TextView bubble = new TextView(this);
+            bubble.setText("C");
+            bubble.setTextColor(android.graphics.Color.WHITE);
+            bubble.setTextSize(21);
+            bubble.setGravity(Gravity.CENTER);
+            GradientDrawable background = new GradientDrawable();
+            background.setShape(GradientDrawable.OVAL);
+            background.setColor(android.graphics.Color.rgb(13, 39, 61));
+            background.setStroke(3, android.graphics.Color.rgb(106, 207, 232));
+            bubble.setBackground(background);
+            bubble.setElevation(12);
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    58, 58, Build.VERSION.SDK_INT >= 26
+                    ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    : WindowManager.LayoutParams.TYPE_PHONE,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                    PixelFormat.TRANSLUCENT);
+            params.gravity = Gravity.TOP | Gravity.END;
+            params.x = 14;
+            params.y = 210;
+            final int[] down = new int[2];
+            final float[] touch = new float[2];
+            final boolean[] moved = new boolean[1];
+            bubble.setOnTouchListener((view, event) -> {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        down[0] = params.x; down[1] = params.y;
+                        touch[0] = event.getRawX(); touch[1] = event.getRawY();
+                        moved[0] = false;
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        int dx = (int) (touch[0] - event.getRawX());
+                        int dy = (int) (event.getRawY() - touch[1]);
+                        if (Math.abs(dx) + Math.abs(dy) > 8) moved[0] = true;
+                        params.x = Math.max(0, down[0] + dx);
+                        params.y = Math.max(40, down[1] + dy);
+                        try { windowManager.updateViewLayout(bubble, params); } catch (Exception ignored) {}
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        if (!moved[0]) {
+                            Intent launch = new Intent(CosmicLiveService.this, MainActivity.class);
+                            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                            startActivity(launch);
+                        }
+                        return true;
+                }
+                return false;
+            });
+            windowManager.addView(bubble, params);
+            bubbleView = bubble;
+            emit("bubble", "Floating COSMIC bubble is active.");
+        } catch (Exception e) {
+            emit("error", "Floating bubble could not start: " + e.getMessage());
+        }
+    }
+
+    private void hideFloatingBubble() {
+        try { if (bubbleView != null && windowManager != null) windowManager.removeView(bubbleView); } catch (Exception ignored) {}
+        bubbleView = null;
+    }
+
     private void startScreenCapture(int resultCode, Intent data) {
         if (data == null || resultCode != android.app.Activity.RESULT_OK) {
             emit("error", "Screen sharing permission was not granted.");
@@ -413,6 +498,7 @@ public class CosmicLiveService extends Service {
         socket = null;
         if (ws != null) ws.close(1000, "user stopped");
         stopScreenCapture();
+        hideFloatingBubble();
         releaseAudio();
         getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().remove("resume_handle").apply();
         emit("audio_end", "");
@@ -461,6 +547,7 @@ public class CosmicLiveService extends Service {
         WebSocket ws = socket;
         if (ws != null) ws.close(1000, "service destroyed");
         stopScreenCapture();
+        hideFloatingBubble();
         releaseAudio();
         if (client != null) client.dispatcher().executorService().shutdown();
         if (instance == this) instance = null;
