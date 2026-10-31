@@ -218,6 +218,8 @@ def create_gemini_live_token():
     """Mint a short-lived, single-use Gemini Live token; never expose the long-lived API key."""
     if request.remote_addr not in ("127.0.0.1", "::1"):
         return jsonify({"success": False, "error": "Live tokens can only be requested by the local COSMIC app."}), 403
+    from backend.ai.gateway.gateway import load_saved_provider_keys
+    load_saved_provider_keys()
     key = os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
         return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP first."}), 400
@@ -358,6 +360,8 @@ def generate_image():
     if len(prompt) > 4000:
         return jsonify({"success": False, "error": "Image prompt must be 4,000 characters or fewer."}), 400
 
+    from backend.ai.gateway.gateway import load_saved_provider_keys
+    load_saved_provider_keys()
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP and add your Gemini key."}), 400
