@@ -388,7 +388,21 @@ class AIGateway:
                     "verified": True,
                 }
             except Exception as exc:
-                errors.append(candidate + ": " + str(exc))
+                errors.append(candidate + " (" + chosen_model + "): " + str(exc))
+                # If the task-selected Gemini model is unavailable on this key,
+                # retry the fast stable model before falling back to another provider.
+                if (provider == "auto" and candidate == "gemini" and
+                        model == "auto" and chosen_model != "gemini-3.8-flash"):
+                    try:
+                        fallback_model = "gemini-3.8-flash"
+                        fallback_answer = self._gemini(fallback_model, key, message, history)
+                        return {
+                            "success": True, "provider": "gemini",
+                            "model": fallback_model, "message": fallback_answer,
+                            "type": "response", "verified": True,
+                        }
+                    except Exception as fallback_exc:
+                        errors.append("gemini (" + fallback_model + "): " + str(fallback_exc))
                 # In automatic mode, try the next configured provider.
                 if provider != "auto":
                     break
