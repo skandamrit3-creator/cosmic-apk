@@ -168,6 +168,13 @@ GEMINI_SPECIALIST_MODELS = [
     ("veo-3.1-lite-generate-preview", "Veo 3.1 Lite Generate · Video", "video", "preview"),
     ("lyria-3-clip-preview", "Lyria 3 Clip · Music", "audio_generation", "preview"),
     ("lyria-3-pro-preview", "Lyria 3 Pro · Music", "audio_generation", "preview"),
+    ("lyria-3.5", "Lyria 3.5 · Music generation", "audio_generation", "active"),
+    ("antigravity-preview-09-2026", "Antigravity · Managed agent", "agent", "active"),
+    ("deep-research-preview-04-2026", "Deep Research Preview", "agent", "active"),
+    ("deep-research-max-preview-04-2026", "Deep Research Max Preview", "agent", "active"),
+    ("deep-research-pro-preview-12-2025", "Deep Research Pro Preview · Retired 23 Oct 2026", "agent", "retired"),
+    ("gemma-4-26b-a4b-it", "Gemma 4 26B", "open-model", "active"),
+    ("gemma-4-31b-it", "Gemma 4 31B", "open-model", "active"),
 ]
 RETIRED_GEMINI_ENTRIES = [
     ("gemini-2.0-flash", "Gemini 2 Flash · Shut down", "chat", "retired"),
