@@ -93,6 +93,13 @@ if(button){
 document.addEventListener("cosmic:live-state",event=>{
  const mode=event.detail?.state;
  if(mode==="live"||mode==="connecting"){listening=true;if(button){button.setAttribute("aria-pressed","true");button.innerHTML="<span>■</span>";}}
+ else if(mode==="error"&&listening&&!window.COSMIC_LIVE?.listening){
+  const generation=++loopGeneration;
+  if(button){button.setAttribute("aria-pressed","true");button.title="Stop fallback voice commands";button.innerHTML="<span>■</span>";}
+  setStatus("GEMINI LIVE UNAVAILABLE · VOICE FALLBACK");
+  if(api()?.listen){nativeLoop=true;runNativeLoop(generation);}
+  else if(!startBrowserRecognition())stop();
+ }
  else if(mode==="idle"||mode==="error"){listening=false;if(button){button.setAttribute("aria-pressed","false");button.innerHTML="<span>◌</span>";}}
 });
 document.addEventListener("cosmic:live-transcript",event=>{
