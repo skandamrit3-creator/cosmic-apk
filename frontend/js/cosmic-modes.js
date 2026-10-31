@@ -164,6 +164,34 @@ async function openQuick(view){
    }catch(e){status.textContent="GEMINI LIVE TEST FAILED: "+e.message;}
    finally{liveTest.disabled=false;}
   });
+  const ttsTest=addQuickButton(actions,"TEST GEMINI SPEECH",async()=>{
+   ttsTest.disabled=true;status.textContent="Generating a short Gemini speech sample…";
+   try{
+    const r=await fetch(apiBase()+"/api/ai/speech",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:"COSMIC speech generation test. MYRAA is ready.",voice:localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore"})});
+    if(!r.ok){let d={};try{d=await r.json();}catch(_){}throw new Error(d.error||"HTTP "+r.status);}
+    const blob=await r.blob();if(!blob.size)throw new Error("TTS returned an empty audio file.");
+    const url=URL.createObjectURL(blob);const audio=new Audio(url);
+    audio.onended=()=>URL.revokeObjectURL(url);audio.onerror=()=>{URL.revokeObjectURL(url);status.textContent="SPEECH PLAYBACK FAILED";};
+    await audio.play();status.textContent="GEMINI SPEECH GENERATED · "+blob.size+" bytes · "+(r.headers.get("X-COSMIC-Model")||"TTS");
+   }catch(e){status.textContent="GEMINI SPEECH TEST FAILED: "+e.message;}
+   finally{ttsTest.disabled=false;}
+  });
+  const imageTest=addQuickButton(actions,"TEST GEMINI IMAGE",async()=>{
+   if(!window.confirm("This sends a real image-generation request and may use paid Gemini API credits. Continue?"))return;
+   imageTest.disabled=true;status.textContent="Generating a small 512px test image…";
+   try{
+    const r=await fetch(apiBase()+"/api/images/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:"A simple elegant violet glass sphere on a dark graphite background, clean studio lighting.",aspect_ratio:"1:1",image_size:"512"})});
+    const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);
+    status.textContent="GEMINI IMAGE GENERATION PASSED · "+(d.model||"image model");
+   }catch(e){status.textContent="GEMINI IMAGE TEST FAILED: "+e.message;}
+   finally{imageTest.disabled=false;}
+  });
+  const avatarProviderTest=addQuickButton(actions,"CHECK 3D AVATAR PROVIDER",async()=>{
+   avatarProviderTest.disabled=true;
+   try{const r=await fetch(apiBase()+"/api/avatar/3d/status",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);status.textContent=d.configured?"TRIPO 3D PROVIDER CONFIGURED · GENERATION NOT YET RUN":"TRIPO 3D PROVIDER NOT CONFIGURED · "+(d.message||"");}
+   catch(e){status.textContent="3D PROVIDER CHECK FAILED: "+e.message;}
+   finally{avatarProviderTest.disabled=false;}
+  });
   async function refreshStatus(){try{const r=await fetch(apiBase()+"/api/ai/provider-keys",{cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"HTTP "+r.status);(d.providers||[]).forEach(p=>{const el=grid.querySelector('[data-provider="'+p.provider+'"]');if(el)el.textContent=p.configured?"KEY SAVED · NOT YET TESTED":"KEY MISSING";});status.textContent="Add your own provider keys, then test them. COSMIC does not include free API credits."; }catch(e){status.textContent="KEY SETTINGS UNAVAILABLE: "+e.message;}}
   refreshStatus();
   addQuickText(body,"A provider needs its own API key and may charge or enforce free-tier limits. Keys are not supplied by the APK.");
