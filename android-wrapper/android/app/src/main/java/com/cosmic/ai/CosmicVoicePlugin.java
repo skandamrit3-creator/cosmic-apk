@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 import androidx.core.content.ContextCompat;
+import androidx.activity.result.ActivityResult;
 import android.net.Uri;
 import android.webkit.URLUtil;
 import android.view.accessibility.AccessibilityNodeInfo;
