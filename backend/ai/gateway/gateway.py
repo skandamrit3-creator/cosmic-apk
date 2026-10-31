@@ -206,12 +206,14 @@ def model_catalog():
             integration = "tts"
         elif task == "image" and model_id == "gemini-nano-banana-2.1":
             integration = "image"
+        elif task == "open-model" and model_id in {"gemma-4-26b-a4b-it", "gemma-4-31b-it"}:
+            integration = "chat"
         else:
             integration = "catalog"
         result.append({
             "provider": "gemini", "id": model_id, "label": label,
-            "configured": gemini_configured, "task": task,
-            "chat_compatible": False, "status": status,
+            "configured": gemini_configured, "task": ("chat" if integration == "chat" else task),
+            "chat_compatible": integration == "chat", "status": status,
             "integration": integration,
         })
     return result
@@ -373,6 +375,20 @@ class AIGateway:
 
         if model != "auto" and provider != "auto":
             candidates = [provider]
+
+        configured_candidates = [
+            candidate for candidate in candidates
+            if os.getenv(CONFIG[candidate]["key"], "").strip()
+        ]
+        if not configured_candidates:
+            return {
+                "success": False,
+                "provider": provider,
+                "needs_setup": True,
+                "error": "No API key is configured for the selected provider(s): "
+                    + ", ".join(candidates)
+                    + ". Open COSMIC → API SETUP, add your Gemini API key, and tap SAVE API KEYS. Model names and quota counters are not API credentials.",
+            }
 
         errors = []
         for candidate in candidates:
