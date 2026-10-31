@@ -236,23 +236,16 @@ def create_gemini_live_token():
 
     now = datetime.datetime.now(datetime.timezone.utc)
     model = "models/" + requested_model
-    locked_config = {
-        "responseModalities": ["AUDIO"],
-        "sessionResumption": {},
-        "contextWindowCompression": {"slidingWindow": {}},
-    }
     try:
         response = requests.post(
             "https://generativelanguage.googleapis.com/v1beta/auth_tokens",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
             json={
+                # Keep token provisioning to the universally supported fields.
+                # Live model/configuration is sent in the WebSocket setup message.
                 "uses": 1,
                 "expireTime": (now + datetime.timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
                 "newSessionExpireTime": (now + datetime.timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
-                "liveConnectConstraints": {
-                    "model": model,
-                    "config": locked_config,
-                },
             },
             timeout=15,
         )
@@ -269,7 +262,7 @@ def create_gemini_live_token():
             "token": token,
             "model": model,
             "expires_in_seconds": 1800,
-            "config": locked_config,
+            "config": {"responseModalities": ["AUDIO"]},
         })
     except requests.RequestException as exc:
         return jsonify({"success": False, "error": "Gemini Live token request failed: " + str(exc)[:240]}), 502
@@ -451,7 +444,7 @@ def generate_image():
         "model": "gemini-nano-banana-2.1",
         "input": [{"type": "text", "text": prompt}],
         "response_format": {
-            "type": "image", "mime_type": "image/png",
+            "type": "image", "mime_type": "image/jpeg",
             "aspect_ratio": aspect_ratio, "image_size": image_size,
         },
     }
@@ -488,7 +481,7 @@ def generate_image():
         data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
         image_dir = data_root / "generated-images"
         image_dir.mkdir(parents=True, exist_ok=True)
-        filename = uuid.uuid4().hex + ".png"
+        filename = uuid.uuid4().hex + ".jpg"
         (image_dir / filename).write_bytes(image_bytes)
         return jsonify({
             "success": True,
@@ -508,11 +501,11 @@ def generate_image():
 
 @app.get("/api/images/generated/<filename>")
 def serve_generated_image(filename):
-    if not filename.endswith(".png") or not filename[:-4].isalnum():
+    if not filename.endswith(".jpg") or not filename[:-4].isalnum():
         return jsonify({"success": False, "error": "Invalid image name"}), 404
     data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
     image_dir = data_root / "generated-images"
-    return send_from_directory(image_dir, filename, mimetype="image/png", as_attachment=False, max_age=86400)
+    return send_from_directory(image_dir, filename, mimetype="image/jpeg", as_attachment=False, max_age=86400)
 
 
 @app.get("/api/history")
