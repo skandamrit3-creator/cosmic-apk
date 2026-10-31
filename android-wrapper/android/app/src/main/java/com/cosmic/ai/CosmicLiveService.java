@@ -403,7 +403,9 @@ public class CosmicLiveService extends Service {
                         if (!moved[0]) {
                             Intent launch = new Intent(CosmicLiveService.this, MainActivity.class);
                             launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                            startActivity(launch);
+                            PendingIntent openApp = PendingIntent.getActivity(CosmicLiveService.this, NOTIFICATION_ID + 1,
+                                    launch, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                            try { openApp.send(); } catch (PendingIntent.CanceledException ignored) {}
                         }
                         return true;
                 }
