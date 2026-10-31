@@ -123,7 +123,8 @@ public class CosmicVoicePlugin extends Plugin {
             Intent stopWake = new Intent(getContext(), CosmicWakeWordService.class);
             stopWake.setAction(CosmicWakeWordService.ACTION_STOP);
             try { getContext().startService(stopWake); } catch (Exception ignored) {}
-            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", true).apply();
+            boolean wakeEnabled = getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).getBoolean("wake_word_enabled", false);
+            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", !wakeEnabled).apply();
             String model = call.getString("model", "gemini-3.8-live");
             if (!"gemini-3.8-live".equals(model) &&
                     !"gemini-3.8-live-extended-thinking".equals(model)) {
