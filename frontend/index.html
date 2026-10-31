@@ -695,13 +695,15 @@
       // KIE remains available for generation workflows, not text chat.
       const kie = [...provider.options].find(o => o.value === "kie");
       if (kie) kie.disabled = true;
-      provider.addEventListener("change", fillModels);
+      provider.onchange = fillModels;
       fillModels();
     } catch (error) {
       console.warn("COSMIC model list unavailable; automatic routing remains available.", error);
     }
   }
 
+  window.COSMIC_REFRESH_MODELS = loadModels;
+  document.addEventListener("cosmic:providers-updated", loadModels);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", loadModels, {once:true});
   } else {
