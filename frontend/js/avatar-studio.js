@@ -30,7 +30,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const iris=new THREE.MeshStandardMaterial({color:0x8062d5,roughness:.22,metalness:.08});
     const pupil=new THREE.MeshStandardMaterial({color:0x211d2d,roughness:.2});
     const lip=new THREE.MeshStandardMaterial({color:0x9e465b,roughness:.5});
-    const eyeLids=[];
+    const eyeLids=[],eyeBrows=[];
     const sphere=(x,y,z,sx,sy,sz,mat)=>mesh(new THREE.SphereGeometry(1,32,24),mat,x,y,z,sx,sy,sz);
     // Silhouette, tailored jacket and neck
     g.add(mesh(new THREE.CapsuleGeometry(.39,.62,8,28),outfit,0,1.05,0));
@@ -107,7 +107,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const collar=mesh(new THREE.TorusGeometry(.19,.026,10,48),trim,0,1.52,.04);collar.rotation.x=Math.PI/2;g.add(collar);
     const waist=mesh(new THREE.TorusGeometry(.31,.012,8,64),trim,0,.73,0);waist.rotation.x=Math.PI/2;g.add(waist);
     const halo=mesh(new THREE.TorusGeometry(.82,.009,8,100),new THREE.MeshBasicMaterial({color:0xb8a6df,transparent:true,opacity:.32}),0,.15,0);halo.rotation.x=Math.PI/2;g.add(halo);
-    g.userData.preview=true;g.userData.style=style;g.userData.leftArm=leftArm;g.userData.rightArm=rightArm;g.userData.mouth=mouth;g.userData.eyeLids=eyeLids;
+    g.userData.preview=true;g.userData.style=style;g.userData.leftArm=leftArm;g.userData.rightArm=rightArm;g.userData.mouth=mouth;g.userData.eyeLids=eyeLids;g.userData.eyeBrows=eyeBrows;
     return g;
   }
   function initScene(canvas){
@@ -126,7 +126,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame,gesture=Date.now()<gestureUntil?activeGesture:"idle";currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=gesture==="celebrate"?.82:gesture==="explain"?-.42:-.08+idle+talk*.35;l.rotation.x=gesture==="think"?-.45:Math.sin(t*.9)*.025;}if(r){r.rotation.z=gesture==="wave"?-.92:gesture==="celebrate"?-.82:gesture==="explain"?.42:.08-idle-talk*.55;r.rotation.x=gesture==="wave"?Math.sin(t*8)*.22:gesture==="think"?.35:Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:open;mouth.scale.x=mood==="surprised"?.095:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=.105*blink;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame,gesture=Date.now()<gestureUntil?activeGesture:"idle";currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=gesture==="celebrate"?.82:gesture==="explain"?-.42:-.08+idle+talk*.35;l.rotation.x=gesture==="think"?-.45:Math.sin(t*.9)*.025;}if(r){r.rotation.z=gesture==="wave"?-.92:gesture==="celebrate"?-.82:gesture==="explain"?.42:.08-idle-talk*.55;r.rotation.x=gesture==="wave"?Math.sin(t*8)*.22:gesture==="think"?.35:Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:mood==="sad"?.012:mood==="surprised"?.065:open;mouth.scale.x=mood==="surprised"?.095:mood==="happy"?.085:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=(mood==="surprised"?.125:mood==="sad"?.082:.105)*blink;});(currentRoot.userData.eyeBrows||[]).forEach((brow,i)=>{const side=i===0?-1:1;brow.rotation.z=mood==="angry"?side*.24:mood==="sad"?-side*.13:mood==="surprised"?side*.12:0;brow.position.y=mood==="surprised"?2.28:2.255;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else if(mood==="angry"){currentRoot.rotation.z=-.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
