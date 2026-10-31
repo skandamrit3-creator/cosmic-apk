@@ -237,7 +237,8 @@
             {name:"open_app",description:"Open an installed Android application by its visible name.",parameters:{type:"OBJECT",properties:{name:{type:"STRING",description:"Visible app name, such as YouTube or Chrome"}},required:["name"]}},
             {name:"open_url",description:"Open an HTTP or HTTPS website or deep link in the available browser.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Complete http or https URL"}},required:["url"]}},
             {name:"download_file",description:"Download a file from a direct HTTP or HTTPS URL using the device download manager.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Direct HTTP or HTTPS file URL"},fileName:{type:"STRING",description:"Optional filename"}},required:["url"]}},
-            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat or Avatar mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar"]}},required:["mode"]}}
+            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat or Avatar mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar"]}},required:["mode"]}},
+            {name:"navigate_back",description:"Navigate back in the current COSMIC view.",parameters:{type:"OBJECT",properties:{}}}
           ]}]
         };
         socket.send(JSON.stringify({setup:{
@@ -318,9 +319,13 @@
         } else if (call.name === "download_file") {
           const url = new URL(String(args.url || ""));
           if (!["http:","https:"].includes(url.protocol)) throw new Error("Only HTTP and HTTPS downloads are allowed.");
+          if (!window.confirm("Allow COSMIC to download this file?\\n"+url.href)) throw new Error("Download cancelled by user.");
           if (typeof plugin?.downloadFile !== "function") throw new Error("Native downloads are unavailable in this client.");
           const fileName = String(args.fileName || "").slice(0,120);
           result = await plugin.downloadFile({url:url.href,fileName});
+        } else if (call.name === "navigate_back") {
+          if (typeof plugin?.systemAction !== "function") throw new Error("Back navigation is unavailable in this client.");
+          await plugin.systemAction({action:"back"}); result = {success:true,action:"navigate_back"};
         } else {
           throw new Error("Unknown COSMIC action.");
         }
