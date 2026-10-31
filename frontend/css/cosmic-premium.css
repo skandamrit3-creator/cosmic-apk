@@ -254,3 +254,31 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .avatar-conversation-message.error{color:#ffb6c2;border-color:rgba(234,182,197,.3)}
 .avatar-conversation-actions{display:flex;gap:8px;margin-top:8px}
 .avatar-conversation-actions button{flex:1;min-height:44px}
+
+
+/* MYRAA-inspired full-screen companion layout: avatars only, settings in a compact drawer. */
+.avatar-mode{position:fixed!important;inset:0!important;z-index:2100!important;height:100dvh!important;overflow:hidden!important;padding:0!important;background:#080613!important}
+.avatar-studio-v2{position:relative;display:block!important;width:100%;height:100%;max-width:none!important;min-height:0!important;margin:0!important;padding:0!important}
+.avatar-studio-head{position:absolute;z-index:5;top:calc(env(safe-area-inset-top) + 10px);left:18px;right:18px;grid-column:auto!important;padding:8px 12px!important;border:1px solid #ffffff12;border-radius:18px;background:#0907159c;backdrop-filter:blur(18px)}
+.avatar-studio-head h2{font-size:17px!important;letter-spacing:.24em!important}.avatar-studio-head h2 span{color:#74dff3}.avatar-studio-head p{font-size:10px!important}
+.avatar-head-actions{display:flex;align-items:center;gap:10px}.avatar-head-actions #cosmicAvatarModelName{font-size:10px;color:#b8c6d5}
+.avatar-settings-toggle,.avatar-settings-close{min-width:40px;min-height:40px;border:1px solid #ffffff25;border-radius:13px;background:#ffffff0d;color:#eaf8ff;font-size:19px}
+.avatar-stage-v2{position:absolute!important;inset:0!important;min-height:0!important;height:100%!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:radial-gradient(ellipse at 50% 35%,#2a1b3a 0%,#100b20 48%,#070511 100%)!important}
+#cosmicAvatarCanvas{width:100%!important;height:100%!important;min-height:0!important;touch-action:pan-y}
+.avatar-stage-v2>.avatar-stage-meta{top:calc(env(safe-area-inset-top) + 76px);left:18px;right:18px}
+.avatar-stage-v2>.avatar-stage-meta span{font-size:9px;background:#08061370}
+.avatar-stage-actions{top:calc(env(safe-area-inset-top) + 76px);bottom:auto;left:auto;right:18px;justify-content:flex-end}
+.avatar-stage-actions .avatar-action{min-height:34px;padding:7px 10px;font-size:9px;background:#08061380}
+.avatar-chat-dock{position:absolute;z-index:6;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 18px);max-width:760px;margin:0 auto;padding:10px;border:1px solid #ffffff20;border-radius:22px;background:#171323d9;backdrop-filter:blur(22px);box-shadow:0 12px 40px #0007}
+.avatar-conversation-log{max-height:18dvh;overflow:auto;margin:0 0 8px;padding:0 4px;color:#f2eff8;font-size:12px}
+.avatar-conversation-log:empty{display:none}.avatar-conversation-message{padding:5px 8px;margin:3px 0;border-radius:10px;background:#ffffff0b}
+.avatar-chat-row{display:flex;gap:8px;align-items:center}.avatar-chat-row textarea{flex:1;min-width:0;min-height:46px;max-height:100px;resize:none;border:1px solid #ffffff16!important;border-radius:14px!important;background:#ffffff0a!important;color:#fff!important;font-size:14px}
+.avatar-chat-row .avatar-conversation-actions{display:flex;gap:7px}.avatar-chat-row button{min-height:46px!important;white-space:nowrap;border-radius:14px!important}
+.avatar-panel{position:absolute!important;z-index:12!important;top:calc(env(safe-area-inset-top) + 64px);right:12px;bottom:12px;width:min(390px,calc(100vw - 24px));overflow:auto;transform:translateX(calc(100% + 30px));transition:transform .25s ease;align-self:auto!important;border:1px solid #ffffff24!important;border-radius:22px!important;background:#0e0b1bf2!important;backdrop-filter:blur(24px)!important}
+.avatar-studio-v2.settings-open .avatar-panel{transform:translateX(0)}
+.avatar-settings-close{display:block;margin:0 0 12px auto;min-height:32px;padding:0 12px;font-size:10px;letter-spacing:.08em}
+.avatar-panel h3{color:#e8e5f4}.avatar-panel p,.avatar-help{color:#aaa6bb}
+.avatar-panel .avatar-conversation-log,.avatar-panel #avatarConversationInput,.avatar-panel .avatar-conversation-actions{display:none!important}
+.avatar-panel .avatar-divider{border-color:#ffffff17}
+@media(max-width:850px){.avatar-studio-v2{display:block!important}.avatar-stage-v2,#cosmicAvatarCanvas{min-height:0!important;height:100%!important}.avatar-studio-head{align-items:center!important;flex-direction:row!important}.avatar-panel{top:calc(env(safe-area-inset-top) + 66px);bottom:calc(env(safe-area-inset-bottom) + 10px)}}
+@media(max-width:480px){.avatar-studio-head{left:10px;right:10px;padding:7px 9px!important}.avatar-head-actions #cosmicAvatarModelName{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.avatar-chat-dock{left:9px;right:9px;bottom:calc(env(safe-area-inset-bottom) + 10px);padding:8px}.avatar-chat-row textarea{font-size:13px}.avatar-chat-row button{padding:0 10px!important;font-size:10px}}
