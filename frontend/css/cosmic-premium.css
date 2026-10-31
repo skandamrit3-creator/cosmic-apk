@@ -245,3 +245,12 @@ button:disabled{opacity:.5;cursor:not-allowed}
  .cosmic-chat-head{flex-wrap:wrap;font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.mode-tab{transition:none!important}}
+
+.avatar-conversation-log{display:flex;flex-direction:column;gap:8px;max-height:260px;min-height:90px;overflow:auto;padding:10px;border:1px solid var(--c-line);border-radius:13px;background:rgba(3,10,18,.55);overscroll-behavior:contain}
+.avatar-conversation-log>p{font-size:11px;color:var(--c-muted)}
+.avatar-conversation-message{max-width:94%;padding:10px 12px;border:1px solid var(--c-line);border-radius:12px;background:rgba(255,255,255,.045);font-size:12px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
+.avatar-conversation-message.user{align-self:flex-end;background:rgba(117,160,190,.16)}
+.avatar-conversation-message.assistant{align-self:flex-start}
+.avatar-conversation-message.error{color:#ffb6c2;border-color:rgba(234,182,197,.3)}
+.avatar-conversation-actions{display:flex;gap:8px;margin-top:8px}
+.avatar-conversation-actions button{flex:1;min-height:44px}
