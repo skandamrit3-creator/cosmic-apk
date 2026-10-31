@@ -16,6 +16,12 @@ public class MainActivity extends BridgeActivity {
         startCosmicBackend();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        CosmicLiveService.refreshFloatingBubble();
+    }
+
     private void startCosmicBackend() {
         Intent service = new Intent(this, CosmicBackendService.class);
         service.setAction(CosmicBackendService.ACTION_START);
