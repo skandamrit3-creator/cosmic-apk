@@ -351,9 +351,13 @@ public class CosmicLiveService extends Service {
                     image.getHeight(), Bitmap.Config.ARGB_8888);
             padded.copyPixelsFromBuffer(buffer);
             Bitmap frame = Bitmap.createBitmap(padded, 0, 0, image.getWidth(), image.getHeight());
+            int targetWidth = Math.min(960, frame.getWidth());
+            int targetHeight = Math.max(1, frame.getHeight() * targetWidth / frame.getWidth());
+            Bitmap scaled = Bitmap.createScaledBitmap(frame, targetWidth, targetHeight, true);
             java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
-            frame.compress(Bitmap.CompressFormat.JPEG, 55, output);
+            scaled.compress(Bitmap.CompressFormat.JPEG, 55, output);
             byte[] bytes = output.toByteArray();
+            if (scaled != frame) scaled.recycle();
             frame.recycle();
             padded.recycle();
             JSONObject video = new JSONObject();
@@ -372,7 +376,7 @@ public class CosmicLiveService extends Service {
     private void stopScreenCapture() {
         try { if (virtualDisplay != null) { virtualDisplay.release(); virtualDisplay = null; } } catch (Exception ignored) {}
         try { if (imageReader != null) { imageReader.setOnImageAvailableListener(null, null); imageReader.close(); imageReader = null; } } catch (Exception ignored) {}
-        try { if (projection != null) { projection.stop(); projection = null; } } catch (Exception ignored) {}
+        try { if (projection != null) { MediaProjection oldProjection = projection; projection = null; oldProjection.stop(); } } catch (Exception ignored) {}
         emit("state", "SCREEN SHARE STOPPED");
     }
 
