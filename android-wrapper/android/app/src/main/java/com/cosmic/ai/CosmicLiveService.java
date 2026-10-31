@@ -188,8 +188,8 @@ public class CosmicLiveService extends Service {
                             functions.put(new JSONObject().put("name", "open_app")
                                     .put("description", "Open an installed Android app by its visible name.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
-                                            .put("properties", new JSONObject().put("app_name", new JSONObject().put("type", "STRING")))
-                                            .put("required", new JSONArray().put("app_name"))));
+                                            .put("properties", new JSONObject().put("name", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("name"))));
                             functions.put(new JSONObject().put("name", "open_url")
                                     .put("description", "Open a website or HTTP/HTTPS link in the appropriate app.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
@@ -200,11 +200,17 @@ public class CosmicLiveService extends Service {
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
                                             .put("properties", new JSONObject()
                                                     .put("url", new JSONObject().put("type", "STRING"))
-                                                    .put("file_name", new JSONObject().put("type", "STRING")))
+                                                    .put("fileName", new JSONObject().put("type", "STRING")))
                                             .put("required", new JSONArray().put("url"))));
                             functions.put(new JSONObject().put("name", "navigate_back")
                                     .put("description", "Navigate back within the COSMIC app.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "switch_mode")
+                                    .put("description", "Switch COSMIC interface to Reactor, Chat or Avatar mode.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar"))))
+                                            .put("required", new JSONArray().put("mode"))));
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
