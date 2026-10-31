@@ -326,7 +326,9 @@
       } else setStatus(message,state.connected?"live":"connecting");
     } else if(type==="error") {
       state.connected=false;state.connecting=false;
-      if(/key is missing|API key|permission denied|permission is required/i.test(message)){state.desired=false;state.nativeMode=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");}
+      const screenOnly=/screen share|screen capture|screen sharing/i.test(message);
+      if(!screenOnly){state.desired=false;state.nativeMode=false;}
+      if(/key is missing|API key|permission denied|permission is required/i.test(message))localStorage.setItem("COSMIC_LIVE_AUTO","false");
       setStatus(message,"error");
     } else if(type==="transcript") transcript(message,"assistant");
     else if(type==="user_transcript") {
