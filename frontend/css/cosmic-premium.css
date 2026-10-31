@@ -282,3 +282,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .avatar-panel .avatar-divider{border-color:#ffffff17}
 @media(max-width:850px){.avatar-studio-v2{display:block!important}.avatar-stage-v2,#cosmicAvatarCanvas{min-height:0!important;height:100%!important}.avatar-studio-head{align-items:center!important;flex-direction:row!important}.avatar-panel{top:calc(env(safe-area-inset-top) + 66px);bottom:calc(env(safe-area-inset-bottom) + 10px)}}
 @media(max-width:480px){.avatar-studio-head{left:10px;right:10px;padding:7px 9px!important}.avatar-head-actions #cosmicAvatarModelName{max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.avatar-chat-dock{left:9px;right:9px;bottom:calc(env(safe-area-inset-bottom) + 10px);padding:8px}.avatar-chat-row textarea{font-size:13px}.avatar-chat-row button{padding:0 10px!important;font-size:10px}}
+
+.avatar-setting-select{display:block;width:100%;margin:6px 0 12px;padding:10px 12px;border:1px solid #ffffff20;border-radius:11px;background:#171323;color:#f5f1fb;font:inherit;font-size:12px}
+.avatar-setting-select option{background:#171323;color:#fff}
