@@ -54,7 +54,7 @@ async function sendChat(e){
  const input=chat.querySelector("#cosmicChatInput"),log=chat.querySelector("#cosmicChatLog"),state=chat.querySelector("#cosmicChatState");
  const message=input.value.trim();if(!message)return;lastPrompt=message;
  const add=(text,kind)=>{const el=document.createElement("div");el.className="cosmic-chat-msg "+kind;if(kind==="assistant")renderRichText(el,text);else el.textContent=text;log.append(el);log.scrollTop=log.scrollHeight;return el;};
- add(message,"user");input.value="";busy=true;state.textContent="PROCESSING…";
+ add(message,"user");window.COSMIC_AVATAR_COMMAND?.(message);input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
   if(/\b(?:make|create|generate|draw|design|render)\b.{0,70}\b(?:image|picture|photo|illustration|wallpaper|logo|poster|artwork)\b/i.test(message)){
