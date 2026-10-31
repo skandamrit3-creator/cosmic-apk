@@ -58,7 +58,7 @@
     if(!plugin)throw new Error("Android action bridge is unavailable.");
     args=args&&typeof args==="object"?args:{};
     if(name==="open_app"){
-      const app=String(args.app_name||"").trim().slice(0,100);
+      const app=String(args.name||args.app_name||"").trim().slice(0,100);
       if(!app)throw new Error("App name is missing.");
       await plugin.launchApp({name:app});status("Opened "+app);return {success:true,action:"open_app",app};
     }
@@ -70,7 +70,7 @@
     if(name==="download_file"){
       const raw=String(args.url||"").trim();const url=new URL(raw);
       if(!["http:","https:"].includes(url.protocol))throw new Error("Only HTTP and HTTPS files can be downloaded.");
-      const fileName=String(args.file_name||"").slice(0,120);
+      const fileName=String(args.fileName||args.file_name||"").slice(0,120);
       const result=await plugin.downloadFile({url:url.href,fileName});
       status("Download started: "+(result.fileName||url.hostname));return {success:true,action:"download_file",fileName:result.fileName};
     }
