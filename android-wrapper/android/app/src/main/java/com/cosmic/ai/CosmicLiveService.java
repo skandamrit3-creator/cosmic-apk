@@ -11,6 +11,17 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
+import android.hardware.display.VirtualDisplay;
+import android.media.Image;
+import android.media.ImageReader;
+import android.graphics.Bitmap;
+import android.graphics.PixelFormat;
+import android.util.DisplayMetrics;
+import android.view.WindowManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Base64;
@@ -38,6 +49,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CosmicLiveService extends Service {
     public static final String ACTION_START = "com.cosmic.ai.live.START";
     public static final String ACTION_STOP = "com.cosmic.ai.live.STOP";
+    public static final String ACTION_SCREEN_START = "com.cosmic.ai.live.SCREEN_START";
+    public static final String ACTION_SCREEN_STOP = "com.cosmic.ai.live.SCREEN_STOP";
     public static final String ACTION_EVENT = "com.cosmic.ai.live.EVENT";
     public static final String EXTRA_MESSAGE = "message";
     private static final String TAG = "COSMICLive";
@@ -54,6 +67,12 @@ public class CosmicLiveService extends Service {
     private Thread sessionThread;
     private String apiKey;
     private String resumeHandle = "";
+    private MediaProjection projection;
+    private VirtualDisplay virtualDisplay;
+    private ImageReader imageReader;
+    private long lastFrameAt = 0;
+
+    public static boolean isRunning() { CosmicLiveService service = instance; return service != null && service.running.get(); }
 
     public static boolean sendText(String text) {
         CosmicLiveService service = instance;
@@ -81,6 +100,20 @@ public class CosmicLiveService extends Service {
     }
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && ACTION_SCREEN_STOP.equals(intent.getAction())) {
+            stopScreenCapture();
+            return START_STICKY;
+        }
+        if (intent != null && ACTION_SCREEN_START.equals(intent.getAction())) {
+            int resultCode = intent.getIntExtra("projection_result", 0);
+            Intent data = intent.getParcelableExtra("projection_data");
+            startScreenCapture(resultCode, data);
+            if (running.compareAndSet(false, true)) {
+                sessionThread = new Thread(this::runSession, "COSMIC-Gemini-Live");
+                sessionThread.start();
+            }
+            return START_STICKY;
+        }
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
             stopLive();
             return START_NOT_STICKY;
