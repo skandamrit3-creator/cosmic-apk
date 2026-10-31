@@ -52,8 +52,12 @@ public class CosmicWakeWordService extends Service {
     private volatile Recognizer recognizer;
     private Thread worker;
 
+    public static boolean isRunning() { return instance != null && instance.running.get(); }
+    private static volatile CosmicWakeWordService instance;
+
     @Override public void onCreate() {
         super.onCreate();
+        instance = this;
         createChannel();
         Notification n = notification("Preparing offline wake-word engine…");
         if (Build.VERSION.SDK_INT >= 34) {
@@ -187,7 +191,7 @@ public class CosmicWakeWordService extends Service {
                 String relative = name.substring(prefix.length());
                 if (relative.isEmpty()) { in.closeEntry(); continue; }
                 File target = new File(temp, relative).getCanonicalFile();
-                if (!target.toPath().startsWith(temp.getCanonicalFile().toPath()))
+                if (!target.getCanonicalPath().startsWith(temp.getCanonicalPath() + File.separator))
                     throw new SecurityException("Wake model archive path escaped its folder.");
                 if (entry.isDirectory()) target.mkdirs();
                 else {
@@ -268,6 +272,7 @@ public class CosmicWakeWordService extends Service {
 
     @Override public void onDestroy() {
         stopEngine();
+        if (instance == this) instance = null;
         super.onDestroy();
     }
 
