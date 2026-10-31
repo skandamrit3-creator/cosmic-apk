@@ -155,7 +155,7 @@ GEMINI_SPECIALIST_MODELS = [
     ("gemini-2.5-flash-preview-tts", "Gemini 2.5 Flash TTS · Legacy access", "tts", "legacy"),
     ("gemini-2.5-pro-preview-tts", "Gemini 2.5 Pro TTS · Legacy access", "tts", "legacy"),
     ("gemini-nano-banana-2.1", "Nano Banana 2.1 · Image generation", "image", "active"),
-    ("gemini-3.1-flash-image", "Nano Banana 2 · Image generation", "image", "active"),
+    ("gemini-3.1-flash-image", "Nano Banana 2 · Image generation · Deprecated", "image", "deprecated"),
     ("gemini-3.1-flash-lite-image", "Nano Banana 2 Lite · Image generation", "image", "active"),
     ("gemini-3-pro-image", "Nano Banana Pro · Image generation", "image", "active"),
     ("gemini-2.5-flash-image", "Nano Banana · Legacy image generation", "image", "legacy"),
