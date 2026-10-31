@@ -84,6 +84,20 @@ public class CosmicLiveService extends Service {
 
     public static boolean isRunning() { CosmicLiveService service = instance; return service != null && service.running.get(); }
 
+    public static boolean sendToolResponses(String responsesJson) {
+        CosmicLiveService service = instance;
+        WebSocket ws = service == null ? null : service.socket;
+        if (service == null || !service.ready.get() || ws == null) return false;
+        try {
+            JSONArray responses = new JSONArray(responsesJson);
+            JSONObject message = new JSONObject().put("toolResponse",
+                    new JSONObject().put("functionResponses", responses));
+            return ws.send(message.toString());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean sendText(String text) {
         CosmicLiveService service = instance;
         WebSocket ws = service == null ? null : service.socket;
@@ -170,6 +184,28 @@ public class CosmicLiveService extends Service {
                             JSONObject resume = new JSONObject();
                             if (!resumeHandle.isEmpty()) resume.put("handle", resumeHandle);
                             config.put("sessionResumption", resume);
+                            JSONArray functions = new JSONArray();
+                            functions.put(new JSONObject().put("name", "open_app")
+                                    .put("description", "Open an installed Android app by its visible name.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("app_name", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("app_name"))));
+                            functions.put(new JSONObject().put("name", "open_url")
+                                    .put("description", "Open a website or HTTP/HTTPS link in the appropriate app.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("url", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("url"))));
+                            functions.put(new JSONObject().put("name", "download_file")
+                                    .put("description", "Download a file from a direct HTTP or HTTPS URL to Android Downloads.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject()
+                                                    .put("url", new JSONObject().put("type", "STRING"))
+                                                    .put("file_name", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("url"))));
+                            functions.put(new JSONObject().put("name", "navigate_back")
+                                    .put("description", "Navigate back within the COSMIC app.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
                                             "You are COSMIC, a fast, warm, highly capable personal assistant. Speak naturally and concisely. You can answer questions and help plan actions. Never claim to have performed a phone action unless a connected tool confirms it. The user can interrupt you at any time."))));
@@ -199,6 +235,8 @@ public class CosmicLiveService extends Service {
                                     getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().putString("resume_handle", handle).apply();
                                 }
                             }
+                            JSONObject toolCall = root.optJSONObject("toolCall");
+                            if (toolCall != null) emit("tool_call", toolCall.toString());
                             JSONObject server = root.optJSONObject("serverContent");
                             if (server != null) {
                                 if (server.optBoolean("interrupted", false) && player != null) {
