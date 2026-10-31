@@ -2,6 +2,10 @@ package com.cosmic.ai;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.os.StatFs;
+import android.os.BatteryManager;
+import android.os.PowerManager;
 import android.app.DownloadManager;
 import android.media.projection.MediaProjectionManager;
 import android.content.Intent;
@@ -311,6 +315,66 @@ public class CosmicVoicePlugin extends Plugin {
         call.reject("This action requires an enabled COSMIC Accessibility Service");
     }
 
+
+    private long lastCpuTotal = -1L;
+    private long lastCpuIdle = -1L;
+
+    @PluginMethod
+    public void getDeviceMetrics(PluginCall call) {
+        try {
+            JSObject out = new JSObject();
+            ActivityManager am = (ActivityManager) getContext().getSystemService(Context.ACTIVITY_SERVICE);
+            ActivityManager.MemoryInfo memory = new ActivityManager.MemoryInfo();
+            if (am != null) {
+                am.getMemoryInfo(memory);
+                long total = memory.totalMem;
+                long used = Math.max(0L, total - memory.availMem);
+                out.put("ramTotalBytes", total);
+                out.put("ramUsedBytes", used);
+                out.put("ramPercent", total > 0 ? Math.round((used * 100.0) / total) : -1);
+            } else {
+                out.put("ramPercent", -1);
+            }
+
+            StatFs fs = new StatFs(Environment.getDataDirectory().getAbsolutePath());
+            long totalStorage = fs.getTotalBytes();
+            long freeStorage = fs.getAvailableBytes();
+            long usedStorage = Math.max(0L, totalStorage - freeStorage);
+            out.put("storageTotalBytes", totalStorage);
+            out.put("storageUsedBytes", usedStorage);
+            out.put("storagePercent", totalStorage > 0 ? Math.round((usedStorage * 100.0) / totalStorage) : -1);
+
+            try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader("/proc/stat"))) {
+                String line = reader.readLine();
+                if (line != null && line.startsWith("cpu ")) {
+                    String[] fields = line.trim().split("\\s+");
+                    long total = 0L;
+                    for (int i = 1; i < fields.length; i++) total += Long.parseLong(fields[i]);
+                    long idle = Long.parseLong(fields[4]) + (fields.length > 5 ? Long.parseLong(fields[5]) : 0L);
+                    int percent = -1;
+                    if (lastCpuTotal >= 0 && total > lastCpuTotal) {
+                        long deltaTotal = total - lastCpuTotal;
+                        long deltaIdle = idle - lastCpuIdle;
+                        percent = (int) Math.max(0, Math.min(100, Math.round((deltaTotal - deltaIdle) * 100.0 / deltaTotal)));
+                    }
+                    lastCpuTotal = total;
+                    lastCpuIdle = idle;
+                    out.put("cpuPercent", percent);
+                } else out.put("cpuPercent", -1);
+            } catch (Exception ignored) {
+                out.put("cpuPercent", -1);
+            }
+
+            BatteryManager battery = (BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
+            out.put("batteryPercent", battery != null ? battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) : -1);
+            out.put("gpuPercent", -1);
+            out.put("gpuAvailable", false);
+            out.put("sampledAt", System.currentTimeMillis());
+            call.resolve(out);
+        } catch (Exception e) {
+            call.reject("Could not read Android device metrics: " + e.getMessage());
+        }
+    }
 
     @PluginMethod
     public void openAccessibilitySettings(PluginCall call) {
