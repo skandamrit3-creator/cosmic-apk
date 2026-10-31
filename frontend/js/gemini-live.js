@@ -161,7 +161,8 @@
     const socket = new WebSocket(WS_BASE + "?access_token=" + encodeURIComponent(token));
     state.socket = socket;
     await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("Gemini Live connection timed out.")), 18000);
+      let settled = false;
+      const timeout = setTimeout(() => { if(!settled){settled=true;reject(new Error("Gemini Live connection timed out."));} }, 18000);
       socket.onopen = () => {
         const config = {
           responseModalities:["AUDIO"],
@@ -190,12 +191,13 @@
           tools:config.tools
         }}));
       };
-      socket.onerror = () => { clearTimeout(timeout); reject(new Error("Gemini Live WebSocket connection failed.")); };
+      socket.onerror = () => { clearTimeout(timeout); if(!settled){settled=true;reject(new Error("Gemini Live WebSocket connection failed."));} };
       socket.onmessage = event => {
         let message;
         try { message = JSON.parse(event.data); } catch (_) { return; }
         if (message.setupComplete) {
           clearTimeout(timeout);
+          settled = true;
           state.connected = true;
           state.reconnectDelay = 1200;
           setStatus("GEMINI LIVE · LISTENING", "live");
@@ -221,6 +223,7 @@
       };
       socket.onclose = () => {
         clearTimeout(timeout);
+        if(!settled){settled=true;reject(new Error("Gemini Live closed before session setup completed."));}
         state.connected = false;
         if (state.socket === socket) state.socket = null;
         if (state.desired && generation === state.generation) scheduleReconnect(generation);
