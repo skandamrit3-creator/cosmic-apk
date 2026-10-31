@@ -22,8 +22,34 @@ function languageSelect(){
  if(actions)actions.insertBefore(select,button);
  return select;
 }
+function routeControlPhrase(raw){
+ const value=String(raw||"").trim().replace(/[.!?]+$/,"");
+ const lower=value.toLowerCase().replace(/^hey\\s+cosmic[, ]*/,"").replace(/^ok\\s+cosmic[, ]*/,"").trim();
+ if(/^(stop listening|stop voice|turn off microphone|mute cosmic|go to sleep)$/i.test(lower)){stop();return true;}
+ if(/^(start listening|resume listening|wake up cosmic|start voice)$/i.test(lower)){start();return true;}
+ let m=lower.match(/^(?:switch|go) to (chat|avatar|reactor)(?: mode)?$|^(?:open|show) (chat|avatar|reactor)(?: mode)?$/i);
+ if(m){const mode=(m[1]||m[2]).toLowerCase();document.querySelector('[data-cosmic-mode="'+mode+'"]')?.click();return true;}
+ m=lower.match(/^(?:use|switch to|change to|select) (gemini|openai|gpt|groq|mistral|openrouter)(?: model)?$/i);
+ if(m){
+  const requested=m[1].toLowerCase(),provider=requested==="gpt"?"openai":requested;
+  const select=document.querySelector("#cosmicChatProvider");
+  if(!select)return false;
+  const option=[...select.options].find(o=>o.value===provider);
+  if(!option){setStatus(provider.toUpperCase()+" provider is not available");return true;}
+  select.value=provider;select.dispatchEvent(new Event("change",{bubbles:true}));
+  const model=document.querySelector("#cosmicChatModel");if(model){model.value="auto";model.dispatchEvent(new Event("change",{bubbles:true}));}
+  localStorage.setItem("COSMIC_CHAT_PROVIDER",provider);
+  setStatus("CHAT MODEL ROUTED TO "+provider.toUpperCase());return true;
+ }
+ m=lower.match(/^(?:use|switch to|change to|select) (?:model )?(.+)$/i);
+ if(m&&/\\b(gemini|gpt-4|gpt oss|llama|deepseek|mistral)\\b/i.test(m[1])){
+  const modelSelect=document.querySelector("#cosmicChatModel");
+  if(modelSelect){const q=m[1].toLowerCase();const opt=[...modelSelect.options].find(o=>(o.textContent+" "+o.value).toLowerCase().includes(q));if(opt&&!opt.disabled){modelSelect.value=opt.value;modelSelect.dispatchEvent(new Event("change",{bubbles:true}));setStatus("MODEL SELECTED: "+opt.textContent);return true;}}
+ }
+ return false;
+}
 async function command(text){
- const value=String(text||"").trim();if(!value)return;
+ const value=String(text||"").trim();if(!value)return;if(routeControlPhrase(value))return;
  if(input)input.value=value;
  const lower=value.toLowerCase();
  if(/^(stop listening|stop voice|turn off microphone|mute cosmic)$/i.test(lower)){stop();return;}
@@ -105,7 +131,8 @@ document.addEventListener("cosmic:live-state",event=>{
 document.addEventListener("cosmic:live-transcript",event=>{
  if(event.detail?.role!=="user")return;
  const text=String(event.detail.text||"").trim();
- if(/^(stop listening|stop voice|turn off microphone|mute cosmic)$/i.test(text))window.COSMIC_LIVE?.stop();
+ if(routeControlPhrase(text))return;
+ if(/^(?:hey |ok )?cosmic[, ]*(?:open|launch|start) .+/i.test(text)){command(text);}
 });
 document.addEventListener("cosmic:reply",event=>{
  const text=event.detail?.text;if(text&&api()?.speak)api().speak({text}).catch(()=>{});
