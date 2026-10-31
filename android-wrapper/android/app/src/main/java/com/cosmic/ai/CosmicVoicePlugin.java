@@ -6,6 +6,8 @@ import android.app.ActivityManager;
 import android.os.StatFs;
 import android.os.BatteryManager;
 import android.os.PowerManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.app.DownloadManager;
 import android.media.projection.MediaProjectionManager;
 import android.content.Intent;
@@ -53,6 +55,55 @@ public class CosmicVoicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void enableWakeWord(PluginCall call) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "wakeMicPermission");
+            return;
+        }
+        startWakeWordService(call);
+    }
+
+    @PermissionCallback
+    private void wakeMicPermission(PluginCall call) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) startWakeWordService(call);
+        else call.reject("Microphone permission is required for local wake-word detection.");
+    }
+
+    private void startWakeWordService(PluginCall call) {
+        try {
+            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE)
+                    .edit().putBoolean("wake_word_enabled", true).apply();
+            Intent stopLive = new Intent(getContext(), CosmicLiveService.class);
+            stopLive.setAction(CosmicLiveService.ACTION_STOP);
+            getContext().startService(stopLive);
+            Intent wake = new Intent(getContext(), CosmicWakeWordService.class);
+            wake.setAction(CosmicWakeWordService.ACTION_START);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(wake);
+            else getContext().startService(wake);
+            call.resolve(new JSObject().put("success", true).put("enabled", true)
+                    .put("message", "Local wake word enabled. The first start downloads a verified offline speech model."));
+        } catch (Exception e) { call.reject("Could not enable local wake word: " + e.getMessage()); }
+    }
+
+    @PluginMethod
+    public void disableWakeWord(PluginCall call) {
+        getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE)
+                .edit().putBoolean("wake_word_enabled", false).apply();
+        Intent stop = new Intent(getContext(), CosmicWakeWordService.class);
+        stop.setAction(CosmicWakeWordService.ACTION_STOP);
+        try { getContext().startService(stop); } catch (Exception ignored) {}
+        call.resolve(new JSObject().put("success", true).put("enabled", false));
+    }
+
+    @PluginMethod
+    public void getWakeWordStatus(PluginCall call) {
+        boolean enabled = getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE)
+                .getBoolean("wake_word_enabled", false);
+        call.resolve(new JSObject().put("enabled", enabled)
+                .put("running", CosmicWakeWordService.isRunning()));
+    }
+
+    @PluginMethod
     public void startLive(PluginCall call) {
         if (getPermissionState("microphone") != PermissionState.GRANTED) {
             requestPermissionForAlias("microphone", call, "liveMicPermission");
@@ -69,6 +120,9 @@ public class CosmicVoicePlugin extends Plugin {
 
     private void startLiveService(PluginCall call) {
         try {
+            Intent stopWake = new Intent(getContext(), CosmicWakeWordService.class);
+            stopWake.setAction(CosmicWakeWordService.ACTION_STOP);
+            try { getContext().startService(stopWake); } catch (Exception ignored) {}
             getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", true).apply();
             String model = call.getString("model", "gemini-3.8-live");
             if (!"gemini-3.8-live".equals(model) &&
@@ -98,11 +152,17 @@ public class CosmicVoicePlugin extends Plugin {
     @PluginMethod
     public void stopLive(PluginCall call) {
         try {
+            boolean wakeEnabled = getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).getBoolean("wake_word_enabled", false);
             getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", false).apply();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
             intent.setAction(CosmicLiveService.ACTION_STOP);
             getContext().startService(intent);
             call.resolve(new JSObject().put("success", true));
+            if (wakeEnabled) new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                Intent wake = new Intent(getContext(), CosmicWakeWordService.class);
+                wake.setAction(CosmicWakeWordService.ACTION_START);
+                try { if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(wake); else getContext().startService(wake); } catch (Exception ignored) {}
+            }, 1200);
         } catch (Exception e) {
             call.reject("Could not stop Gemini Live: " + e.getMessage());
         }
