@@ -11,9 +11,17 @@ Never claim to control devices or files unless an actual connected tool provides
 # These are candidate IDs; providers can change availability and free quotas.
 CATALOG = {
     "gemini": [
-        ("gemini-3.8-flash", "Gemini 3.8 Flash · Advanced"),
+        ("gemini-3.8-flash", "Gemini 3.8 Flash · Recommended"),
         ("gemini-3.6-flash", "Gemini 3.6 Flash · Fast"),
-        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite · Legacy"),
+        ("gemini-3.5-flash-lite", "Gemini 3.5 Flash Lite · Fast / low cost"),
+        ("gemini-3.5-flash", "Gemini 3.5 Flash"),
+        ("gemini-3.1-flash-lite", "Gemini 3.1 Flash Lite · Fast"),
+        ("gemini-3-flash-preview", "Gemini 3 Flash · Preview"),
+        ("gemini-3.1-pro-preview", "Gemini 3.1 Pro · Reasoning"),
+        ("gemini-4-argon", "Gemini 4 Argon · Advanced reasoning"),
+        ("gemini-2.5-flash", "Gemini 2.5 Flash · Legacy access"),
+        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite · Legacy access"),
+        ("gemini-2.5-pro", "Gemini 2.5 Pro · Legacy access"),
     ],
     "groq": [
         ("openai/gpt-oss-120b", "GPT OSS 120B"),
@@ -132,6 +140,42 @@ def save_provider_keys(keys=None, clear=None):
 load_saved_provider_keys()
 
 
+# Gemini API models are separated by task. Only text models appear in Chat.
+GEMINI_SPECIALIST_MODELS = [
+    ("gemini-3.8-live", "Gemini 3.8 Live · Default real-time voice", "live", "active"),
+    ("gemini-3.8-live-extended-thinking", "Gemini 3.8 Live Extended Thinking", "live", "active"),
+    ("gemini-3.5-live-translate-preview", "Gemini 3.5 Live Translate", "live", "preview"),
+    ("gemini-3.5-transcribe", "Gemini 3.5 Transcribe", "transcription", "active"),
+    ("gemini-3.5-transcribe-live", "Gemini 3.5 Transcribe Live", "transcription", "active"),
+    ("gemini-3.1-flash-live-preview", "Gemini 3.1 Flash Live · Legacy preview", "live", "legacy"),
+    ("gemini-2.5-flash-native-audio-preview-12-2025", "Gemini 2.5 Flash Native Audio Dialog · Legacy", "live", "legacy"),
+    ("gemini-3.8-flash-tts", "Gemini 3.8 Flash TTS · Natural speech", "tts", "active"),
+    ("gemini-3.8-flash-lite-tts", "Gemini 3.8 Flash Lite TTS · Fast speech", "tts", "active"),
+    ("gemini-3.1-flash-tts-preview", "Gemini 3.1 Flash TTS · Legacy preview", "tts", "legacy"),
+    ("gemini-2.5-flash-preview-tts", "Gemini 2.5 Flash TTS · Legacy access", "tts", "legacy"),
+    ("gemini-2.5-pro-preview-tts", "Gemini 2.5 Pro TTS · Legacy access", "tts", "legacy"),
+    ("gemini-nano-banana-2.1", "Nano Banana 2.1 · Image generation", "image", "active"),
+    ("gemini-3.1-flash-image", "Nano Banana 2 · Image generation", "image", "deprecated"),
+    ("gemini-3.1-flash-lite-image", "Nano Banana 2 Lite · Image generation", "image", "active"),
+    ("gemini-3-pro-image", "Nano Banana Pro · Image generation", "image", "active"),
+    ("gemini-2.5-flash-image", "Nano Banana · Legacy image generation", "image", "legacy"),
+    ("gemini-embedding-001", "Gemini Embedding 1", "embedding", "active"),
+    ("gemini-embedding-2", "Gemini Embedding 2 · Multimodal", "embedding", "active"),
+    ("gemini-omni-1.1-flash", "Gemini Omni 1.1 Flash · Video generation", "video", "active"),
+    ("gemini-robotics-er-2-preview", "Gemini Robotics ER 2 · Robotics", "robotics", "preview"),
+    ("veo-3.1-generate-preview", "Veo 3.1 Generate · Video", "video", "preview"),
+    ("veo-3.1-fast-generate-preview", "Veo 3.1 Fast Generate · Video", "video", "preview"),
+    ("veo-3.1-lite-generate-preview", "Veo 3.1 Lite Generate · Video", "video", "preview"),
+    ("lyria-3-clip-preview", "Lyria 3 Clip · Music", "audio_generation", "preview"),
+    ("lyria-3-pro-preview", "Lyria 3 Pro · Music", "audio_generation", "preview"),
+]
+RETIRED_GEMINI_ENTRIES = [
+    ("gemini-2.0-flash", "Gemini 2 Flash · Shut down", "chat", "retired"),
+    ("gemini-2.0-flash-lite", "Gemini 2 Flash Lite · Shut down", "chat", "retired"),
+    ("gemini-2.5-computer-use-preview-10-2025", "Computer Use Preview · Shut down", "tool", "retired"),
+]
+
+
 def model_catalog():
     result = []
     for provider, models in CATALOG.items():
@@ -139,12 +183,19 @@ def model_catalog():
         configured = bool(os.getenv(cfg["key"], "").strip())
         for model_id, label in models:
             result.append({
-                "provider": provider,
-                "id": model_id,
-                "label": label,
-                "configured": configured,
+                "provider": provider, "id": model_id, "label": label,
+                "configured": configured, "task": "chat",
+                "chat_compatible": True, "status": "active",
             })
+    gemini_configured = bool(os.getenv(CONFIG["gemini"]["key"], "").strip())
+    for model_id, label, task, status in GEMINI_SPECIALIST_MODELS + RETIRED_GEMINI_ENTRIES:
+        result.append({
+            "provider": "gemini", "id": model_id, "label": label,
+            "configured": gemini_configured, "task": task,
+            "chat_compatible": False, "status": status,
+        })
     return result
+
 
 
 class AIGateway:
