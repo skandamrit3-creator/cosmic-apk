@@ -62,7 +62,6 @@ jobs:
 
       - name: Verify referenced frontend assets
         run: |
-          export APK_SHA256
           python - <<'PY'
           from pathlib import Path
           import re
@@ -190,6 +189,7 @@ jobs:
           mkdir -p release
           cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.3.0.apk
           APK_SHA256="$(sha256sum release/COSMIC-2.3.0.apk | awk '{print $1}')"
+          export APK_SHA256
           python - <<'PY'
           import json, os
           version_code = int(os.environ["VERSION_CODE"])
