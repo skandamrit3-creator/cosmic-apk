@@ -18,7 +18,7 @@ function showMode(mode){
   chat.querySelector("#cosmicNewChat").onclick=newChat;
   chat.querySelector("#cosmicHistoryToggle").onclick=()=>{const panel=chat.querySelector("#cosmicHistoryPanel");panel.hidden=!panel.hidden;chat.querySelector("#cosmicHistoryToggle").setAttribute("aria-expanded",String(!panel.hidden));};
   chat.querySelector("#cosmicApiSetup").onclick=()=>openQuick("settings");
-  chat.querySelector("#cosmicVoice").onclick=startVoice;
+  chat.querySelector("#cosmicVoice").onclick=()=>{if(window.COSMIC_LIVE)window.COSMIC_LIVE.toggle();else startVoice();};
   loadModels();loadChats();
  }
  if(mode==="avatar"&&!avatar.dataset.ready){avatar.dataset.ready="1";avatar.innerHTML="<div class=\"avatar-mount-placeholder\"></div>";}
@@ -72,6 +72,10 @@ async function sendChat(e){
   }
   if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(message)){
    wait.className="cosmic-chat-msg system";wait.textContent="DEVICE ACTION · "+(window.COSMIC_BRAIN.state.lastAction||"Command processed");state.textContent="DEVICE ACTION";return;
+  }
+  if(window.COSMIC_LIVE?.active){
+   if(!window.COSMIC_LIVE.sendText(message,true))throw new Error("Gemini Live session is not ready. Tap the Live control to reconnect.");
+   wait.remove();state.textContent="GEMINI LIVE · SENT";return;
   }
   const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,task:"chat",mode:chat.querySelector("#cosmicChatProvider")?.value==="auto"?"auto":"manual",provider:chat.querySelector("#cosmicChatProvider")?.value||"auto",model:chat.querySelector("#cosmicChatModel")?.value||"auto",session_id:sessionId})});
   const data=await response.json();if(!response.ok||data.success===false)throw new Error(data.error||data.message||"HTTP "+response.status);
