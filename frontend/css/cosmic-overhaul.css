@@ -208,3 +208,6 @@ body{margin:0}
 #cosmicLiveShare[hidden]{display:none!important}
 #cosmicLiveDock{flex-wrap:wrap}
 @media(max-width:420px){#cosmicLiveDock{gap:6px}#cosmicLiveShare{order:3;flex:1 1 100%}}
+
+#cosmicLiveBubble{min-height:36px;padding:7px 10px;border:1px solid rgba(235,188,120,.34);border-radius:10px;background:rgba(235,188,120,.1);color:#ffe1b7;font-size:8px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+#cosmicLiveBubble[hidden]{display:none!important}
