@@ -47,7 +47,15 @@
     wakeButton = root.querySelector("#cosmicLiveWake");
     const wakePlugin = window.Capacitor?.Plugins?.CosmicVoice;
     const paintWake = enabled => { if(wakeButton){wakeButton.textContent=enabled?"WAKE WORD ON":"ENABLE OK COSMIC";wakeButton.classList.toggle("is-enabled",!!enabled);wakeButton.setAttribute("aria-pressed",String(!!enabled));} };
-    wakePlugin?.getWakeWordStatus?.().then(result=>paintWake(!!result?.enabled)).catch(()=>{});
+    wakePlugin?.getWakeWordStatus?.().then(async result=>{
+      paintWake(!!result?.enabled);
+      // Android blocks microphone foreground-service auto-start directly from BOOT_COMPLETED.
+      // Once the user taps the boot-resume notification and opens COSMIC, resume the opted-in local detector.
+      if(result?.enabled&&!result?.running&&typeof wakePlugin.enableWakeWord==="function"){
+        try{await wakePlugin.enableWakeWord();paintWake(true);setStatus("LOCAL WAKE WORD RESUMED · LISTENING FOR OK COSMIC","idle");}
+        catch(error){setStatus("WAKE WORD RESUME FAILED · "+(error?.message||error),"error");}
+      }
+    }).catch(()=>{});
     wakeButton.addEventListener("click",async()=>{wakeButton.disabled=true;try{const api=window.Capacitor?.Plugins?.CosmicVoice;if(!api)throw new Error("Local wake word is available in the Android app.");const current=await api.getWakeWordStatus();if(current?.enabled){await api.disableWakeWord();paintWake(false);setStatus("LOCAL WAKE WORD OFF","idle");}else{await api.enableWakeWord();paintWake(true);setStatus("DOWNLOADING VERIFIED OFFLINE MODEL · FIRST SETUP","connecting");}}catch(error){setStatus("WAKE WORD SETUP FAILED · "+(error.message||error),"error");}finally{wakeButton.disabled=false;}});
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
     shareButton.addEventListener("click", () => state.sharing ? stopScreenShare() : startScreenShare());
