@@ -9,7 +9,7 @@ const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace
 function showMode(mode){
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
  const isReactor=mode==="reactor";
- if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=false;
+ if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=!isReactor;
  chat.hidden=mode!=="chat";avatar.hidden=mode!=="avatar";
  if(mode==="chat"&&!chat.dataset.ready){
   chat.dataset.ready="1";
