@@ -1,142 +1,81 @@
+/* COSMIC voice control — Gemini Live streaming audio only.
+   No Android SpeechRecognizer, Google Keyboard dictation, or browser SpeechRecognition fallback. */
 (() => {
-"use strict";
-const button=document.querySelector("#voiceButton");
-const input=document.querySelector("#messageInput");
-const api=()=>window.Capacitor?.Plugins?.CosmicVoice;
-const locales=[
- ["English (India)","en-IN"],["Hindi","hi-IN"],["Telugu","te-IN"],["Tamil","ta-IN"],
- ["Bengali","bn-IN"],["Marathi","mr-IN"],["Urdu","ur-IN"],["Kannada","kn-IN"],
- ["Malayalam","ml-IN"],["Gujarati","gu-IN"],["English (US)","en-US"]
-];
-let listening=false,recognition=null,nativeLoop=false,loopGeneration=0;
-function setStatus(text){const el=document.querySelector("#sessionState");if(el)el.textContent=text;}
-function languageSelect(){
- let select=document.querySelector("#cosmicVoiceLanguage");
- if(select)return select;
- select=document.createElement("select");select.id="cosmicVoiceLanguage";select.setAttribute("aria-label","Voice recognition language");
- select.className="cosmic-voice-language";
- const saved=localStorage.getItem("COSMIC_VOICE_LANGUAGE")||"en-IN";
- locales.forEach(([label,value])=>select.add(new Option(label,value)));
- select.value=saved;select.addEventListener("change",()=>localStorage.setItem("COSMIC_VOICE_LANGUAGE",select.value));
- const actions=document.querySelector(".command-actions");
- if(actions)actions.insertBefore(select,button);
- return select;
-}
-function routeControlPhrase(raw){
- const value=String(raw||"").trim().replace(/[.!?]+$/,"");
- const lower=value.toLowerCase().replace(/^hey\\s+cosmic[, ]*/,"").replace(/^ok\\s+cosmic[, ]*/,"").trim();
- if(/^(stop listening|stop voice|turn off microphone|mute cosmic|go to sleep)$/i.test(lower)){stop();return true;}
- if(/^(start listening|resume listening|wake up cosmic|start voice)$/i.test(lower)){start();return true;}
- let m=lower.match(/^(?:switch|go) to (chat|avatar|reactor)(?: mode)?$|^(?:open|show) (chat|avatar|reactor)(?: mode)?$/i);
- if(m){const mode=(m[1]||m[2]).toLowerCase();document.querySelector('[data-cosmic-mode="'+mode+'"]')?.click();return true;}
- m=lower.match(/^(?:use|switch to|change to|select) (gemini|openai|gpt|groq|mistral|openrouter)(?: model)?$/i);
- if(m){
-  const requested=m[1].toLowerCase(),provider=requested==="gpt"?"openai":requested;
+ "use strict";
+ const button=document.querySelector("#voiceButton");
+ const input=document.querySelector("#messageInput");
+ let listening=false,starting=false;
+ const setStatus=value=>{const el=document.querySelector("#sessionState");if(el)el.textContent=value;};
+ function paint(active){
+  if(!button)return;
+  button.disabled=false;button.setAttribute("aria-pressed",String(active));
+  button.title=active?"Stop COSMIC Live voice":"Start COSMIC Live voice";
+  button.innerHTML=active?"<span>■</span>":"<span>◌</span>";
+ }
+ function stop(){
+  listening=false;starting=false;
+  try{window.COSMIC_LIVE?.stop();}catch(error){console.warn("COSMIC Live stop:",error);}
+  paint(false);setStatus("VOICE OFF");
+ }
+ function start(){
+  if(listening||starting)return;
+  if(!window.COSMIC_LIVE?.start){setStatus("GEMINI LIVE NOT AVAILABLE");return;}
+  starting=true;paint(true);setStatus("CONNECTING · GEMINI LIVE");
+  Promise.resolve(window.COSMIC_LIVE.start()).then(()=>{
+   starting=false;listening=true;paint(true);
+  }).catch(error=>{
+   starting=false;listening=!!window.COSMIC_LIVE?.listening;paint(listening);
+   setStatus("LIVE VOICE ERROR · "+(error?.message||"Connection failed"));
+  });
+ }
+ function selectProvider(provider){
   const select=document.querySelector("#cosmicChatProvider");
   if(!select)return false;
-  const option=[...select.options].find(o=>o.value===provider);
-  if(!option){setStatus(provider.toUpperCase()+" provider is not available");return true;}
+  const option=[...select.options].find(item=>item.value===provider);
+  if(!option){setStatus(provider.toUpperCase()+" PROVIDER NOT AVAILABLE");return true;}
   select.value=provider;select.dispatchEvent(new Event("change",{bubbles:true}));
-  const model=document.querySelector("#cosmicChatModel");if(model){model.value="auto";model.dispatchEvent(new Event("change",{bubbles:true}));}
+  const model=document.querySelector("#cosmicChatModel");
+  if(model){model.value="auto";model.dispatchEvent(new Event("change",{bubbles:true}));}
   localStorage.setItem("COSMIC_CHAT_PROVIDER",provider);
-  setStatus("CHAT MODEL ROUTED TO "+provider.toUpperCase());return true;
+  setStatus("CHAT ROUTED TO "+provider.toUpperCase());
+  return true;
  }
- m=lower.match(/^(?:use|switch to|change to|select) (?:model )?(.+)$/i);
- if(m&&/\\b(gemini|gpt-4|gpt oss|llama|deepseek|mistral)\\b/i.test(m[1])){
-  const modelSelect=document.querySelector("#cosmicChatModel");
-  if(modelSelect){const q=m[1].toLowerCase();const opt=[...modelSelect.options].find(o=>(o.textContent+" "+o.value).toLowerCase().includes(q));if(opt&&!opt.disabled){modelSelect.value=opt.value;modelSelect.dispatchEvent(new Event("change",{bubbles:true}));setStatus("MODEL SELECTED: "+opt.textContent);return true;}}
- }
- return false;
-}
-async function command(text){
- const value=String(text||"").trim();if(!value)return;if(routeControlPhrase(value))return;
- if(input)input.value=value;
- const lower=value.toLowerCase();
- if(/^(stop listening|stop voice|turn off microphone|mute cosmic)$/i.test(lower)){stop();return;}
- if(/^(open|show|switch to) (avatar|avatar studio|3d avatar)$/i.test(lower)){document.querySelector('[data-cosmic-mode="avatar"]')?.click();return;}
- if(/^(open|show|switch to) (chat|chat mode)$/i.test(lower)){document.querySelector('[data-cosmic-mode="chat"]')?.click();return;}
- if(/^(open|show|switch to) (reactor|home|command core)$/i.test(lower)){document.querySelector('[data-cosmic-mode="reactor"]')?.click();return;}
- if(/^(close|hide) (avatar|chat)$/i.test(lower)){document.querySelector('[data-cosmic-mode="reactor"]')?.click();return;}
- if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(value)){
-  document.dispatchEvent(new CustomEvent("cosmic:voice-command",{detail:{text:value,handled:true}}));return;
- }
- window.COSMIC?.executeCommand?.();
-}
-function stop(){
- if(window.COSMIC_LIVE?.listening)window.COSMIC_LIVE.stop();
- listening=false;nativeLoop=false;loopGeneration++;
- try{recognition?.stop();}catch(_){}recognition=null;
- if(button){button.disabled=false;button.setAttribute("aria-pressed","false");button.title="Start live voice control";button.innerHTML="<span>◌</span>";}
- setStatus("STANDBY");
-}
-async function runNativeLoop(generation){
- const plugin=api(),language=languageSelect()?.value||"en-IN";
- while(listening&&generation===loopGeneration){
-  try{
-   setStatus("LISTENING · "+language);
-   const result=await plugin.listen({language});
-   if(!listening||generation!==loopGeneration)break;
-   if(result?.text)await command(result.text);
-  }catch(error){
-   if(!listening||generation!==loopGeneration)break;
-   setStatus("VOICE ERROR");
-   const log=document.querySelector("#responseStream");
-   if(log){const item=document.createElement("div");item.className="stream-item system-message";item.textContent="VOICE: "+(error?.message||"Recognition failed");log.append(item);}
-   break;
+ function routeControlPhrase(raw){
+  const value=String(raw||"").trim().replace(/[.!?]+$/,"");
+  const lower=value.toLowerCase().replace(/^(?:hey|ok)\\s+cosmic[, ]*/,"").trim();
+  if(/^(stop listening|stop voice|turn off microphone|mute cosmic|go to sleep)$/i.test(lower)){stop();return true;}
+  let m=lower.match(/^(?:switch|go) to (chat|avatar|reactor)(?: mode)?$|^(?:open|show) (chat|avatar|reactor)(?: mode)?$/i);
+  if(m){const mode=(m[1]||m[2]).toLowerCase();document.querySelector('[data-cosmic-mode="'+mode+'"]')?.click();setStatus("SWITCHED TO "+mode.toUpperCase());return true;}
+  m=lower.match(/^(?:use|switch to|change to|select) (gemini|openai|gpt|groq|mistral|openrouter)(?: model)?$/i);
+  if(m){selectProvider(m[1].toLowerCase()==="gpt"?"openai":m[1].toLowerCase());return true;}
+  m=lower.match(/^(?:use|switch to|change to|select) (?:model )?(.+)$/i);
+  if(m&&/\\b(gemini|gpt-4|gpt oss|llama|deepseek|mistral)\\b/i.test(m[1])){
+   const model=document.querySelector("#cosmicChatModel");
+   if(model){const q=m[1].toLowerCase();const option=[...model.options].find(item=>(item.textContent+" "+item.value).toLowerCase().includes(q));if(option&&!option.disabled){model.value=option.value;model.dispatchEvent(new Event("change",{bubbles:true}));setStatus("MODEL SELECTED · "+option.textContent);return true;}}
   }
-  await new Promise(resolve=>setTimeout(resolve,280));
+  return false;
  }
- if(generation===loopGeneration&&listening)stop();
-}
-function startBrowserRecognition(){
- const Speech=window.SpeechRecognition||window.webkitSpeechRecognition;
- if(!Speech)return false;
- const rec=new Speech();recognition=rec;rec.lang=languageSelect()?.value||"en-IN";rec.continuous=true;rec.interimResults=false;rec.maxAlternatives=1;
- rec.onresult=async event=>{for(let i=event.resultIndex;i<event.results.length;i++){if(event.results[i].isFinal){const value=event.results[i][0]?.transcript||"";await command(value);}}};
- rec.onerror=event=>{if(event.error!=="no-speech"&&event.error!=="aborted")setStatus("VOICE ERROR · "+event.error);};
- rec.onend=()=>{if(listening&&recognition===rec){try{rec.start();}catch(_){stop();}}};
- try{rec.start();return true;}catch(_){recognition=null;return false;}
-}
-function start(){
- if(listening)return;
- listening=true;loopGeneration++;const generation=loopGeneration;
- if(window.COSMIC_LIVE){
-  languageSelect();
-  if(button){button.disabled=false;button.setAttribute("aria-pressed","true");button.title="Stop Gemini Live voice";button.innerHTML="<span>■</span>";}
-  window.COSMIC_LIVE.start();return;
+ async function handleTranscript(raw){
+  const value=String(raw||"").trim();
+  if(!value)return;
+  if(routeControlPhrase(value))return;
+  const withoutWake=value.replace(/^(?:hey|ok)\\s+cosmic[, ]*/i,"").trim();
+  if(/^(open|launch|start|visit|download|go back)\\b/i.test(withoutWake)){
+   if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(withoutWake))return;
+  }
  }
- if(button){button.disabled=false;button.setAttribute("aria-pressed","true");button.title="Stop live voice control";button.innerHTML="<span>■</span>";}
- languageSelect();
- if(api()?.listen){nativeLoop=true;runNativeLoop(generation);return;}
- if(startBrowserRecognition())return;
- stop();setStatus("VOICE NOT AVAILABLE");
- alert("Voice recognition is not available. Install/enable an Android speech-recognition service or use Chrome with microphone permission.");
-}
-if(button){
- button.addEventListener("click",event=>{event.preventDefault();if(listening)stop();else start();});
- languageSelect();
-}
-document.addEventListener("cosmic:live-state",event=>{
- const mode=event.detail?.state;
- if(mode==="live"||mode==="connecting"){listening=true;if(button){button.setAttribute("aria-pressed","true");button.innerHTML="<span>■</span>";}}
- else if(mode==="error"&&listening&&!window.COSMIC_LIVE?.listening){
-  const generation=++loopGeneration;
-  if(button){button.setAttribute("aria-pressed","true");button.title="Stop fallback voice commands";button.innerHTML="<span>■</span>";}
-  setStatus("GEMINI LIVE UNAVAILABLE · VOICE FALLBACK");
-  if(api()?.listen){nativeLoop=true;runNativeLoop(generation);}
-  else if(!startBrowserRecognition())stop();
- }
- else if(mode==="idle"||mode==="error"){listening=false;if(button){button.setAttribute("aria-pressed","false");button.innerHTML="<span>◌</span>";}}
-});
-document.addEventListener("cosmic:live-transcript",event=>{
- if(event.detail?.role!=="user")return;
- const text=String(event.detail.text||"").trim();
- if(routeControlPhrase(text))return;
- if(/^(?:hey |ok )?cosmic[, ]*(?:open|launch|start) .+/i.test(text)){command(text);}
-});
-document.addEventListener("cosmic:reply",event=>{
- const text=event.detail?.text;if(text&&api()?.speak)api().speak({text}).catch(()=>{});
-});
-window.COSMIC_VOICE={start,stop,get listening(){return listening;}};
-console.log("COSMIC multilingual voice loop ready (foreground, user-started).");
+ if(button)button.addEventListener("click",event=>{event.preventDefault();if(listening||starting)stop();else start();});
+ document.addEventListener("cosmic:live-state",event=>{
+  const mode=event.detail?.state;
+  if(mode==="live"){listening=true;starting=false;paint(true);setStatus("LIVE · LISTENING");}
+  else if(mode==="connecting"){starting=true;paint(true);setStatus("CONNECTING · GEMINI LIVE");}
+  else if(mode==="idle"){listening=false;starting=false;paint(false);setStatus("VOICE OFF");}
+  else if(mode==="error"){listening=false;starting=false;paint(false);setStatus("LIVE VOICE ERROR");}
+ });
+ document.addEventListener("cosmic:live-transcript",event=>{
+  if(event.detail?.role==="user")handleTranscript(event.detail.text).catch(error=>setStatus("VOICE COMMAND ERROR · "+error.message));
+ });
+ window.COSMIC_VOICE={start,stop,get listening(){return listening||starting;}};
+ paint(false);
+ console.log("COSMIC voice control ready · Gemini Live streaming only · no speech-recognition fallback.");
 })();
