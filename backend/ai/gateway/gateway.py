@@ -72,7 +72,8 @@ def load_saved_provider_keys():
             for provider, cfg in CONFIG.items():
                 value = saved.get(provider)
                 if isinstance(value, str) and value.strip():
-                    os.environ.setdefault(cfg["key"], value.strip())
+                    if not os.getenv(cfg["key"], "").strip():
+                        os.environ[cfg["key"]] = value.strip()
     except (OSError, ValueError, TypeError):
         pass
 
