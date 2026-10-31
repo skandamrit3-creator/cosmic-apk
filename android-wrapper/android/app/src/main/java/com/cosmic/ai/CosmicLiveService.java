@@ -293,6 +293,89 @@ public class CosmicLiveService extends Service {
         }
     }
 
+    private void startScreenCapture(int resultCode, Intent data) {
+        if (data == null || resultCode != android.app.Activity.RESULT_OK) {
+            emit("error", "Screen sharing permission was not granted.");
+            return;
+        }
+        try {
+            if (projection != null) stopScreenCapture();
+            if (Build.VERSION.SDK_INT >= 34) {
+                startForeground(NOTIFICATION_ID, notification("Microphone and screen sharing active"),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE | ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIFICATION_ID, notification("Screen sharing active"),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION);
+            }
+            MediaProjectionManager manager = (MediaProjectionManager) getSystemService(MEDIA_PROJECTION_SERVICE);
+            projection = manager.getMediaProjection(resultCode, data);
+            if (projection == null) throw new IllegalStateException("Android did not create a screen capture session.");
+            DisplayMetrics metrics = new DisplayMetrics();
+            WindowManager window = (WindowManager) getSystemService(WINDOW_SERVICE);
+            window.getDefaultDisplay().getRealMetrics(metrics);
+            int width = Math.max(1, metrics.widthPixels);
+            int height = Math.max(1, metrics.heightPixels);
+            imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
+            imageReader.setOnImageAvailableListener(this::sendScreenFrame, new Handler(Looper.getMainLooper()));
+            projection.registerCallback(new MediaProjection.Callback() {
+                @Override public void onStop() {
+                    stopScreenCapture();
+                    emit("state", "SCREEN SHARE STOPPED");
+                }
+            }, new Handler(Looper.getMainLooper()));
+            virtualDisplay = projection.createVirtualDisplay("COSMIC Live Screen",
+                    width, height, metrics.densityDpi,
+                    android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                    imageReader.getSurface(), null, null);
+            emit("state", "LIVE · SCREEN SHARING");
+        } catch (Exception e) {
+            stopScreenCapture();
+            emit("error", "Could not start screen sharing: " + e.getMessage());
+        }
+    }
+
+    private void sendScreenFrame(ImageReader reader) {
+        Image image = null;
+        try {
+            long now = System.currentTimeMillis();
+            if (now - lastFrameAt < 1000 || !ready.get()) return;
+            image = reader.acquireLatestImage();
+            if (image == null) return;
+            lastFrameAt = now;
+            Image.Plane plane = image.getPlanes()[0];
+            java.nio.ByteBuffer buffer = plane.getBuffer();
+            int pixelStride = plane.getPixelStride();
+            int rowStride = plane.getRowStride();
+            int rowPadding = rowStride - pixelStride * image.getWidth();
+            Bitmap padded = Bitmap.createBitmap(image.getWidth() + rowPadding / pixelStride,
+                    image.getHeight(), Bitmap.Config.ARGB_8888);
+            padded.copyPixelsFromBuffer(buffer);
+            Bitmap frame = Bitmap.createBitmap(padded, 0, 0, image.getWidth(), image.getHeight());
+            java.io.ByteArrayOutputStream output = new java.io.ByteArrayOutputStream();
+            frame.compress(Bitmap.CompressFormat.JPEG, 55, output);
+            byte[] bytes = output.toByteArray();
+            frame.recycle();
+            padded.recycle();
+            JSONObject video = new JSONObject();
+            video.put("data", Base64.encodeToString(bytes, Base64.NO_WRAP));
+            video.put("mimeType", "image/jpeg");
+            WebSocket ws = socket;
+            if (ws != null && ready.get()) ws.send(new JSONObject()
+                    .put("realtimeInput", new JSONObject().put("video", video)).toString());
+        } catch (Exception e) {
+            Log.w(TAG, "Screen frame could not be sent", e);
+        } finally {
+            if (image != null) image.close();
+        }
+    }
+
+    private void stopScreenCapture() {
+        try { if (virtualDisplay != null) { virtualDisplay.release(); virtualDisplay = null; } } catch (Exception ignored) {}
+        try { if (imageReader != null) { imageReader.setOnImageAvailableListener(null, null); imageReader.close(); imageReader = null; } } catch (Exception ignored) {}
+        try { if (projection != null) { projection.stop(); projection = null; } } catch (Exception ignored) {}
+        emit("state", "SCREEN SHARE STOPPED");
+    }
+
     private void prepareAudio() {
         int min = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
         recorder = new AudioRecord(MediaRecorder.AudioSource.VOICE_RECOGNITION, 16000,
@@ -325,6 +408,7 @@ public class CosmicLiveService extends Service {
         WebSocket ws = socket;
         socket = null;
         if (ws != null) ws.close(1000, "user stopped");
+        stopScreenCapture();
         releaseAudio();
         getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().remove("resume_handle").apply();
         emit("audio_end", "");
@@ -372,6 +456,7 @@ public class CosmicLiveService extends Service {
         ready.set(false);
         WebSocket ws = socket;
         if (ws != null) ws.close(1000, "service destroyed");
+        stopScreenCapture();
         releaseAudio();
         if (client != null) client.dispatcher().executorService().shutdown();
         if (instance == this) instance = null;
