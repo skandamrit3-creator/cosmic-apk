@@ -372,7 +372,7 @@ def generate_image():
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "generationConfig": {
             "responseModalities": ["TEXT", "IMAGE"],
-            "responseFormat": {"image": {"aspectRatio": aspect_ratio, "imageSize": image_size}},
+            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": image_size},
         },
     }
     try:
