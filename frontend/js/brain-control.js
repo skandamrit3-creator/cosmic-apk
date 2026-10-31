@@ -77,6 +77,11 @@
     if(name==="navigate_back"){
       await plugin.systemAction({action:"back"});status("Navigated back");return {success:true,action:"navigate_back"};
     }
+    if(name==="system_action"){
+      const action=String(args.action||"").toLowerCase();
+      if(!["home","back","notifications","quicksettings","recents"].includes(action))throw new Error("Unsupported Android action.");
+      await plugin.systemAction({action});status("Android action completed: "+action);return {success:true,action};
+    }
     throw new Error("COSMIC has no approved device tool named "+name+".");
   }
 
@@ -94,7 +99,7 @@
     const panel = document.createElement("section");
     panel.id = "cosmicBrainPanel";
     panel.className = "cosmic-brain-panel";
-    panel.innerHTML = '<div class="brain-head"><div><small>PERSONAL DEVICE CONTROLLER</small><h2>◈ COSMIC BRAIN</h2></div><label class="brain-toggle"><input id="brainEnabled" type="checkbox" checked><span>ENABLED</span></label></div><p>Voice and text commands for Android actions. Each action uses the permissions Android grants to COSMIC.</p><div class="brain-actions"><button type="button" data-brain-action="accessibility">ACCESSIBILITY PERMISSION</button><button type="button" data-brain-action="app-settings">APP PERMISSIONS</button></div><div class="brain-status"><span>LAST ACTION</span><strong id="brainStatus">Ready</strong></div><small class="brain-note">Open installed apps, open web links and download direct HTTP/HTTPS files are supported. Screen-wide control, notification access, calls and messages need additional Android services and your explicit approval.</small>';
+    panel.innerHTML = '<div class="brain-head"><div><small>PERSONAL DEVICE CONTROLLER</small><h2>◈ COSMIC BRAIN</h2></div><label class="brain-toggle"><input id="brainEnabled" type="checkbox" checked><span>ENABLED</span></label></div><p>Voice and text commands for Android actions. Each action uses the permissions Android grants to COSMIC.</p><div class="brain-actions"><button type="button" data-brain-action="accessibility">ACCESSIBILITY PERMISSION</button><button type="button" data-brain-action="app-settings">APP PERMISSIONS</button></div><div class="brain-status"><span>LAST ACTION</span><strong id="brainStatus">Ready</strong></div><small class="brain-note">Open installed apps, web links, downloads and basic Android navigation are supported. Enable COSMIC Device Controls in Accessibility settings before using Home, Recents or notification controls. COSMIC does not silently read screen contents or messages.</small>';
     const stage = document.querySelector(".core-stage");
     const command = document.querySelector(".command-zone");
     if (stage && command) stage.insertBefore(panel, command);
