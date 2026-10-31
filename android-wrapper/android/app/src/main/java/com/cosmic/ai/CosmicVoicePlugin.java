@@ -155,6 +155,16 @@ public class CosmicVoicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void sendLiveToolResponse(PluginCall call) {
+        String responses = call.getString("responses", "[]");
+        if (!CosmicLiveService.sendToolResponses(responses)) {
+            call.reject("Gemini Live tool response could not be sent.");
+            return;
+        }
+        call.resolve(new JSObject().put("success", true));
+    }
+
+    @PluginMethod
     public void sendLiveText(PluginCall call) {
         String text = call.getString("text", "").trim();
         if (text.isEmpty()) { call.reject("Message is empty"); return; }
