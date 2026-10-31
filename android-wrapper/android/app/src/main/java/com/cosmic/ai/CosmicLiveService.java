@@ -175,8 +175,6 @@ public class CosmicLiveService extends Service {
                             JSONObject config = new JSONObject();
                             config.put("model", "models/gemini-3.8-live");
                             config.put("responseModalities", new JSONArray().put("AUDIO"));
-                            config.put("speechConfig", new JSONObject().put("voiceConfig", new JSONObject()
-                                    .put("prebuiltVoiceConfig", new JSONObject().put("voiceName", "Aoede"))));
                             config.put("inputAudioTranscription", new JSONObject());
                             config.put("outputAudioTranscription", new JSONObject());
                             config.put("speechConfig", new JSONObject().put("voiceConfig",
