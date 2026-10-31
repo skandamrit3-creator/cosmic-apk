@@ -76,7 +76,7 @@ async function sendChat(e){
    wait.className="cosmic-chat-msg system";wait.textContent="DEVICE ACTION · "+(window.COSMIC_BRAIN.state.lastAction||"Command processed");state.textContent="DEVICE ACTION";return;
   }
   if(window.COSMIC_LIVE?.active){
-   await window.COSMIC_LIVE.sendText(message);
+   if(!await window.COSMIC_LIVE.sendText(message,true))throw new Error("Gemini Live session is not ready.");
    wait.remove();state.textContent="GEMINI LIVE · SENT";return;
   }
   const response=await fetch(apiBase()+"/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,task:"chat",mode:chat.querySelector("#cosmicChatProvider")?.value==="auto"?"auto":"manual",provider:chat.querySelector("#cosmicChatProvider")?.value||"auto",model:chat.querySelector("#cosmicChatModel")?.value||"auto",session_id:sessionId})});
