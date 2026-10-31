@@ -297,27 +297,16 @@ public class CosmicVoicePlugin extends Plugin {
     @PluginMethod
     public void systemAction(PluginCall call) {
         String action = call.getString("action", "").toLowerCase(Locale.ROOT);
-        int value;
-        switch (action) {
-            case "back": value = 1; break;
-            case "home": value = 2; break;
-            case "notifications": value = 4; break;
-            case "quicksettings": value = 5; break;
-            default: call.reject("Unsupported system action"); return;
-        }
-        if (action.equals("back")) {
-            getActivity().runOnUiThread(() -> getBridge().getWebView().evaluateJavascript(
-                "history.length>1?history.back():null", null));
-            call.resolve(new JSObject().put("success", true));
+        if (!Arrays.asList("back", "home", "notifications", "quicksettings", "recents").contains(action)) {
+            call.reject("Unsupported system action");
             return;
         }
-        // Home/notification shade require an enabled Accessibility Service.
-        call.reject("This action requires an enabled COSMIC Accessibility Service");
+        if (CosmicAccessibilityService.perform(action)) {
+            call.resolve(new JSObject().put("success", true).put("action", action));
+            return;
+        }
+        call.reject("Enable COSMIC Device Controls in Android Accessibility settings before using " + action + ".");
     }
-
-
-    private long lastCpuTotal = -1L;
-    private long lastCpuIdle = -1L;
 
     @PluginMethod
     public void getDeviceMetrics(PluginCall call) {
