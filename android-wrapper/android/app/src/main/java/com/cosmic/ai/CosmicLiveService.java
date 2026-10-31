@@ -47,8 +47,11 @@ import okio.ByteString;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +76,6 @@ public class CosmicLiveService extends Service {
     private AudioRecord recorder;
     private AudioTrack player;
     private Thread sessionThread;
-    private String apiKey;
     private String resumeHandle = "";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
@@ -151,12 +153,6 @@ public class CosmicLiveService extends Service {
 
     private void runSession() {
         try {
-            apiKey = readGeminiKey();
-            if (apiKey.isEmpty()) {
-                emit("error", "Gemini API key is missing. Open COSMIC API SETUP and save a Gemini key.");
-                stopLive();
-                return;
-            }
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             showFloatingBubble();
             prepareAudio();
@@ -169,7 +165,8 @@ public class CosmicLiveService extends Service {
             while (running.get()) {
                 CountDownLatch configured = new CountDownLatch(1);
                 AtomicBoolean setupFailed = new AtomicBoolean(false);
-                String url = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=" + apiKey;
+                String liveToken = requestLiveToken();
+                String url = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=" + Uri.encode(liveToken);
                 Request request = new Request.Builder().url(url).build();
                 socket = client.newWebSocket(request, new WebSocketListener() {
                     @Override public void onOpen(WebSocket webSocket, Response response) {
@@ -528,13 +525,45 @@ public class CosmicLiveService extends Service {
         player.play();
     }
 
-    private String readGeminiKey() throws Exception {
-        File file = new File(new File(getFilesDir(), "cosmic"), "provider-keys.json");
-        if (!file.isFile()) return "";
-        byte[] bytes = new byte[(int) file.length()];
-        try (FileInputStream in = new FileInputStream(file)) { int n = in.read(bytes); }
-        JSONObject saved = new JSONObject(new String(bytes, StandardCharsets.UTF_8));
-        return saved.optString("gemini", "").trim();
+    private String requestLiveToken() throws Exception {
+        Exception lastError = null;
+        for (int attempt = 0; attempt < 6; attempt++) {
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL("http://127.0.0.1:8059/api/ai/live-token").openConnection();
+                connection.setRequestMethod("POST");
+                connection.setConnectTimeout(7000);
+                connection.setReadTimeout(15000);
+                connection.setDoOutput(true);
+                connection.setRequestProperty("Content-Type", "application/json");
+                try (OutputStream output = connection.getOutputStream()) {
+                    output.write("{}".getBytes(StandardCharsets.UTF_8));
+                }
+                int code = connection.getResponseCode();
+                InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
+                ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+                if (stream != null) {
+                    try (InputStream input = stream) {
+                        byte[] buffer = new byte[2048];
+                        int count;
+                        while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
+                    }
+                }
+                JSONObject response = new JSONObject(bytes.toString(StandardCharsets.UTF_8.name()));
+                if (code < 200 || code >= 300) {
+                    throw new IllegalStateException(response.optString("error", "Gemini Live token request failed · HTTP " + code));
+                }
+                String token = response.optString("token", "").trim();
+                if (token.isEmpty()) throw new IllegalStateException("Gemini did not issue a Live token.");
+                return token;
+            } catch (java.net.ConnectException error) {
+                lastError = error;
+                if (attempt < 5) Thread.sleep(1000);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+        }
+        throw new IllegalStateException("COSMIC local AI backend is not ready for Gemini Live.", lastError);
     }
 
     private void stopLive() {
