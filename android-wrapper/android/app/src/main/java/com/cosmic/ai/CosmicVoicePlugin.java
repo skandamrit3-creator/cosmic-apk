@@ -15,6 +15,9 @@ import android.speech.tts.TextToSpeech;
 import android.view.accessibility.AccessibilityManager;
 import android.provider.Settings;
 import android.content.Context;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import androidx.core.content.ContextCompat;
 import android.net.Uri;
 import android.webkit.URLUtil;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -27,6 +30,73 @@ import java.util.*;
  strings = {Manifest.permission.RECORD_AUDIO})})
 public class CosmicVoicePlugin extends Plugin {
     private TextToSpeech tts;
+    private BroadcastReceiver liveReceiver;
+
+    @Override
+    public void load() {
+        super.load();
+        liveReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                JSObject data = new JSObject();
+                data.put("type", intent.getStringExtra("type"));
+                data.put("message", intent.getStringExtra(CosmicLiveService.EXTRA_MESSAGE));
+                notifyListeners("liveEvent", data);
+            }
+        };
+        ContextCompat.registerReceiver(getContext(), liveReceiver,
+                new IntentFilter(CosmicLiveService.ACTION_EVENT),
+                ContextCompat.RECEIVER_NOT_EXPORTED);
+    }
+
+    @PluginMethod
+    public void startLive(PluginCall call) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "liveMicPermission");
+            return;
+        }
+        startLiveService(call);
+    }
+
+    @PermissionCallback
+    private void liveMicPermission(PluginCall call) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) startLiveService(call);
+        else call.reject("Microphone permission denied. Gemini Live cannot start.");
+    }
+
+    private void startLiveService(PluginCall call) {
+        try {
+            Intent intent = new Intent(getContext(), CosmicLiveService.class);
+            intent.setAction(CosmicLiveService.ACTION_START);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
+            else getContext().startService(intent);
+            call.resolve(new JSObject().put("success", true).put("message", "Gemini Live starting"));
+        } catch (Exception e) {
+            call.reject("Could not start Gemini Live: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void stopLive(PluginCall call) {
+        try {
+            Intent intent = new Intent(getContext(), CosmicLiveService.class);
+            intent.setAction(CosmicLiveService.ACTION_STOP);
+            getContext().startService(intent);
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) {
+            call.reject("Could not stop Gemini Live: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void sendLiveText(PluginCall call) {
+        String text = call.getString("text", "").trim();
+        if (text.isEmpty()) { call.reject("Message is empty"); return; }
+        if (!CosmicLiveService.sendText(text)) {
+            call.reject("Gemini Live is not connected. Start the Live session first.");
+            return;
+        }
+        call.resolve(new JSObject().put("success", true));
+    }
 
     @PluginMethod
     public void listen(PluginCall call) {
@@ -245,6 +315,7 @@ public class CosmicVoicePlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
+        if (liveReceiver != null) { try { getContext().unregisterReceiver(liveReceiver); } catch (Exception ignored) {} liveReceiver = null; }
         super.handleOnDestroy();
     }
 }
