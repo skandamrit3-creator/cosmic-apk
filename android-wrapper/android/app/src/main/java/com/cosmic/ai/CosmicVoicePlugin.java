@@ -72,7 +72,7 @@ public class CosmicVoicePlugin extends Plugin {
     private void startWakeWordService(PluginCall call) {
         try {
             getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE)
-                    .edit().putBoolean("wake_word_enabled", true).apply();
+                    .edit().putBoolean("wake_word_enabled", true).putBoolean("voice_auto_resume", false).apply();
             Intent stopLive = new Intent(getContext(), CosmicLiveService.class);
             stopLive.setAction(CosmicLiveService.ACTION_STOP);
             getContext().startService(stopLive);
