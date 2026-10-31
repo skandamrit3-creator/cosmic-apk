@@ -84,6 +84,7 @@ public class CosmicLiveService extends Service {
     private Thread sessionThread;
     private String resumeHandle = "";
     private volatile String liveModel = "gemini-3.8-live";
+    private volatile String liveVoice = "Kore";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -144,6 +145,16 @@ public class CosmicLiveService extends Service {
                         .putString("live_model", liveModel).apply();
                 if (changed && socket != null) socket.close(1012, "COSMIC Live model changed");
             }
+            String requestedVoice = intent.getStringExtra("live_voice");
+            if (requestedVoice != null && java.util.Arrays.asList(
+                    "Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr"
+            ).contains(requestedVoice)) {
+                boolean changed = !requestedVoice.equals(liveVoice);
+                liveVoice = requestedVoice;
+                getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
+                        .putString("live_voice", liveVoice).apply();
+                if (changed && socket != null) socket.close(1012, "COSMIC Live voice changed");
+            }
         }
         if (intent != null && ACTION_SCREEN_STOP.equals(intent.getAction())) {
             stopScreenCapture();
@@ -174,6 +185,7 @@ public class CosmicLiveService extends Service {
         try {
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
+            liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
             showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
@@ -198,7 +210,7 @@ public class CosmicLiveService extends Service {
                             config.put("inputAudioTranscription", new JSONObject());
                             config.put("outputAudioTranscription", new JSONObject());
                             config.put("speechConfig", new JSONObject().put("voiceConfig",
-                                    new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", "Aoede"))));
+                                    new JSONObject().put("prebuiltVoiceConfig", new JSONObject().put("voiceName", liveVoice))));
                             config.put("contextWindowCompression", new JSONObject().put("slidingWindow", new JSONObject()));
                             JSONObject resume = new JSONObject();
                             if (!resumeHandle.isEmpty()) resume.put("handle", resumeHandle);
