@@ -58,6 +58,8 @@ jobs:
           node --check frontend/js/app.js
           node --check frontend/js/cosmic-modes.js
           node --check frontend/js/voice-control.js
+          node --check frontend/js/brain-control.js
+          node --check frontend/js/integrations.js
           node --input-type=module --check < frontend/js/avatar-studio.js
 
       - name: Verify referenced frontend assets
