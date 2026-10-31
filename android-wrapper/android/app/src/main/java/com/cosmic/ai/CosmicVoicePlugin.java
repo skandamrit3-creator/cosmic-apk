@@ -74,10 +74,15 @@ public class CosmicVoicePlugin extends Plugin {
                 call.reject("Unsupported Gemini Live model.");
                 return;
             }
+            String voice = call.getString("voice", "Kore");
+            if (!Arrays.asList("Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr").contains(voice)) {
+                voice = "Kore";
+            }
             boolean alreadyRunning = CosmicLiveService.isRunning();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
             intent.setAction(CosmicLiveService.ACTION_START);
             intent.putExtra("live_model", model);
+            intent.putExtra("live_voice", voice);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
             else getContext().startService(intent);
             call.resolve(new JSObject().put("success", true).put("alreadyRunning", alreadyRunning)
