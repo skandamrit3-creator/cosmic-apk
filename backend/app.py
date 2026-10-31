@@ -6,7 +6,7 @@ from backend.database.connection import init_db, get_connection
 from backend.core.kernel.kernel import process_message
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
 from backend.integrations.tripo import TripoService, TripoError
-import os, platform, time
+import os, platform, time, base64, uuid, requests
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -292,6 +292,95 @@ def chat():
             pass
 
     return jsonify(result)
+
+
+@app.post("/api/images/generate")
+def generate_image():
+    """Generate an image with Gemini Nano Banana and save it in app-private storage."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({"success": False, "error": "JSON object required"}), 400
+    prompt = str(data.get("prompt", "")).strip()
+    if not prompt:
+        return jsonify({"success": False, "error": "Describe the image you want."}), 400
+    if len(prompt) > 4000:
+        return jsonify({"success": False, "error": "Image prompt must be 4,000 characters or fewer."}), 400
+
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP and add your Gemini key."}), 400
+
+    payload = {
+        "model": "gemini-nano-banana-2.1",
+        "input": [{"type": "text", "text": prompt}],
+        "response_format": {
+            "type": "image",
+            "mime_type": "image/png",
+            "aspect_ratio": str(data.get("aspect_ratio", "1:1")),
+            "image_size": str(data.get("image_size", "1K")),
+        },
+    }
+    try:
+        response = requests.post(
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json=payload,
+            timeout=180,
+        )
+        if not response.ok:
+            detail = (response.text or "").replace("\\n", " ")[:400]
+            return jsonify({"success": False, "error": "Gemini image API HTTP "
+                + str(response.status_code) + ": " + detail}), 502
+        result = response.json()
+        output = result.get("output_image") or {}
+        encoded = output.get("data") if isinstance(output, dict) else None
+        if not encoded:
+            for step in result.get("steps", []):
+                if step.get("type") != "model_output":
+                    continue
+                for item in step.get("content", []):
+                    if item.get("type") == "image" and item.get("data"):
+                        encoded = item["data"]
+                        break
+                if encoded:
+                    break
+        if not encoded:
+            return jsonify({"success": False, "error": "Gemini completed without returning an image. Try a simpler prompt."}), 502
+        if encoded.startswith("data:") and "," in encoded:
+            encoded = encoded.split(",", 1)[1]
+        image_bytes = base64.b64decode(encoded, validate=True)
+        if not image_bytes or len(image_bytes) > 25 * 1024 * 1024:
+            return jsonify({"success": False, "error": "Generated image was empty or exceeded the 25 MB limit."}), 502
+
+        data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
+        image_dir = data_root / "generated-images"
+        image_dir.mkdir(parents=True, exist_ok=True)
+        filename = uuid.uuid4().hex + ".png"
+        (image_dir / filename).write_bytes(image_bytes)
+        return jsonify({
+            "success": True,
+            "url": "/api/images/generated/" + filename,
+            "filename": filename,
+            "size_bytes": len(image_bytes),
+            "model": "gemini-nano-banana-2.1",
+        })
+    except (ValueError, TypeError) as exc:
+        return jsonify({"success": False, "error": "Could not decode Gemini's image response: " + str(exc)}), 502
+    except requests.RequestException as exc:
+        return jsonify({"success": False, "error": "Gemini image request failed: " + str(exc)[:240]}), 502
+    except OSError:
+        app.logger.exception("Could not save generated COSMIC image")
+        return jsonify({"success": False, "error": "Could not save the generated image on this device."}), 500
+
+
+@app.get("/api/images/generated/<filename>")
+def serve_generated_image(filename):
+    if not filename.endswith(".png") or not filename[:-4].isalnum():
+        return jsonify({"success": False, "error": "Invalid image name"}), 404
+    data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
+    image_dir = data_root / "generated-images"
+    return send_from_directory(image_dir, filename, mimetype="image/png", as_attachment=False, max_age=86400)
+
 
 @app.get("/api/history")
 def history():
