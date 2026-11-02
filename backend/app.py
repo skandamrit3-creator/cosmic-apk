@@ -375,27 +375,50 @@ def generate_gemini_speech():
 
 @app.get("/api/ai/gemini/models")
 def ai_gemini_models():
-    """Return the live Google Gemini model catalogue for the locally configured key."""
+    """Return every page of Google's live Gemini model catalogue for the local key."""
     from backend.ai.gateway.gateway import load_saved_provider_keys
     load_saved_provider_keys()
     key = os.getenv("GEMINI_API_KEY", "").strip()
     if not key:
         return jsonify({"success": False, "error": "Gemini API key is not configured."}), 400
     try:
-        response = requests.get("https://generativelanguage.googleapis.com/v1beta/models", params={"key": key, "pageSize": 1000}, timeout=15)
-        if not response.ok:
-            return jsonify({"success": False, "error": "Google model catalogue returned HTTP " + str(response.status_code)}), 502
-        data = response.json()
         models = []
-        for item in data.get("models", []):
-            name = str(item.get("name", ""))
-            if name.startswith("models/"):
-                name = name[7:]
-            if name:
-                models.append({"id": name, "display_name": item.get("displayName") or name, "supported_generation_methods": item.get("supportedGenerationMethods", []), "input_token_limit": item.get("inputTokenLimit"), "output_token_limit": item.get("outputTokenLimit")})
-        return jsonify({"success": True, "source": "Google Gemini API", "models": models, "count": len(models), "next_page_token": data.get("nextPageToken")})
+        page_token = None
+        pages = 0
+        while pages < 20:
+            params = {"key": key, "pageSize": 1000}
+            if page_token:
+                params["pageToken"] = page_token
+            response = requests.get(
+                "https://generativelanguage.googleapis.com/v1beta/models",
+                params=params, timeout=15
+            )
+            if not response.ok:
+                return jsonify({"success": False, "error":
+                    "Google model catalogue returned HTTP " + str(response.status_code)}), 502
+            data = response.json()
+            for item in data.get("models", []):
+                name = str(item.get("name", ""))
+                if name.startswith("models/"):
+                    name = name[7:]
+                if name:
+                    models.append({
+                        "id": name,
+                        "display_name": item.get("displayName") or name,
+                        "supported_generation_methods": item.get("supportedGenerationMethods", []),
+                        "input_token_limit": item.get("inputTokenLimit"),
+                        "output_token_limit": item.get("outputTokenLimit"),
+                    })
+            page_token = data.get("nextPageToken")
+            pages += 1
+            if not page_token:
+                break
+        return jsonify({"success": True, "source": "Google Gemini API",
+            "models": models, "count": len(models),
+            "complete": not bool(page_token), "next_page_token": page_token})
     except requests.RequestException as exc:
-        return jsonify({"success": False, "error": "Could not reach Google model catalogue: " + str(exc)[:180]}), 502
+        return jsonify({"success": False, "error":
+            "Could not reach Google model catalogue: " + str(exc)[:180]}), 502
 
 @app.post("/api/ai/provider-keys")
 def save_ai_provider_keys():
