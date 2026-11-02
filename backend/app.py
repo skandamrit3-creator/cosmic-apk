@@ -537,9 +537,34 @@ def chat():
     except Exception:
         history_items = []
 
+    # Add durable memories and relevant imported knowledge to each new model request.
+    memory_context = []
+    try:
+        with get_connection() as db:
+            saved = db.execute("SELECT memory FROM memories ORDER BY updated_at DESC LIMIT 40").fetchall()
+            memory_context.extend(str(row[0]) for row in saved if row[0])
+            terms = [term for term in message.split() if len(term) > 2][:8]
+            if terms:
+                clauses = " OR ".join(["c.content LIKE ?" for _ in terms])
+                params = ["%" + term + "%" for term in terms]
+                chunks = db.execute(
+                    "SELECT d.title,c.content FROM knowledge_chunks c "
+                    "JOIN knowledge_documents d ON d.id=c.document_id WHERE " + clauses +
+                    " ORDER BY d.id DESC LIMIT 6", params
+                ).fetchall()
+                memory_context.extend("Knowledge (" + str(row[0]) + "): " + str(row[1]) for row in chunks)
+    except Exception:
+        memory_context = []
+    enriched_message = message.strip()
+    if memory_context:
+        enriched_message = (
+            "Relevant persistent COSMIC memory and user knowledge (use only when relevant; do not invent facts):\\n"
+            + "\\n".join(memory_context[:40]) + "\\n\\nCurrent user request:\\n" + message.strip()
+        )
+
     from backend.ai.gateway.gateway import AIGateway
     result = AIGateway().chat(
-        message.strip(), history_items, provider=provider, model=model, mode=mode
+        enriched_message, history_items, provider=provider, model=model, mode=mode
     )
 
     if result.get("success"):
