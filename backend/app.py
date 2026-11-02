@@ -517,17 +517,20 @@ def generate_image():
         return jsonify({"success": False, "error": "Unsupported image aspect ratio."}), 400
     if image_size not in {"512","1K","2K","4K"}:
         return jsonify({"success": False, "error": "Image size must be 512, 1K, 2K or 4K."}), 400
+    model = str(data.get("model", "gemini-nano-banana-2.1"))
+    allowed_image_models = {"gemini-nano-banana-2.1", "gemini-3.1-flash-lite-image", "gemini-3-pro-image", "gemini-2.5-flash-image"}
+    if model not in allowed_image_models:
+        return jsonify({"success": False, "error": "Unsupported image model."}), 400
     payload = {
-        "model": "gemini-nano-banana-2.1",
-        "input": [{"type": "text", "text": prompt}],
-        "response_format": {
-            "type": "image", "mime_type": "image/jpeg",
-            "aspect_ratio": aspect_ratio, "image_size": image_size,
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "responseModalities": ["IMAGE"],
+            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": image_size},
         },
     }
     try:
         response = requests.post(
-            "https://generativelanguage.googleapis.com/v1beta/interactions",
+            "https://generativelanguage.googleapis.com/v1/models/" + model + ":generateContent",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
             json=payload,
             timeout=45,
@@ -537,8 +540,17 @@ def generate_image():
             return jsonify({"success": False, "error": "Gemini Nano Banana 2.1 HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
-        output_image = result.get("output_image") or {}
-        encoded = output_image.get("data") if isinstance(output_image, dict) else None
+        encoded = None
+        mime_type = "image/jpeg"
+        for candidate in result.get("candidates", []):
+            for part in candidate.get("content", {}).get("parts", []):
+                inline = part.get("inlineData") or part.get("inline_data") or {}
+                if inline.get("data"):
+                    encoded = inline["data"]
+                    mime_type = inline.get("mimeType") or inline.get("mime_type") or "image/jpeg"
+                    break
+            if encoded:
+                break
         if not encoded:
             for step in result.get("steps", []):
                 if step.get("type") != "model_output":
@@ -558,14 +570,15 @@ def generate_image():
         data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
         image_dir = data_root / "generated-images"
         image_dir.mkdir(parents=True, exist_ok=True)
-        filename = uuid.uuid4().hex + ".jpg"
+        extension = ".png" if mime_type == "image/png" else ".jpg"
+        filename = uuid.uuid4().hex + extension
         (image_dir / filename).write_bytes(image_bytes)
         return jsonify({
             "success": True,
             "url": "/api/images/generated/" + filename,
             "filename": filename,
             "size_bytes": len(image_bytes),
-            "model": "gemini-nano-banana-2.1",
+            "model": model, "mime_type": mime_type,
         })
     except (ValueError, TypeError) as exc:
         return jsonify({"success": False, "error": "Could not decode Gemini's image response: " + str(exc)}), 502
@@ -578,11 +591,12 @@ def generate_image():
 
 @app.get("/api/images/generated/<filename>")
 def serve_generated_image(filename):
-    if not filename.endswith(".jpg") or not filename[:-4].isalnum():
+    if not (filename.endswith(".jpg") or filename.endswith(".png")) or not filename.rsplit(".", 1)[0].isalnum():
         return jsonify({"success": False, "error": "Invalid image name"}), 404
     data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
     image_dir = data_root / "generated-images"
-    return send_from_directory(image_dir, filename, mimetype="image/jpeg", as_attachment=False, max_age=86400)
+    mime_type = "image/png" if filename.endswith(".png") else "image/jpeg"
+    return send_from_directory(image_dir, filename, mimetype=mime_type, as_attachment=False, max_age=86400)
 
 
 @app.get("/api/history")
