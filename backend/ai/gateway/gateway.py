@@ -248,6 +248,16 @@ class AIGateway:
                     item["status"] = "network_error"
                     item["detail"] = str(exc)[:180]
             result.append(item)
+        cf_account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+        cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+        cf_configured = bool(cf_account and cf_token)
+        result.append({
+            "provider": "cloudflare_ai",
+            "configured": cf_configured,
+            "status": "configured_not_tested" if cf_configured else "not_configured",
+            "tested": False,
+            "purpose": "image_generation",
+        })
         return result
 
 
