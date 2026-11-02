@@ -530,7 +530,7 @@ def generate_image():
             "https://generativelanguage.googleapis.com/v1beta/interactions",
             headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
             json=payload,
-            timeout=180,
+            timeout=45,
         )
         if not response.ok:
             detail = (response.text or "").replace("\\n", " ")[:400]
