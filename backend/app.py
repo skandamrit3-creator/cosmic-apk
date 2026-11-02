@@ -537,7 +537,7 @@ def generate_image():
         )
         if not response.ok:
             detail = (response.text or "").replace("\\n", " ")[:400]
-            return jsonify({"success": False, "error": "Gemini Nano Banana 2.1 HTTP "
+            return jsonify({"success": False, "error": "Gemini image API HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
         encoded = None
