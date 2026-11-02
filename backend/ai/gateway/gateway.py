@@ -103,7 +103,7 @@ def save_provider_keys(keys=None, clear=None):
         existing = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(existing, dict):
             saved.update({k: v for k, v in existing.items()
-                          if k in allowed and isinstance(v, str)})
+                          if k in allowed and (isinstance(v, str) or (k == "cloudflare_ai" and isinstance(v, dict)))})
     except (OSError, ValueError, TypeError):
         pass
 
