@@ -438,6 +438,74 @@ def save_ai_provider_keys():
         app.logger.exception("Could not save COSMIC provider keys")
         return jsonify({"success": False, "error": "Could not save provider keys to app storage."}), 500
 
+@app.get("/api/knowledge/documents")
+def list_knowledge_documents():
+    with get_connection() as db:
+        rows = db.execute("SELECT d.id,d.title,d.source,d.created_at,COUNT(c.id) AS chunks FROM knowledge_documents d LEFT JOIN knowledge_chunks c ON c.document_id=d.id GROUP BY d.id ORDER BY d.id DESC LIMIT 500").fetchall()
+    return jsonify({"success": True, "documents": [dict(row) for row in rows]})
+
+
+@app.post("/api/knowledge/documents")
+def add_knowledge_document():
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Knowledge imports are local-app only."}), 403
+    data = request.get_json(silent=True) or {}
+    title = str(data.get("title", "Untitled knowledge")).strip()[:240]
+    content = data.get("content", "")
+    if not isinstance(content, str) or not content.strip():
+        return jsonify({"success": False, "error": "Paste or upload text content first."}), 400
+    if len(content.encode("utf-8")) > 5 * 1024 * 1024:
+        return jsonify({"success": False, "error": "Each text import is limited to 5 MB."}), 413
+    content = content.strip()
+    chunks = []
+    start = 0
+    while start < len(content):
+        end = min(len(content), start + 1600)
+        if end < len(content):
+            split = content.rfind(" ", start + 1000, end)
+            if split > start: end = split
+        chunks.append(content[start:end])
+        if end >= len(content): break
+        start = max(start + 1, end - 180)
+    with get_connection() as db:
+        cur = db.execute("INSERT INTO knowledge_documents(title,source,content) VALUES(?,?,?)",
+                         (title or "Untitled knowledge", str(data.get("source", "manual"))[:120], content))
+        doc_id = cur.lastrowid
+        db.executemany("INSERT INTO knowledge_chunks(document_id,chunk_index,content) VALUES(?,?,?)",
+                       [(doc_id, i, chunk) for i, chunk in enumerate(chunks)])
+        db.commit()
+    return jsonify({"success": True, "document_id": doc_id, "title": title,
+                    "characters": len(content), "chunks": len(chunks)}), 201
+
+
+@app.get("/api/knowledge/search")
+def search_knowledge():
+    query = str(request.args.get("q", "")).strip()
+    if not query:
+        return jsonify({"success": True, "results": []})
+    terms = [term for term in query.split() if len(term) > 1][:12]
+    if not terms:
+        return jsonify({"success": True, "results": []})
+    clauses = " OR ".join(["c.content LIKE ?" for _ in terms])
+    params = ["%" + term + "%" for term in terms]
+    with get_connection() as db:
+        rows = db.execute("SELECT d.id AS document_id,d.title,c.content,c.chunk_index FROM knowledge_chunks c JOIN knowledge_documents d ON d.id=c.document_id WHERE " + clauses + " ORDER BY d.id DESC LIMIT 12", params).fetchall()
+    return jsonify({"success": True, "results": [dict(row) for row in rows]})
+
+
+@app.delete("/api/knowledge/documents/<int:document_id>")
+def delete_knowledge_document(document_id):
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Knowledge changes are local-app only."}), 403
+    with get_connection() as db:
+        db.execute("DELETE FROM knowledge_chunks WHERE document_id=?", (document_id,))
+        cur = db.execute("DELETE FROM knowledge_documents WHERE id=?", (document_id,))
+        db.commit()
+    if not cur.rowcount:
+        return jsonify({"success": False, "error": "Document not found."}), 404
+    return jsonify({"success": True, "deleted": document_id})
+
+
 @app.post("/api/chat")
 def chat():
     data = request.get_json(silent=True)
