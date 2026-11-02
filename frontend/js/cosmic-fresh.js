@@ -3,7 +3,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 let BASE=localStorage.getItem("cosmic-backend-url")||location.origin;
 const url=p=>BASE.replace(/\/$/,"")+p;
 const names={gemini:"Google Gemini",openai:"OpenAI",groq:"Groq",mistral:"Mistral",openrouter:"OpenRouter"};
-let models=[],latencySamples=[];
+let models=[],latencySamples=[];names.cloudflare_ai="Cloudflare Workers AI";
 async function api(path,opts={}){const r=await fetch(url(path),opts);let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||"HTTP "+r.status);return d}
 const tabs=$$("[data-mode]"),views=$$("[data-view]");
 function mode(n){tabs.forEach(b=>b.classList.toggle("active",b.dataset.mode===n));views.forEach(v=>v.classList.toggle("active",v.dataset.view===n))}
@@ -32,4 +32,5 @@ $("#catalogue-provider")?.addEventListener("change",drawModels);$("#refresh-mode
 $("#backend-url").value=BASE;$("#apply-backend")?.addEventListener("click",async()=>{const out=$("#backend-result");try{const candidate=new URL($("#backend-url").value.trim()).origin;const r=await fetch(candidate+"/api/health");const d=await r.json();if(!r.ok||d.status!=="healthy")throw Error("Health check failed");BASE=candidate;localStorage.setItem("cosmic-backend-url",BASE);out.textContent="Connected: "+BASE;health();status();catalogue()}catch(e){out.textContent="Connection failed: "+e.message}});
 $("#refresh-status")?.addEventListener("click",()=>{health();status();catalogue()});
 health();status();catalogue();reactorProviders();setInterval(health,15000);setInterval(reactorProviders,30000);
+$("#save-keys")?.addEventListener("click",async()=>{const account=$("#key-cloudflare-account")?.value.trim(),token=$("#key-cloudflare_ai")?.value.trim();if(!account&&!token)return;if(!account||!token){$("#api-result").textContent="Enter both Cloudflare Account ID and API token.";return}try{await api("/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keys:{cloudflare_ai:account+"|"+token}})});$("#key-cloudflare-account").value="";$("#key-cloudflare_ai").value="";$("#api-result").textContent="Cloudflare credentials saved securely.";status()}catch(e){$("#api-result").textContent="Cloudflare save failed: "+e.message}});
 })();
