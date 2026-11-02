@@ -195,6 +195,7 @@ RETIRED_GEMINI_ENTRIES = [
 
 
 def model_catalog():
+    """Return static catalogues for non-Gemini providers. Gemini is fetched live."""
     result = []
     for provider, models in CATALOG.items():
         cfg = CONFIG[provider]
@@ -205,26 +206,6 @@ def model_catalog():
                 "configured": configured, "task": "chat",
                 "chat_compatible": True, "status": "active", "integration": "chat",
             })
-    gemini_configured = bool(os.getenv(CONFIG["gemini"]["key"], "").strip())
-    for model_id, label, task, status in GEMINI_SPECIALIST_MODELS + RETIRED_GEMINI_ENTRIES:
-        if status == "retired":
-            integration = "retired"
-        elif task == "live" and model_id in {"gemini-3.8-live", "gemini-3.8-live-extended-thinking"}:
-            integration = "live"
-        elif task == "tts" and model_id in {"gemini-3.8-flash-tts", "gemini-3.8-flash-lite-tts"}:
-            integration = "tts"
-        elif task == "image" and model_id == "gemini-nano-banana-2.1":
-            integration = "image"
-        elif task == "open-model" and model_id in {"gemma-4-26b-a4b-it", "gemma-4-31b-it"}:
-            integration = "chat"
-        else:
-            integration = "catalog"
-        result.append({
-            "provider": "gemini", "id": model_id, "label": label,
-            "configured": gemini_configured, "task": ("chat" if integration == "chat" else task),
-            "chat_compatible": integration == "chat", "status": status,
-            "integration": integration,
-        })
     return result
 
 
@@ -282,7 +263,7 @@ class AIGateway:
             json={
                 "systemInstruction": {"parts": [{"text": COSMIC_SYSTEM}]},
                 "contents": contents,
-            }, timeout=18
+            }, timeout=12
         )
         if not r.ok:
             detail = (r.text or "").replace("\n", " ")[:300]
@@ -349,7 +330,7 @@ class AIGateway:
             try:
                 response = requests.get(
                     "https://generativelanguage.googleapis.com/v1beta/models",
-                    params={"key": key, "pageSize": 1000}, timeout=5
+                    params={"key": key, "pageSize": 1000}, timeout=3
                 )
                 if response.ok:
                     available = [
