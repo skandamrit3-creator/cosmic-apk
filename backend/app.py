@@ -302,10 +302,9 @@ def ai_provider_keys():
     """Return key-presence flags only; load device-saved keys before reporting."""
     from backend.ai.gateway.gateway import CONFIG, load_saved_provider_keys
     load_saved_provider_keys()
-    return jsonify({"success": True, "providers": [
-        {"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())}
-        for provider, cfg in CONFIG.items()
-    ]})
+    providers = [{"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())} for provider, cfg in CONFIG.items()]
+    providers.append({"provider": "cloudflare_ai", "configured": bool(os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip() and os.getenv("CLOUDFLARE_API_TOKEN", "").strip())})
+    return jsonify({"success": True, "providers": providers})
 
 
 @app.post("/api/ai/speech")
@@ -507,9 +506,44 @@ def generate_image():
 
     from backend.ai.gateway.gateway import load_saved_provider_keys
     load_saved_provider_keys()
+    selected_provider = str(data.get("provider", "auto")).strip().lower()
+    cf_account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    if selected_provider == "cloudflare" or (selected_provider == "auto" and cf_account and cf_token and not os.getenv("GEMINI_API_KEY", "").strip()):
+        if not cf_account or not cf_token:
+            return jsonify({"success": False, "error": "Cloudflare is not configured. Add Account ID and API token in API & BACKEND."}), 400
+        try:
+            cf_response = requests.post(
+                "https://api.cloudflare.com/client/v4/accounts/" + cf_account + "/ai/run/@cf/black-forest-labs/flux-1-schnell",
+                headers={"Authorization": "Bearer " + cf_token, "Content-Type": "application/json"},
+                json={"prompt": prompt}, timeout=90
+            )
+            if not cf_response.ok:
+                return jsonify({"success": False, "error": "Cloudflare Workers AI HTTP " + str(cf_response.status_code) + ": " + (cf_response.text or "")[:350]}), 502
+            encoded = (cf_response.json().get("result") or {}).get("image")
+            if not encoded:
+                return jsonify({"success": False, "error": "Cloudflare returned no image data."}), 502
+            image_bytes = base64.b64decode(encoded, validate=True)
+            if not image_bytes or len(image_bytes) > 25 * 1024 * 1024:
+                return jsonify({"success": False, "error": "Cloudflare image was empty or exceeded 25 MB."}), 502
+            data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
+            image_dir = data_root / "generated-images"
+            image_dir.mkdir(parents=True, exist_ok=True)
+            filename = uuid.uuid4().hex + ".png"
+            (image_dir / filename).write_bytes(image_bytes)
+            return jsonify({"success": True, "url": "/api/images/generated/" + filename, "filename": filename,
+                "size_bytes": len(image_bytes), "model": "@cf/black-forest-labs/flux-1-schnell",
+                "provider": "cloudflare", "mime_type": "image/png"})
+        except (ValueError, TypeError) as exc:
+            return jsonify({"success": False, "error": "Invalid Cloudflare image response: " + str(exc)}), 502
+        except requests.RequestException as exc:
+            return jsonify({"success": False, "error": "Cloudflare image request failed: " + str(exc)[:220]}), 502
+    if selected_provider == "cloudflare":
+        return jsonify({"success": False, "error": "Cloudflare credentials are missing. Save Account ID and API token first."}), 400
+
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
-        return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP and add your Gemini key."}), 400
+        return jsonify({"success": False, "error": "No image provider configured. Add Gemini or Cloudflare credentials in API & BACKEND."}), 400
 
     aspect_ratio = str(data.get("aspect_ratio", "1:1"))
     image_size = str(data.get("image_size", "1K"))
