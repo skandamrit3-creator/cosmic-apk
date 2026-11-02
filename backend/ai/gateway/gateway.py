@@ -10,19 +10,7 @@ Never claim to control devices or files unless an actual connected tool provides
 
 # These are candidate IDs; providers can change availability and free quotas.
 CATALOG = {
-    "gemini": [
-        ("gemini-3.8-flash", "Gemini 3.8 Flash · Recommended"),
-        ("gemini-3.6-flash", "Gemini 3.6 Flash · Fast"),
-        ("gemini-3.5-flash-lite", "Gemini 3.5 Flash Lite · Fast / low cost"),
-        ("gemini-3.5-flash", "Gemini 3.5 Flash"),
-        ("gemini-3.1-flash-lite", "Gemini 3.1 Flash Lite · Fast"),
-        ("gemini-3-flash-preview", "Gemini 3 Flash · Preview"),
-        ("gemini-3.1-pro-preview", "Gemini 3.1 Pro · Reasoning"),
-        ("gemini-4-argon", "Gemini 4 Argon · Advanced reasoning"),
-        ("gemini-2.5-flash", "Gemini 2.5 Flash · Legacy access"),
-        ("gemini-2.5-flash-lite", "Gemini 2.5 Flash Lite · Legacy access"),
-        ("gemini-2.5-pro", "Gemini 2.5 Pro · Legacy access"),
-    ],
+    "gemini": [],
     "openai": [
         ("gpt-4.1-mini", "GPT-4.1 mini · Fast"),
         ("gpt-4.1", "GPT-4.1 · Advanced"),
