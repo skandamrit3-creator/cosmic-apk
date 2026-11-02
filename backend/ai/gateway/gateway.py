@@ -282,7 +282,7 @@ class AIGateway:
             json={
                 "systemInstruction": {"parts": [{"text": COSMIC_SYSTEM}]},
                 "contents": contents,
-            }, timeout=60
+            }, timeout=18
         )
         if not r.ok:
             detail = (r.text or "").replace("\n", " ")[:300]
@@ -320,7 +320,7 @@ class AIGateway:
                    if provider == "openrouter" else {}),
             },
             json={"model": model, "messages": messages, "temperature": 0.6},
-            timeout=60,
+            timeout=18,
         )
         if not r.ok:
             detail = (r.text or "").replace("\n", " ")[:300]
@@ -343,24 +343,36 @@ class AIGateway:
         return text
 
     @staticmethod
-    def _auto_gemini_model(message):
-        """Fast task-aware model choice; explicit user selection always wins."""
-        text = str(message or "").lower()
-        deep_signals = (
-            "prove ", "proof ", "derive ", "architecture", "design a system",
-            "deep analysis", "analyze in detail", "debug this code",
-            "complex reasoning", "compare in depth", "step by step implementation",
-            "security review", "optimize this code",
-        )
-        quick_signals = (
-            "in one line", "short answer", "quickly", "just the answer",
-            "yes or no", "define ", "meaning of ",
-        )
-        if any(signal in text for signal in deep_signals):
-            return "gemini-4-argon"
-        if len(text) < 100 and any(signal in text for signal in quick_signals):
-            return "gemini-3.5-flash-lite"
-        return "gemini-3.8-flash"
+    def _auto_gemini_model(message, key=None):
+        """Choose a real text-capable Gemini model exposed to this API key."""
+        if key:
+            try:
+                response = requests.get(
+                    "https://generativelanguage.googleapis.com/v1beta/models",
+                    params={"key": key, "pageSize": 1000}, timeout=5
+                )
+                if response.ok:
+                    available = [
+                        item for item in response.json().get("models", [])
+                        if "generateContent" in item.get("supportedGenerationMethods", [])
+                    ]
+                    text = str(message or "").lower()
+                    prefer_pro = any(word in text for word in (
+                        "prove", "proof", "derive", "architecture", "debug",
+                        "deep analysis", "security review"
+                    ))
+                    ranked = sorted(available, key=lambda item: (
+                        0 if ("pro" in item.get("name", "").lower()) == prefer_pro else 1,
+                        0 if "flash" in item.get("name", "").lower() else 1,
+                        item.get("name", "")
+                    ))
+                    if ranked:
+                        return ranked[0]["name"].removeprefix("models/")
+            except (requests.RequestException, ValueError, TypeError):
+                pass
+        # No fabricated model IDs: use a documented stable fallback and surface
+        # provider errors quickly if this key does not have access to it.
+        return "gemini-2.5-flash"
 
     def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
         # Reload app-private credentials for every request. Android .env files are
@@ -410,7 +422,7 @@ class AIGateway:
                 errors.append(candidate + ": API key not configured")
                 continue
 
-            chosen_model = model if model != "auto" and candidate == provider else (self._auto_gemini_model(message) if candidate == "gemini" else cfg["default"])
+            chosen_model = model if model != "auto" and candidate == provider else (self._auto_gemini_model(message, key) if candidate == "gemini" else cfg["default"])
             try:
                 if cfg.get("kind") == "gemini":
                     answer = self._gemini(chosen_model, key, message, history)
@@ -428,20 +440,6 @@ class AIGateway:
                 }
             except Exception as exc:
                 errors.append(candidate + " (" + chosen_model + "): " + str(exc))
-                # If the task-selected Gemini model is unavailable on this key,
-                # retry the fast stable model before falling back to another provider.
-                if (provider == "auto" and candidate == "gemini" and
-                        model == "auto" and chosen_model != "gemini-3.8-flash"):
-                    try:
-                        fallback_model = "gemini-3.8-flash"
-                        fallback_answer = self._gemini(fallback_model, key, message, history)
-                        return {
-                            "success": True, "provider": "gemini",
-                            "model": fallback_model, "message": fallback_answer,
-                            "type": "response", "verified": True,
-                        }
-                    except Exception as fallback_exc:
-                        errors.append("gemini (" + fallback_model + "): " + str(fallback_exc))
                 # In automatic mode, try the next configured provider.
                 if provider != "auto":
                     break
