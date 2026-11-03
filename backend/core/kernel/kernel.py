@@ -6,6 +6,7 @@ from backend.database.connection import (
     get_memories,
 )
 from backend.security.verification.verifier import verify_response
+import re
 
 gateway = AIGateway()
 
@@ -56,10 +57,33 @@ def extract_memory(message):
     text = message.strip()
     lower = text.lower()
 
+    # Save explicit identity statements before provider calls. API failures must
+    # never discard a fact the user deliberately shared.
+    name_match = re.match(
+        r"^(?:please\s+)?my name is\s+(.+?)\s*[.!?]*$",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if name_match:
+        name = name_match.group(1).strip(" .!?")
+        if name:
+            save_memory(f"The user's name is {name}")
+        return
+
+    call_me_match = re.match(
+        r"^(?:please\s+)?call me\s+(.+?)\s*[.!?]*$",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if call_me_match:
+        name = call_me_match.group(1).strip(" .!?")
+        if name:
+            save_memory(f"The user's preferred name is {name}")
+        return
+
     triggers = (
         "remember that ",
         "remember this ",
-        "my name is ",
         "i prefer ",
         "i like ",
         "i don't like ",
@@ -69,13 +93,15 @@ def extract_memory(message):
 
     for trigger in triggers:
         if lower.startswith(trigger):
-            memory = text[len(trigger):].strip(" .")
+            memory = text[len(trigger):].strip(" .!?")
             if memory:
                 save_memory(memory)
             break
 
 
 def process_message(message, session_id="default"):
+    # Persist deliberate memory statements even if the model provider is unavailable.
+    extract_memory(message)
     history = get_recent_history(10, session_id)
     memory_context = get_memory_context()
 
@@ -101,7 +127,6 @@ def process_message(message, session_id="default"):
     verified = verify_response(response)
 
     save_conversation(message, response, session_id)
-    extract_memory(message)
 
     return {
         "success": True,
