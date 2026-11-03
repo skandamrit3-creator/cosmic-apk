@@ -88,7 +88,7 @@ public class CosmicWakeWordService extends Service {
             LibVosk.setLogLevel(LogLevel.WARNINGS);
             model = new Model(modelDir.getAbsolutePath());
             recognizer = new Recognizer(model, 16000.0f,
-                    "[\"ok cosmic\", \"okay cosmic\", \"okay, cosmic\", \"[unk]\"]");
+                    "[\"ok cosmic\", \"okay cosmic\", \"okay, cosmic\", \"hey cosmic\", \"hey, cosmic\", \"[unk]\"]");
             int min = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO,
                     AudioFormat.ENCODING_PCM_16BIT);
             if (min <= 0) throw new IllegalStateException("Android microphone buffer is unavailable.");
