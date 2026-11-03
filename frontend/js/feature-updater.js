@@ -81,3 +81,5 @@
  window.COSMIC_FEATURE_UPDATER={check,install,rollback,registerWorker};
  registerWorker().catch(()=>{});
 })();
+
+function base(){return String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,'');}
