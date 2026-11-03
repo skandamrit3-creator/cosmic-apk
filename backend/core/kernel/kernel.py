@@ -60,7 +60,7 @@ def extract_memory(message):
     # Save explicit identity statements before provider calls. API failures must
     # never discard a fact the user deliberately shared.
     name_match = re.match(
-        r"^(?:please\s+)?my name is\s+(.+?)\s*[.!?]*$",
+        r"^(?:(?:hey|okay|ok)\s+cosmic[, ]*)?(?:please\s+)?my name is\s+(.+?)\s*[.!?]*$",
         text,
         flags=re.IGNORECASE,
     )
@@ -71,7 +71,7 @@ def extract_memory(message):
         return
 
     call_me_match = re.match(
-        r"^(?:please\s+)?call me\s+(.+?)\s*[.!?]*$",
+        r"^(?:(?:hey|okay|ok)\s+cosmic[, ]*)?(?:please\s+)?call me\s+(.+?)\s*[.!?]*$",
         text,
         flags=re.IGNORECASE,
     )
