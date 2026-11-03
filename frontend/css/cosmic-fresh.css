@@ -53,3 +53,5 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .image-download:hover{background:#ffffff0b}
 .composer-options select{max-width:155px}
 @media(max-width:560px){.composer-options select{max-width:112px}.composer-options{flex-wrap:wrap}}
+
+.sensor-online{color:#80e4bb!important;font-size:12px!important;letter-spacing:.1em}.device-control-panel{grid-column:1/-1;padding:17px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,rgba(20,29,43,.8),rgba(11,17,27,.82))}.device-control-panel h3{font-size:12px;letter-spacing:.12em;margin:7px 0}.device-control-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.device-permission-note{font-size:10px;color:var(--muted);padding-top:9px;border-top:1px solid var(--line)}.sensor-line{gap:12px}.sensor-line b{font-variant-numeric:tabular-nums}
