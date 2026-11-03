@@ -189,3 +189,42 @@ body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120
 .cosmic-chat-controls label{display:flex;min-width:0;align-items:center;gap:8px;font-size:10px}
 .cosmic-chat-controls select{min-width:0;max-width:100%;flex:1;padding:9px 10px;border-radius:10px}
 @media(max-width:520px){.cosmic-chat-controls{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px}.cosmic-chat-controls label{display:grid;gap:4px;font-size:8px}.cosmic-chat-controls select{width:100%;font-size:11px}}
+
+
+/* Compact four-theme control */
+.cosmic-theme-picker{max-width:104px;min-width:0;padding:8px 6px;border:1px solid rgba(170,167,232,.2);border-radius:999px;background:rgba(24,25,39,.95);color:#e9e7f4;font:600 9px/1.2 system-ui}
+@media(max-width:520px){.mode-switch{top:6px;gap:2px;padding:4px}.mode-tab{padding:8px 7px;font-size:8px;letter-spacing:.03em}.cosmic-theme-picker{max-width:76px;padding:7px 3px;font-size:8px}}
+:root[data-cosmic-theme="nebula"]{--cosmic-theme-a:#18253b;--cosmic-theme-b:#090d18;--cosmic-theme-c:#25213a}
+:root[data-cosmic-theme="aurora"]{--cosmic-theme-a:#123c3a;--cosmic-theme-b:#07151b;--cosmic-theme-c:#18334a}
+:root[data-cosmic-theme="midnight"]{--cosmic-theme-a:#202434;--cosmic-theme-b:#080a11;--cosmic-theme-c:#151a2a}
+:root[data-cosmic-theme="solar"]{--cosmic-theme-a:#493021;--cosmic-theme-b:#120e13;--cosmic-theme-c:#33233b}
+:root[data-cosmic-theme] .cosmic-mode-view{background:radial-gradient(ellipse at 50% 0%,var(--cosmic-theme-a),var(--cosmic-theme-b) 70%,#07080d)!important}
+.characters-mode{padding:clamp(12px,2.4vw,28px);overflow:auto}
+.character-workspace{width:min(1180px,100%);height:100%;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.character-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:4px 4px 14px;border-bottom:1px solid rgba(200,200,235,.14)}
+.character-kicker,.character-roster-title{font:600 10px/1.4 ui-monospace,monospace;letter-spacing:.15em;color:#a9a5e5}
+.character-head h1{margin:5px 0;font-size:clamp(22px,3vw,32px);color:#f1effb}
+.character-head p,.character-note{margin:0;color:#a4a5b9;font-size:12px;line-height:1.5}
+.character-status{font:10px ui-monospace,monospace;color:#9edfc8}
+.character-layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;min-height:0;flex:1}
+.character-roster,.character-stage{min-width:0;border:1px solid rgba(198,190,230,.14);border-radius:20px;background:rgba(16,18,29,.72);padding:14px}
+.character-roster{display:flex;flex-direction:column;gap:10px}
+.character-choice{display:flex;align-items:center;gap:11px;text-align:left;padding:10px;border:1px solid transparent;border-radius:13px;background:rgba(255,255,255,.025);color:#eeeaf7}
+.character-choice.active{border-color:rgba(170,158,228,.45);background:rgba(115,99,165,.18)}
+.character-choice span:last-child{display:grid;gap:4px}.character-choice small{color:#9c9caf;font-size:10px}
+.character-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;font-size:18px;font-weight:700;color:#fff}
+.character-avatar.myraa{background:linear-gradient(140deg,#a87eae,#454a75)}.character-avatar.anime{background:linear-gradient(140deg,#e18aab,#615a9e)}.character-avatar.fantasy{background:linear-gradient(140deg,#d0a76b,#526f65)}.character-avatar.scifi{background:linear-gradient(140deg,#5eabc1,#4c4b88)}
+.character-upload{display:block;margin-top:auto;padding:11px;border:1px dashed rgba(184,174,225,.4);border-radius:12px;text-align:center;color:#ded9f4;font-size:11px;cursor:pointer}
+.character-note{font-size:10px}
+.character-stage{display:grid;grid-template-columns:minmax(170px,.65fr) minmax(0,1.35fr);grid-template-rows:minmax(0,1fr) auto;gap:14px;overflow:hidden}
+.character-portrait-wrap{grid-row:1/3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0}
+.character-portrait-placeholder{width:min(100%,260px);aspect-ratio:3/4;max-height:410px;display:grid;place-items:center;overflow:hidden;border-radius:24px;background:radial-gradient(ellipse at 50% 25%,#555078,#24263c 65%,#121521);border:1px solid rgba(206,195,240,.22);color:#fff;font-size:64px}
+.character-portrait-placeholder img{width:100%;height:100%;object-fit:contain}
+.character-name{font-size:20px;font-weight:700;color:#f4efff}.character-caption{font-size:11px;color:#aaa8bd}
+.character-conversation{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;background:rgba(4,6,12,.28)}
+.character-welcome,.character-message{max-width:88%;padding:12px 14px;border:1px solid rgba(190,185,224,.12);border-radius:14px;background:rgba(255,255,255,.045);color:#eeeaf6;line-height:1.5;font-size:13px;overflow-wrap:anywhere}
+.character-message.user{align-self:flex-end;background:rgba(103,87,150,.3)}
+.character-compose{display:flex;gap:8px;align-items:flex-end;padding:8px;border:1px solid rgba(194,183,225,.17);border-radius:15px;background:rgba(8,9,16,.72)}
+.character-compose textarea{flex:1;min-width:0;max-height:120px;resize:vertical;background:transparent;border:0;outline:0;color:#fff;padding:10px}
+.character-compose button{padding:12px 16px;border-radius:11px;background:linear-gradient(135deg,#625889,#3f5877);color:#fff}
+@media(max-width:720px){.characters-mode{padding:10px}.character-workspace{gap:10px}.character-head{padding-bottom:10px}.character-layout{grid-template-columns:1fr;grid-template-rows:auto minmax(440px,1fr);gap:10px}.character-roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px}.character-roster-title,.character-upload,.character-note{grid-column:1/-1}.character-choice{padding:7px;gap:7px}.character-avatar{width:34px;height:34px}.character-choice b{font-size:10px}.character-choice small{font-size:9px}.character-stage{grid-template-columns:110px minmax(0,1fr);padding:9px;gap:8px}.character-portrait-placeholder{width:100%;border-radius:15px}.character-name{font-size:15px}.character-caption{font-size:9px}.character-conversation{padding:8px}.character-message,.character-welcome{font-size:12px;padding:9px;max-width:100%}.character-compose{grid-column:1/-1}}
