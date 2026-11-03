@@ -228,3 +228,12 @@ body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120
 .character-compose textarea{flex:1;min-width:0;max-height:120px;resize:vertical;background:transparent;border:0;outline:0;color:#fff;padding:10px}
 .character-compose button{padding:12px 16px;border-radius:11px;background:linear-gradient(135deg,#625889,#3f5877);color:#fff}
 @media(max-width:720px){.characters-mode{padding:10px}.character-workspace{gap:10px}.character-head{padding-bottom:10px}.character-layout{grid-template-columns:1fr;grid-template-rows:auto minmax(440px,1fr);gap:10px}.character-roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:10px}.character-roster-title,.character-upload,.character-note{grid-column:1/-1}.character-choice{padding:7px;gap:7px}.character-avatar{width:34px;height:34px}.character-choice b{font-size:10px}.character-choice small{font-size:9px}.character-stage{grid-template-columns:110px minmax(0,1fr);padding:9px;gap:8px}.character-portrait-placeholder{width:100%;border-radius:15px}.character-name{font-size:15px}.character-caption{font-size:9px}.character-conversation{padding:8px}.character-message,.character-welcome{font-size:12px;padding:9px;max-width:100%}.character-compose{grid-column:1/-1}}
+
+
+/* Empty imported-model stage */
+.avatar-empty-state{position:absolute;z-index:2;inset:76px 16px 128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;border:1px dashed rgba(176,216,242,.24);border-radius:20px;background:radial-gradient(ellipse at 50% 30%,rgba(28,43,66,.98),rgba(8,13,23,.99));color:#edf2fb}
+.avatar-empty-state h2{margin:0;font-size:clamp(18px,3vw,26px);letter-spacing:.12em}
+.avatar-empty-state p{max-width:360px;margin:0;color:#aeb9ce;font-size:13px;line-height:1.6}
+.avatar-empty-state button{padding:12px 18px;border:1px solid rgba(180,166,230,.4);border-radius:12px;background:linear-gradient(135deg,#625889,#3f5877);color:white;font-weight:700}
+.avatar-empty-state small{color:#8f98ae;font-size:10px}
+.avatar-stage-v2 .avatar-stage-actions{z-index:4}
