@@ -263,7 +263,7 @@ public class CosmicLiveService extends Service {
                                     .put("description", "Switch COSMIC interface to Reactor, Chat or Avatar mode.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
                                             .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
-                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar"))))
+                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar").put("settings"))))
                                             .put("required", new JSONArray().put("mode"))));
                             
                             functions.put(new JSONObject().put("name", "set_theme")
@@ -286,7 +286,7 @@ public class CosmicLiveService extends Service {
 config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
-                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
+                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back, switch COSMIC modes, change COSMIC themes, choose the chat provider and generate images. Confirm the user's intent before paid image generation. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
                             setup.put("setup", config);
                             webSocket.send(setup.toString());
                         } catch (Exception e) {

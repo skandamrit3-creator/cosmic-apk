@@ -645,46 +645,49 @@ def generate_image():
     if image_size not in {"512","1K","2K","4K"}:
         return jsonify({"success": False, "error": "Image size must be 512, 1K, 2K or 4K."}), 400
     model = str(data.get("model", "gemini-nano-banana-2.1"))
-    allowed_image_models = {"gemini-nano-banana-2.1", "gemini-3.1-flash-lite-image", "gemini-3-pro-image", "gemini-2.5-flash-image"}
+    allowed_image_models = {"gemini-nano-banana-2.1", "gemini-3.1-flash-image", "gemini-3.1-flash-lite-image", "gemini-3-pro-image", "gemini-2.5-flash-image"}
     if model not in allowed_image_models:
         return jsonify({"success": False, "error": "Unsupported image model."}), 400
+    # Use Gemini's current Interactions API for native Nano Banana output.
+    # The older generateContent image path does not expose the current model contract.
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "responseModalities": ["IMAGE"],
-            "imageConfig": {"aspectRatio": aspect_ratio, "imageSize": image_size},
+        "model": model,
+        "input": prompt,
+        "response_format": {
+            "type": "image",
+            "mime_type": "image/jpeg",
+            "aspect_ratio": aspect_ratio,
+            "image_size": image_size,
         },
     }
     try:
         response = requests.post(
-            "https://generativelanguage.googleapis.com/v1/models/" + model + ":generateContent",
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            "https://generativelanguage.googleapis.com/v1beta/interactions",
+            headers={
+                "x-goog-api-key": api_key,
+                "Content-Type": "application/json",
+                "Api-Revision": "2026-05-20",
+            },
             json=payload,
-            timeout=45,
+            timeout=120,
         )
         if not response.ok:
-            detail = (response.text or "").replace("\\n", " ")[:400]
+            detail = (response.text or "").replace("\\n", " ")[:500]
             return jsonify({"success": False, "error": "Gemini image API HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
         encoded = None
         mime_type = "image/jpeg"
-        for candidate in result.get("candidates", []):
-            for part in candidate.get("content", {}).get("parts", []):
-                inline = part.get("inlineData") or part.get("inline_data") or {}
-                if inline.get("data"):
-                    encoded = inline["data"]
-                    mime_type = inline.get("mimeType") or inline.get("mime_type") or "image/jpeg"
-                    break
-            if encoded:
-                break
+        output_image = result.get("output_image") or result.get("outputImage") or {}
+        if output_image.get("data"):
+            encoded = output_image["data"]
+            mime_type = output_image.get("mime_type") or output_image.get("mimeType") or "image/jpeg"
         if not encoded:
             for step in result.get("steps", []):
-                if step.get("type") != "model_output":
-                    continue
-                for item in step.get("content", []):
+                for item in step.get("content", []) or []:
                     if item.get("type") == "image" and item.get("data"):
                         encoded = item["data"]
+                        mime_type = item.get("mime_type") or item.get("mimeType") or "image/jpeg"
                         break
                 if encoded:
                     break
