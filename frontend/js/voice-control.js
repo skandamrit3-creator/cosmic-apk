@@ -42,7 +42,7 @@
  }
  function routeControlPhrase(raw){
   const value=String(raw||"").trim().replace(/[.!?]+$/,"");
-  const lower=value.toLowerCase().replace(/^(?:hey|ok)\s+cosmic[, ]*/,"").trim();
+  const lower=value.toLowerCase().replace(/^(?:hey|ok|okay)\s+cosmic[, ]*/,"").trim();
   if(/^(speak|speak to me|speak and tell|talk to me|answer aloud|turn on voice replies|enable spoken replies)$/i.test(lower)){
    localStorage.setItem("COSMIC_SPEAK_REPLIES","true");
    const last=window.COSMIC_LAST_RESPONSE||"Spoken replies are now enabled. I will speak my answers aloud.";
@@ -76,7 +76,7 @@
   const value=String(raw||"").trim();
   if(!value)return;
   if(routeControlPhrase(value))return;
-  const withoutWake=value.replace(/^(?:hey|ok)\s+cosmic[, ]*/i,"").trim();
+  const withoutWake=value.replace(/^(?:hey|ok|okay)\s+cosmic[, ]*/i,"").trim();
   if(/^(open|launch|start|visit|download|go back)\b/i.test(withoutWake)){
    if(window.COSMIC_BRAIN?.handle&&await window.COSMIC_BRAIN.handle(withoutWake))return;
   }
