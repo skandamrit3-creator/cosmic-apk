@@ -583,6 +583,39 @@ def chat():
     return jsonify(result)
 
 
+
+def _cloudflare_image_fallback(prompt, account_id, api_token):
+    """Try Cloudflare FLUX when Auto routing's Gemini call fails."""
+    try:
+        response = requests.post(
+            "https://api.cloudflare.com/client/v4/accounts/" + account_id + "/ai/run/@cf/black-forest-labs/flux-1-schnell",
+            headers={"Authorization": "Bearer " + api_token, "Content-Type": "application/json"},
+            json={"prompt": prompt}, timeout=90
+        )
+        if not response.ok:
+            return None, "Cloudflare fallback HTTP " + str(response.status_code) + ": " + (response.text or "")[:240]
+        encoded = (response.json().get("result") or {}).get("image")
+        if not encoded:
+            return None, "Cloudflare fallback returned no image data."
+        image_bytes = base64.b64decode(encoded, validate=True)
+        if not image_bytes or len(image_bytes) > 25 * 1024 * 1024:
+            return None, "Cloudflare fallback image was empty or exceeded 25 MB."
+        data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
+        image_dir = data_root / "generated-images"
+        image_dir.mkdir(parents=True, exist_ok=True)
+        filename = uuid.uuid4().hex + ".png"
+        (image_dir / filename).write_bytes(image_bytes)
+        return {
+            "success": True, "url": "/api/images/generated/" + filename,
+            "filename": filename, "size_bytes": len(image_bytes),
+            "model": "@cf/black-forest-labs/flux-1-schnell",
+            "provider": "cloudflare", "mime_type": "image/png",
+            "fallback": True,
+        }, None
+    except (ValueError, TypeError, requests.RequestException, OSError) as exc:
+        return None, "Cloudflare fallback failed: " + str(exc)[:220]
+
+
 @app.post("/api/images/generate")
 def generate_image():
     """Generate an image with Gemini Nano Banana and save it in app-private storage."""
@@ -673,6 +706,10 @@ def generate_image():
         )
         if not response.ok:
             detail = (response.text or "").replace("\\n", " ")[:500]
+            if selected_provider == "auto" and cf_account and cf_token:
+                fallback, fallback_error = _cloudflare_image_fallback(prompt, cf_account, cf_token)
+                if fallback:
+                    return jsonify(fallback)
             return jsonify({"success": False, "error": "Gemini image API HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
@@ -692,6 +729,10 @@ def generate_image():
                 if encoded:
                     break
         if not encoded:
+            if selected_provider == "auto" and cf_account and cf_token:
+                fallback, fallback_error = _cloudflare_image_fallback(prompt, cf_account, cf_token)
+                if fallback:
+                    return jsonify(fallback)
             return jsonify({"success": False, "error": "Gemini completed without returning an image. Try a simpler prompt."}), 502
         image_bytes = base64.b64decode(encoded, validate=True)
         if not image_bytes or len(image_bytes) > 25 * 1024 * 1024:
