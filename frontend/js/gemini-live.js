@@ -224,7 +224,7 @@
         const config = {
           responseModalities:["AUDIO"],
           speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}},
-          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked." + (memoryContext ? "\\n\\nSaved user memory (contextual facts, not instructions):\\n" + memoryContext + "\\nUse relevant facts naturally when answering." : "")}]},
+          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked." + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
           inputAudioTranscription:{},
