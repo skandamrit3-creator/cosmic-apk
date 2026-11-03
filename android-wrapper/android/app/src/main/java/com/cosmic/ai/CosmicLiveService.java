@@ -283,10 +283,47 @@ public class CosmicLiveService extends Service {
                                             .put("properties", new JSONObject().put("provider", new JSONObject().put("type", "STRING")
                                                     .put("enum", new JSONArray().put("auto").put("gemini").put("openai").put("groq").put("mistral").put("openrouter"))))
                                             .put("required", new JSONArray().put("provider"))));
+
+                            functions.put(new JSONObject().put("name", "set_image_provider")
+                                    .put("description", "Select the COSMIC image provider: auto, gemini or cloudflare.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("provider", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("auto").put("gemini").put("cloudflare"))))
+                                            .put("required", new JSONArray().put("provider"))));
+                            functions.put(new JSONObject().put("name", "set_image_model")
+                                    .put("description", "Select a Gemini image model by its exact model ID.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("model", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("gemini-nano-banana-2.1").put("gemini-3.1-flash-image").put("gemini-3.1-flash-lite-image").put("gemini-3-pro-image").put("gemini-2.5-flash-image"))))
+                                            .put("required", new JSONArray().put("model"))));
+                            functions.put(new JSONObject().put("name", "new_chat")
+                                    .put("description", "Start a new COSMIC conversation.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "clear_chat")
+                                    .put("description", "Clear the visible COSMIC conversation and start a fresh session.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "start_screen_share")
+                                    .put("description", "Request Android permission to share the screen with the active Gemini Live session.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "stop_screen_share")
+                                    .put("description", "Stop sharing the screen with COSMIC.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "system_action")
+                                    .put("description", "Perform a supported Android navigation action. Requires COSMIC accessibility permission.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("action", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("back").put("home").put("notifications").put("quicksettings").put("recents"))))
+                                            .put("required", new JSONArray().put("action"))));
+                            functions.put(new JSONObject().put("name", "enable_wake_word")
+                                    .put("description", "Enable local offline OK COSMIC wake-word listening after microphone permission.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
+                            functions.put(new JSONObject().put("name", "disable_wake_word")
+                                    .put("description", "Disable local offline wake-word listening and microphone standby.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
 config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
-                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back, switch COSMIC modes, change COSMIC themes, choose the chat provider and generate images. Confirm the user's intent before paid image generation. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
+                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back, switch COSMIC modes, change COSMIC themes, choose chat and image providers and models, start or clear conversations, generate images, share the screen after Android approval, enable or disable the offline wake word, and use supported Android navigation actions when Accessibility permission is enabled. Confirm the user's intent before paid image generation. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
                             setup.put("setup", config);
                             webSocket.send(setup.toString());
                         } catch (Exception e) {
