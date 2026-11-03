@@ -43,10 +43,10 @@
  function routeControlPhrase(raw){
   const value=String(raw||"").trim().replace(/[.!?]+$/,"");
   const lower=value.toLowerCase().replace(/^(?:hey|ok)\s+cosmic[, ]*/,"").trim();
-  if(/^(speak|speak to me|turn on voice replies|enable spoken replies)$/i.test(lower)){
+  if(/^(speak|speak to me|speak and tell|talk to me|answer aloud|turn on voice replies|enable spoken replies)$/i.test(lower)){
    localStorage.setItem("COSMIC_SPEAK_REPLIES","true");
    const last=window.COSMIC_LAST_RESPONSE||"Spoken replies are now enabled. I will speak my answers aloud.";
-   window.COSMIC_SPEAK_TEXT?.(last);
+   if(!window.COSMIC_LIVE?.active)window.COSMIC_SPEAK_TEXT?.(last);
    setStatus("SPOKEN REPLIES ON");
    return true;
   }
