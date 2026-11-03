@@ -75,3 +75,12 @@ button:active{transform:translateY(1px)}
  .cosmic-voice-language{max-width:118px;font-size:10px}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+
+.avatar-stage-v2{position:relative}
+.avatar-empty-state{position:absolute;z-index:2;inset:76px 16px 128px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center;border:1px dashed rgba(176,216,242,.24);border-radius:20px;background:radial-gradient(ellipse at 50% 30%,rgba(28,43,66,.98),rgba(8,13,23,.99));color:#edf2fb}
+.avatar-empty-state h2{margin:0;font-size:clamp(18px,3vw,26px);letter-spacing:.12em}
+.avatar-empty-state p{max-width:360px;margin:0;color:#aeb9ce;font-size:13px;line-height:1.6}
+.avatar-empty-state button{padding:12px 18px;border:1px solid rgba(180,166,230,.4);border-radius:12px;background:linear-gradient(135deg,#625889,#3f5877);color:white;font-weight:700}
+.avatar-empty-state small{color:#8f98ae;font-size:10px}
+.avatar-stage-v2 .avatar-stage-actions{z-index:4}
