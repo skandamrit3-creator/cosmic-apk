@@ -110,6 +110,13 @@ public class CosmicVoicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void getLiveStatus(PluginCall call) {
+        call.resolve(new JSObject()
+                .put("running", CosmicLiveService.isRunning())
+                .put("ready", CosmicLiveService.isReady()));
+    }
+
+    @PluginMethod
     public void startLive(PluginCall call) {
         if (getPermissionState("microphone") != PermissionState.GRANTED) {
             requestPermissionForAlias("microphone", call, "liveMicPermission");
