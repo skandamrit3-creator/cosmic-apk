@@ -266,6 +266,10 @@ body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120
  .cosmic-theme-picker{max-width:72px;min-width:64px;padding:7px 4px;font-size:9px}
  .topbar{padding-top:env(safe-area-inset-top);min-height:48px}
  .hud-main{padding:8px 8px calc(76px + env(safe-area-inset-bottom))!important;gap:10px!important;min-height:0;overflow:visible}
+ .hud-main{height:calc(100dvh - 60px - 58px)!important;overflow-y:auto!important;overscroll-behavior:contain;display:block!important}
+ .hud-main>.core-stage{min-height:620px;height:auto!important}
+ .hud-main>.right-panel{display:grid!important;grid-template-columns:1fr;gap:10px;padding:8px!important}
+ .hud-main>.right-panel>.hud-panel{min-width:0}
  .reactor-live-readings{order:-1;margin-bottom:2px;padding:11px}
  .reactor-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
  .reactor-live-grid article{padding:9px}
