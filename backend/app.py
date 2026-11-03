@@ -652,6 +652,14 @@ def memories():
 from backend.core.characters import CHARACTERS, get_character
 CHARACTER_PORTRAITS = PROJECT_ROOT / "data" / "characters"
 CHARACTER_PORTRAITS.mkdir(parents=True, exist_ok=True)
+# Bundle the user's original MYRAA portrait; never overwrite a portrait they upload later.
+_MYRAA_PORTRAIT = CHARACTER_PORTRAITS / "myraa.jpg"
+_MYRAA_BUNDLE = PROJECT_ROOT / "backend" / "assets" / "myraa-portrait.jpg.b64"
+if not any((CHARACTER_PORTRAITS / ("myraa." + ext)).is_file() for ext in ("jpg", "png", "webp")) and _MYRAA_BUNDLE.is_file():
+    try:
+        _MYRAA_PORTRAIT.write_bytes(base64.b64decode(_MYRAA_BUNDLE.read_text(encoding="ascii"), validate=True))
+    except Exception:
+        pass
 
 with get_connection() as _db:
     _db.execute("""
