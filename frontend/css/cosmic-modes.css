@@ -237,3 +237,67 @@ body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120
 .avatar-empty-state button{padding:12px 18px;border:1px solid rgba(180,166,230,.4);border-radius:12px;background:linear-gradient(135deg,#625889,#3f5877);color:white;font-weight:700}
 .avatar-empty-state small{color:#8f98ae;font-size:10px}
 .avatar-stage-v2 .avatar-stage-actions{z-index:4}
+
+
+/* Mobile-first mode shell: keep all primary modes reachable on narrow Android displays. */
+.mode-switch{box-sizing:border-box;max-width:calc(100vw - 12px);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;white-space:nowrap;justify-content:flex-start}
+.mode-switch::-webkit-scrollbar{display:none}
+.mode-tab{flex:0 0 auto;white-space:nowrap;min-height:36px}
+.cosmic-theme-picker{flex:0 0 auto;min-width:68px}
+.hud-main{min-width:0;min-height:0}
+.hud-main>*{min-width:0}
+#cosmicCharactersMode{padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+#cosmicCharactersMode .character-workspace{min-height:100%;height:auto}
+.reactor-live-readings{grid-column:1/-1;min-width:0;margin:0 0 14px;padding:14px 16px;border:1px solid rgba(151,169,202,.17);border-radius:18px;background:linear-gradient(145deg,rgba(24,29,43,.96),rgba(13,17,27,.96));color:#edf2ff}
+.reactor-live-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.reactor-live-head small{font:600 9px/1.4 ui-monospace,monospace;letter-spacing:.16em;color:#9eaed0}
+.reactor-live-head h2{margin:3px 0 0;font-size:17px;letter-spacing:.02em}
+#reactorLiveState{font:600 9px ui-monospace,monospace;color:#a8dfc4;text-align:right}
+.reactor-live-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.reactor-live-grid article{min-width:0;padding:11px;border-radius:12px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.055)}
+.reactor-live-grid small{display:block;font-size:9px;letter-spacing:.08em;color:#9ba8c1}
+.reactor-live-grid b{display:block;margin:7px 0 9px;font-size:clamp(15px,2vw,21px);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.reactor-live-grid i{display:block;height:4px;border-radius:9px;background:rgba(255,255,255,.09);overflow:hidden}
+.reactor-live-grid em{display:block;width:0;height:100%;border-radius:9px;background:linear-gradient(90deg,#7b86bd,#9ad6cf);transition:width .25s}
+.reactor-live-readings footer{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px;color:#8f9bb2;font-size:9px;font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+ .mode-switch{position:sticky;top:0;margin:0 auto 7px;padding:4px;gap:3px;border-radius:13px;max-width:calc(100vw - 8px);z-index:9000}
+ .mode-tab{min-height:36px;padding:0 9px;font-size:9px;letter-spacing:0}
+ .cosmic-theme-picker{max-width:72px;min-width:64px;padding:7px 4px;font-size:9px}
+ .topbar{padding-top:env(safe-area-inset-top);min-height:48px}
+ .hud-main{padding:8px 8px calc(76px + env(safe-area-inset-bottom))!important;gap:10px!important;min-height:0;overflow:visible}
+ .reactor-live-readings{order:-1;margin-bottom:2px;padding:11px}
+ .reactor-live-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .reactor-live-grid article{padding:9px}
+ .reactor-live-grid b{font-size:18px}
+ .reactor-live-readings footer{font-size:8px}
+ .cosmic-mode-view{inset:52px 0 0!important;height:calc(100dvh - 52px)!important;max-height:calc(100dvh - 52px)!important;padding-bottom:env(safe-area-inset-bottom)}
+ .cosmic-chat-layout{height:100%;min-height:0}
+ .cosmic-chat-main{min-height:0;padding:5px!important}
+ .cosmic-chat-head{gap:6px;padding:8px}
+ .cosmic-chat-brand small{display:none}
+ .cosmic-chat-controls{position:sticky;top:0;z-index:3}
+ .cosmic-chat-log{min-height:0}
+ .cosmic-chat-compose{padding-bottom:calc(7px + env(safe-area-inset-bottom))}
+ .characters-mode{overflow-y:auto;overscroll-behavior:contain}
+ .character-layout{grid-template-rows:auto minmax(360px,1fr)!important}
+ .character-stage{grid-template-columns:minmax(84px,28%) minmax(0,1fr)!important;min-height:360px}
+ .character-portrait-placeholder{aspect-ratio:3/4;max-height:210px}
+ .character-conversation{min-height:210px}
+ .avatar-mode .avatar-stage-v2{height:calc(100dvh - 60px)!important;min-height:0!important}
+ .mobile-nav{padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(max-width:380px){
+ .mode-tab{padding:0 7px;font-size:8px}
+ .cosmic-theme-picker{max-width:62px;min-width:58px;font-size:8px}
+ .reactor-live-grid article{padding:8px}
+ .reactor-live-grid b{font-size:16px}
+ .character-roster{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .character-choice{padding:6px}
+}
+@media(orientation:landscape) and (max-height:500px){
+ .mode-switch{margin-top:2px;margin-bottom:3px}
+ .cosmic-mode-view{inset:44px 0 0!important;height:calc(100dvh - 44px)!important}
+ .reactor-live-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .reactor-live-readings{padding:8px 12px}
+}
