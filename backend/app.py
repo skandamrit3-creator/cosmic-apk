@@ -454,8 +454,8 @@ def add_knowledge_document():
     content = data.get("content", "")
     if not isinstance(content, str) or not content.strip():
         return jsonify({"success": False, "error": "Paste or upload text content first."}), 400
-    if len(content.encode("utf-8")) > 5 * 1024 * 1024:
-        return jsonify({"success": False, "error": "Each text import is limited to 5 MB."}), 413
+    if len(content.encode("utf-8")) > 20 * 1024 * 1024:
+        return jsonify({"success": False, "error": "Each text import is limited to 20 MB."}), 413
     content = content.strip()
     chunks = []
     start = 0
@@ -815,6 +815,36 @@ def memories():
         "success": True,
         "items": [dict(row) for row in rows]
     })
+
+@app.post("/api/memories")
+def create_memory():
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Memory changes are local-app only."}), 403
+    data = request.get_json(silent=True) or {}
+    memory = str(data.get("memory", "")).strip()
+    if not memory:
+        return jsonify({"success": False, "error": "Memory text is required."}), 400
+    if len(memory) > 20000:
+        return jsonify({"success": False, "error": "A single memory is limited to 20,000 characters."}), 413
+    source = str(data.get("source", "manual"))[:120]
+    with get_connection() as db:
+        cur = db.execute("INSERT OR IGNORE INTO memories(memory,source) VALUES(?,?)", (memory, source))
+        row = db.execute("SELECT id,memory,source,created_at,updated_at FROM memories WHERE memory=?", (memory,)).fetchone()
+        db.commit()
+    return jsonify({"success": True, "item": dict(row), "created": cur.rowcount == 1}), 201
+
+
+@app.delete("/api/memories/<int:memory_id>")
+def delete_memory(memory_id):
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Memory changes are local-app only."}), 403
+    with get_connection() as db:
+        cur = db.execute("DELETE FROM memories WHERE id=?", (memory_id,))
+        db.commit()
+    if not cur.rowcount:
+        return jsonify({"success": False, "error": "Memory not found."}), 404
+    return jsonify({"success": True, "deleted": memory_id})
+
 
 
 
