@@ -3,7 +3,7 @@
 const tabs=[...document.querySelectorAll("[data-cosmic-mode]")];
 const reactor=document.querySelector(".hud-main"),topbar=document.querySelector(".topbar"),mobile=document.querySelector(".mobile-nav");
 const chat=document.querySelector("#cosmicChatMode"),avatar=document.querySelector("#cosmicAvatarMode");
-let busy=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat-"+Date.now().toString(36)), lastPrompt="";
+let busy=false, imageMode=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat-"+Date.now().toString(36)), lastPrompt="";
 localStorage.setItem("cosmic.chat.session.v1",sessionId);
 const apiBase=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/$/,"");
 function showMode(mode){
@@ -15,8 +15,9 @@ function showMode(mode){
  chat.hidden=mode!=="chat";avatar.hidden=mode!=="avatar";
  if(mode==="chat"&&!chat.dataset.ready){
   chat.dataset.ready="1";
-  chat.innerHTML='<div class="cosmic-chat-layout"><aside class="cosmic-history" id="cosmicHistoryPanel"><div class="cosmic-history-head"><b>CHAT HISTORY</b><button id="cosmicNewChat" type="button">＋ NEW CHAT</button></div><div id="cosmicHistoryList"></div></aside><section class="cosmic-chat-main"><header class="cosmic-chat-head"><div class="cosmic-chat-brand"><span class="cosmic-chat-mark">✦</span><div><b>COSMIC</b><small>PERSONAL AI</small></div></div><span id="cosmicChatState">CONNECTING…</span><div class="cosmic-chat-head-actions"><button id="cosmicHistoryToggle" type="button" aria-expanded="false">HISTORY</button><button id="cosmicApiSetup" type="button">SETTINGS</button></div></header><div class="cosmic-chat-controls"><label>PROVIDER <select id="cosmicChatProvider"><option value="auto">AUTO</option></select></label><label>MODEL <select id="cosmicChatModel"><option value="auto">AUTO</option></select></label></div><div class="cosmic-chat-log" id="cosmicChatLog"><div class="cosmic-chat-msg">COSMIC CHAT — Ask a question or give a command.</div></div><form class="cosmic-chat-compose" id="cosmicChatForm"><textarea id="cosmicChatInput" rows="2" placeholder="Message COSMIC…"></textarea><button type="submit">SEND ↗</button></form></section></div>';
+  chat.innerHTML='<div class="cosmic-chat-layout"><aside class="cosmic-history" id="cosmicHistoryPanel"><div class="cosmic-history-head"><b>CHAT HISTORY</b><button id="cosmicNewChat" type="button">＋ NEW CHAT</button></div><div id="cosmicHistoryList"></div></aside><section class="cosmic-chat-main"><header class="cosmic-chat-head"><div class="cosmic-chat-brand"><span class="cosmic-chat-mark">✦</span><div><b>COSMIC</b><small>PERSONAL AI</small></div></div><span id="cosmicChatState">CONNECTING…</span><div class="cosmic-chat-head-actions"><button id="cosmicHistoryToggle" type="button" aria-expanded="false">HISTORY</button><button id="cosmicApiSetup" type="button">SETTINGS</button></div></header><div class="cosmic-chat-controls"><label>PROVIDER <select id="cosmicChatProvider"><option value="auto">AUTO</option></select></label><label>MODEL <select id="cosmicChatModel"><option value="auto">AUTO</option></select></label></div><div class="cosmic-chat-log" id="cosmicChatLog"><div class="cosmic-chat-msg">COSMIC CHAT — Ask a question or give a command.</div></div><form class="cosmic-chat-compose" id="cosmicChatForm"><textarea id="cosmicChatInput" rows="2" placeholder="Message COSMIC…"></textarea><button type="button" id="cosmicChatImageMode" aria-pressed="false">✦ IMAGE</button><button type="submit">SEND ↗</button></form></section></div>';
   chat.querySelector("#cosmicChatForm").addEventListener("submit",sendChat);
+  chat.querySelector("#cosmicChatImageMode").addEventListener("click",()=>{imageMode=!imageMode;const b=chat.querySelector("#cosmicChatImageMode"),input=chat.querySelector("#cosmicChatInput");b.setAttribute("aria-pressed",String(imageMode));b.classList.toggle("active",imageMode);b.textContent=imageMode?"✦ IMAGE ON":"✦ IMAGE";input.placeholder=imageMode?"Describe the image COSMIC should generate…":"Message COSMIC…";input.focus();});
   chat.querySelector("#cosmicNewChat").onclick=newChat;
   chat.querySelector("#cosmicHistoryToggle").onclick=()=>{const panel=chat.querySelector("#cosmicHistoryPanel");panel.hidden=!panel.hidden;chat.querySelector("#cosmicHistoryToggle").setAttribute("aria-expanded",String(!panel.hidden));if(!panel.hidden)loadChats();};
   chat.querySelector("#cosmicApiSetup").onclick=()=>openQuick("settings");
@@ -59,7 +60,8 @@ async function sendChat(e){
  add(message,"user");window.COSMIC_AVATAR_COMMAND?.(message);input.value="";busy=true;state.textContent="PROCESSING…";
  const wait=add("Thinking…","assistant");
  try{
-  if(/\b(?:make|create|generate|draw|design|render)\b.{0,70}\b(?:image|picture|photo|illustration|wallpaper|logo|poster|artwork)\b/i.test(message)){
+  if(imageMode||/\b(?:make|create|generate|draw|design|render)\b.{0,70}\b(?:image|picture|photo|illustration|wallpaper|logo|poster|artwork)\b/i.test(message)){
+   imageMode=false;const imageButton=chat.querySelector("#cosmicChatImageMode");if(imageButton){imageButton.setAttribute("aria-pressed","false");imageButton.classList.remove("active");imageButton.textContent="✦ IMAGE";chat.querySelector("#cosmicChatInput").placeholder="Message COSMIC…";}
    try{
     state.textContent="CREATING IMAGE…";
     const r=await fetch(apiBase()+"/api/images/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:message})});
