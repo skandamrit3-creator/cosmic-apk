@@ -279,7 +279,7 @@ def create_gemini_live_token():
             timeout=15,
         )
         if not response.ok:
-            detail = (response.text or "").replace("\\n", " ")[:350]
+            detail = (response.text or "").replace("\n", " ")[:350]
             return jsonify({"success": False, "error": "Gemini Live token request failed (HTTP "
                 + str(response.status_code) + "): " + detail}), 502
         data = response.json()
@@ -344,7 +344,7 @@ def generate_gemini_speech():
             timeout=90,
         )
         if not response.ok:
-            detail = (response.text or "").replace("\\n", " ")[:300]
+            detail = (response.text or "").replace("\n", " ")[:300]
             return jsonify({"success": False, "error": "Gemini TTS HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         payload = response.json()
@@ -429,9 +429,9 @@ def chat():
     enriched_message = message.strip()
     if memory_context:
         enriched_message = (
-            "Persistent COSMIC memory:\\n"
+            "Persistent COSMIC memory:\n"
             + memory_context
-            + "\\n\\nCurrent user message:\\n"
+            + "\n\nCurrent user message:\n"
             + message.strip()
         )
 
@@ -498,7 +498,7 @@ def generate_image():
             timeout=180,
         )
         if not response.ok:
-            detail = (response.text or "").replace("\\n", " ")[:400]
+            detail = (response.text or "").replace("\n", " ")[:400]
             return jsonify({"success": False, "error": "Gemini Nano Banana 2.1 HTTP "
                 + str(response.status_code) + ": " + detail}), 502
         result = response.json()
