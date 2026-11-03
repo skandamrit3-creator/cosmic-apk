@@ -43,6 +43,23 @@
  function routeControlPhrase(raw){
   const value=String(raw||"").trim().replace(/[.!?]+$/,"");
   const lower=value.toLowerCase().replace(/^(?:hey|ok)\s+cosmic[, ]*/,"").trim();
+  if(/^(speak|speak to me|turn on voice replies|enable spoken replies)$/i.test(lower)){
+   localStorage.setItem("COSMIC_SPEAK_REPLIES","true");
+   const last=window.COSMIC_LAST_RESPONSE||"Spoken replies are now enabled. I will speak my answers aloud.";
+   window.COSMIC_SPEAK_TEXT?.(last);
+   setStatus("SPOKEN REPLIES ON");
+   return true;
+  }
+  if(/^(stop speaking|mute replies|turn off spoken replies|disable voice replies)$/i.test(lower)){
+   localStorage.setItem("COSMIC_SPEAK_REPLIES","false");
+   window.COSMIC_STOP_SPEAKING?.();
+   setStatus("SPOKEN REPLIES OFF");
+   return true;
+  }
+  if(/^(read last response|repeat your last answer|say that again)$/i.test(lower)){
+   window.COSMIC_SPEAK_TEXT?.(window.COSMIC_LAST_RESPONSE||"There is no previous answer to read.");
+   return true;
+  }
   if(/^(stop listening|stop voice|turn off microphone|mute cosmic|go to sleep)$/i.test(lower)){stop();return true;}
   let m=lower.match(/^(?:switch|go) to (chat|avatar|reactor)(?: mode)?$|^(?:open|show) (chat|avatar|reactor)(?: mode)?$/i);
   if(m){const mode=(m[1]||m[2]).toLowerCase();document.querySelector('[data-cosmic-mode="'+mode+'"]')?.click();setStatus("SWITCHED TO "+mode.toUpperCase());return true;}
