@@ -44,3 +44,33 @@ The layout uses safe-area insets and responsive breakpoints for narrow portrait 
 ## Build the Android debug APK
 
 The Build COSMIC Android APK GitHub Actions workflow copies the latest frontend tree into android-wrapper/www/, runs npx cap sync android, and assembles a debug APK. A successful CI build confirms packaging, not physical-device testing. Debug APKs are not production-signed updates; stable in-place updates require a private signing keystore configured as GitHub Actions secrets.
+
+
+## COSMIC 2.9.3 feature build
+
+This branch contains the from-scratch workspace upgrade:
+
+- Compact, textured Chat workspace with code-copy controls, safe Markdown links, tables, lists, and saved conversation history.
+- Four persistent visual themes: Midnight, Aurora, Ember, and Light.
+- Native Gemini Live voice path with a single listening toggle, offline OK COSMIC wake-word standby, and permission-aware Android actions.
+- Reactor telemetry for backend latency and native Android CPU, RAM, storage, battery, and network receive/transmit rates. GPU utilisation is deliberately shown as unavailable.
+- Avatar Studio with local GLB import, animation-clip playback, Tripo character presets including MYRAA, and optional humanoid rigging.
+- Durable memory create/delete controls and local knowledge imports (up to 20 MB per text document). This is retrieval-based personal knowledge, not model-weight fine-tuning.
+- Gemini Nano Banana image generation through the current Interactions API, Cloudflare FLUX selection, output aspect/resolution controls, and automatic Cloudflare fallback when Auto routing has both providers configured.
+
+### Pull the feature branch
+
+```sh
+cd "/public/Cosmic AI"
+git pull --ff-only origin feature/cosmic-from-scratch
+```
+
+The Android release workflow copies the latest frontend and backend into the Capacitor wrapper and builds a signed in-place update using the existing package ID and signing keystore. The 2.9.3 release increments versionCode to 16.
+
+### Android permission notes
+
+Microphone access is opt-in. Android requires a foreground notification for ongoing microphone capture; after a reboot, COSMIC posts a resume notification that must be tapped. Screen sharing requires Android's system approval dialog. Home, Recents, Notifications and Quick Settings actions require COSMIC's Accessibility service to be explicitly enabled. These controls cannot silently bypass Android permissions or OS restrictions.
+
+### Provider requirements
+
+Gemini image generation needs a working Gemini API key and model access. Cloudflare FLUX needs an Account ID and an API token with Workers AI permission. MYRAA/Tripo generation and rigging need a configured TRIPO_API_KEY and may consume paid credits.
