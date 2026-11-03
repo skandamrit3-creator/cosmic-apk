@@ -196,13 +196,12 @@
                 );
             }
 
-            addMessage(
-                "assistant-message",
-                data.message ||
-                data.response ||
-                data.text ||
-                "COSMIC returned no response."
-            );
+            const reply = data.message || data.response || data.text || "COSMIC returned no response.";
+            window.COSMIC_LAST_RESPONSE = reply;
+            addMessage("assistant-message", reply);
+            if (localStorage.getItem("COSMIC_SPEAK_REPLIES") === "true") {
+                window.COSMIC_SPEAK_TEXT?.(reply);
+            }
 
             const connection = $("#connection");
 
