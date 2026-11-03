@@ -164,3 +164,8 @@ body[data-cosmic-mode="chat"] .cosmic-chat-compose{border-color:rgba(203,187,228
 body[data-cosmic-mode="reactor"] .mode-switch{background:rgba(16,17,25,.94);border-color:rgba(193,176,220,.2)}
 body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120deg,#51456f,#39334e);color:#f2edf8;box-shadow:0 5px 18px rgba(76,63,111,.28)}
 @media(max-width:700px){.avatar-mode .avatar-stage-v2{height:calc(100dvh - 78px);min-height:480px;border-radius:16px}.avatar-mode .avatar-stage-actions{top:43px;right:9px}.avatar-mode .avatar-stage-actions .avatar-action{padding:7px 9px;font-size:10px}.avatar-mode .avatar-chat-dock{left:8px;right:8px;bottom:8px;padding:8px}.avatar-mode .avatar-chat-row button{padding:9px 10px}.avatar-mode .avatar-conversation-log-stage{max-height:100px}}
+
+/* Direct access to core creative tools */
+#cosmicChatImageMode{flex:0 0 auto;padding:0 14px;border:1px solid rgba(155,208,255,.3);background:rgba(83,105,151,.22);color:#dceaff}
+#cosmicChatImageMode.active{background:linear-gradient(135deg,#7657a8,#3f79a0);border-color:#b8a3ef;color:#fff;box-shadow:0 0 18px rgba(133,111,210,.28)}
+@media(max-width:520px){.cosmic-chat-compose{gap:6px;padding:7px}.cosmic-chat-compose textarea{min-width:0;padding:9px 6px}.cosmic-chat-compose button{padding:0 10px;font-size:11px}}
