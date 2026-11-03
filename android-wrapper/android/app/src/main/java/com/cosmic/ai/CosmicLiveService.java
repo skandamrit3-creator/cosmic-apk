@@ -260,7 +260,7 @@ public class CosmicLiveService extends Service {
                                     .put("description", "Navigate back within the COSMIC app.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
                             functions.put(new JSONObject().put("name", "switch_mode")
-                                    .put("description", "Switch COSMIC interface to Reactor, Chat or Avatar mode.")
+                                    .put("description", "Switch COSMIC interface to Reactor, Chat, Avatar or Settings mode.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
                                             .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
                                                     .put("enum", new JSONArray().put("reactor").put("chat").put("avatar").put("settings"))))
