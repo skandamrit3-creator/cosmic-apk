@@ -98,7 +98,7 @@ public class CosmicWakeWordService extends Service {
             if (recorder.getState() != AudioRecord.STATE_INITIALIZED)
                 throw new IllegalStateException("Could not initialize microphone for local wake detection.");
             recorder.startRecording();
-            updateNotification("Listening locally for “OK COSMIC” · audio is not sent to a server");
+            updateNotification("Listening locally for “OK COSMIC” or “HEY COSMIC” · audio stays on this device");
             byte[] buffer = new byte[3200];
             while (running.get()) {
                 int count = recorder.read(buffer, 0, buffer.length);
@@ -131,7 +131,7 @@ public class CosmicWakeWordService extends Service {
             String phrase = new JSONObject(json).optString("partial",
                     new JSONObject(json).optString("text", "")).toLowerCase(Locale.ROOT).trim();
             phrase = phrase.replaceAll("[^a-z ]", " ").replaceAll("\\s+", " ").trim();
-            return phrase.equals("ok cosmic") || phrase.equals("okay cosmic");
+            return phrase.equals("ok cosmic") || phrase.equals("okay cosmic") || phrase.equals("hey cosmic");
         } catch (Exception ignored) { return false; }
     }
 
