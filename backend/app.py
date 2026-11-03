@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request, send_from_directory, Response
 from dotenv import load_dotenv
 from flask_cors import CORS
 from backend.database.connection import init_db, get_connection
-from backend.core.kernel.kernel import process_message
+from backend.core.kernel.kernel import process_message, extract_memory, get_memory_context
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
 from backend.integrations.tripo import TripoService, TripoError
 import os, platform, time, base64, uuid, requests, datetime
@@ -422,9 +422,22 @@ def chat():
     except Exception:
         history_items = []
 
+    # The primary /api/chat route must use the same persistent profile memory
+    # as the kernel. Save explicit facts before contacting any provider.
+    extract_memory(message.strip())
+    memory_context = get_memory_context()
+    enriched_message = message.strip()
+    if memory_context:
+        enriched_message = (
+            "Persistent COSMIC memory:\\n"
+            + memory_context
+            + "\\n\\nCurrent user message:\\n"
+            + message.strip()
+        )
+
     from backend.ai.gateway.gateway import AIGateway
     result = AIGateway().chat(
-        message.strip(), history_items, provider=provider, model=model, mode=mode
+        enriched_message, history_items, provider=provider, model=model, mode=mode
     )
 
     if result.get("success"):
