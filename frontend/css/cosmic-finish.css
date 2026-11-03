@@ -1,0 +1,149 @@
+/* COSMIC 3.1 — final responsive layout and motion pass.
+   Keep the three workspaces visually distinct while sharing one predictable viewport system. */
+:root {
+  --cx-space: clamp(10px, 1.35vw, 20px);
+  --cx-readable: clamp(12px, .82vw, 14px);
+  --cx-control: 44px;
+  --cx-ease: cubic-bezier(.2,.75,.25,1);
+}
+*,*::before,*::after { box-sizing:border-box; }
+html { min-width:320px; min-height:100%; scroll-behavior:smooth; }
+body { min-width:320px; min-height:100dvh; font-size:var(--cx-readable); }
+button,select,input,textarea { font:inherit; }
+button { touch-action:manipulation; }
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible {
+  outline:2px solid #c7b8ed; outline-offset:2px;
+}
+#cosmic { width:100%; min-width:0; min-height:100dvh; }
+.mode-switch {
+  position:sticky!important; top:calc(env(safe-area-inset-top,0px) + 8px)!important;
+  z-index:9500!important; width:min(470px,calc(100% - 24px));
+  display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr));
+  margin:8px auto 14px!important; padding:5px!important; gap:5px!important;
+  border:1px solid rgba(205,194,232,.19)!important;
+  border-radius:18px!important; background:rgba(18,18,27,.94)!important;
+  box-shadow:0 12px 32px rgba(0,0,0,.28);
+  backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+}
+.mode-tab {
+  min-width:0!important; min-height:var(--cx-control)!important;
+  padding:0 clamp(6px,1.4vw,16px)!important; border-radius:12px!important;
+  font-size:clamp(10px,.78vw,12px)!important; letter-spacing:.07em!important;
+  white-space:nowrap; transition:background .18s var(--cx-ease),color .18s var(--cx-ease),transform .18s var(--cx-ease);
+}
+.mode-tab.active { background:linear-gradient(135deg,#4a405f,#30384a)!important; color:#fff!important; }
+.mode-tab:active { transform:scale(.975); }
+.cosmic-mode-view { min-width:0; }
+.cosmic-mode-view[hidden] { display:none!important; }
+
+/* REACTOR: give the operational cockpit real room; keep telemetry in its own column. */
+.hud-main {
+  display:grid!important;
+  grid-template-columns:minmax(138px,.68fr) minmax(0,2.15fr) minmax(235px,.9fr)!important;
+  align-items:stretch; gap:clamp(10px,1.3vw,18px)!important;
+  width:100%; min-width:0; min-height:calc(100dvh - 90px);
+  padding:clamp(10px,1.5vw,22px)!important;
+}
+.left-rail,.right-panel,.core-stage { min-width:0; }
+.core-stage { min-height:calc(100dvh - 130px); }
+.stage-header { gap:12px; }
+.stage-header h1 { font-size:clamp(13px,1.15vw,17px)!important; }
+.micro-label,.telemetry-label,.rail-title { font-size:10px!important; }
+.rail-item { min-height:42px; font-size:clamp(10px,.72vw,12px)!important; }
+.ai-core-area { flex-basis:clamp(250px,37dvh,390px)!important; min-height:220px; }
+.core-telemetry { font-size:10px!important; }
+.core-telemetry strong { font-size:clamp(11px,.9vw,14px)!important; }
+.pipeline { gap:clamp(4px,.8vw,12px); }
+.pipeline-node strong { font-size:clamp(8px,.68vw,10px)!important; }
+.response-stream {
+  min-height:140px; max-height:none!important; flex:1 1 180px;
+  overflow:auto; overscroll-behavior:contain;
+}
+.stream-text { font-size:var(--cx-readable); line-height:1.65; overflow-wrap:anywhere; }
+.command-zone { flex:0 0 auto; min-width:0; }
+.command-box textarea { min-width:0; min-height:48px; font-size:16px!important; }
+.command-actions { flex-wrap:wrap; }
+.action-button,.execute-button { min-height:var(--cx-control); }
+.metric { grid-template-columns:minmax(52px,.55fr) minmax(40px,1fr) 42px; font-size:10px!important; }
+.metric > b { font-size:11px; }
+.right-panel .hud-panel { min-width:0; }
+
+/* CHAT: readable text and one contained scroll surface for conversation history. */
+.chat-mode { width:100%; min-width:0; }
+.cosmic-chat-layout { width:min(1320px,100%); min-width:0; }
+.cosmic-chat-main { min-width:0; }
+.cosmic-chat-log { min-width:0; }
+.cosmic-chat-msg { font-size:clamp(14px,1vw,16px)!important; line-height:1.72; }
+.cosmic-chat-compose textarea { font-size:16px!important; }
+.cosmic-chat-compose button { min-height:var(--cx-control); }
+
+/* AVATAR: preserve a large stage; never squeeze the 3D canvas into a narrow card. */
+.avatar-studio-v2 { width:min(1540px,100%); min-width:0; }
+.avatar-stage-v2 { min-width:0; }
+#cosmicAvatarCanvas { display:block; width:100%; height:100%; }
+.avatar-panel { min-width:0; }
+.avatar-panel button,.avatar-action { min-height:40px; }
+
+/* Motion is brief and transform-based to avoid expensive layout animation. */
+.hud-panel,.core-stage,.cosmic-chat-main,.avatar-stage-v2,.avatar-panel {
+  transition:border-color .2s var(--cx-ease),box-shadow .2s var(--cx-ease);
+}
+.mode-tab,.rail-item,.mobile-nav-item,.action-button,.execute-button,.avatar-action {
+  transition:transform .16s var(--cx-ease),background-color .16s var(--cx-ease),border-color .16s var(--cx-ease);
+}
+@media (min-width:851px) and (max-width:1120px) {
+  .hud-main { grid-template-columns:92px minmax(0,1fr) 220px!important; }
+  .right-panel { padding-inline:9px; }
+  .pipeline-line { width:clamp(8px,1.3vw,18px)!important; }
+}
+@media (max-width:850px) {
+  html,body { width:100%; min-width:320px; overflow-x:hidden; }
+  #cosmic { padding-bottom:calc(68px + env(safe-area-inset-bottom,0px)); }
+  .mode-switch { position:sticky!important; top:calc(env(safe-area-inset-top,0px) + 5px)!important; margin:5px auto 10px!important; }
+  .hud-main { display:block!important; min-height:0; padding:8px 10px 14px!important; }
+  .left-rail,.right-panel { display:none!important; }
+  .core-stage { width:100%; min-height:calc(100dvh - 155px); }
+  .stage-header { min-height:52px; padding:8px 4px; }
+  .ai-core-area { flex-basis:clamp(205px,31dvh,285px)!important; min-height:190px; }
+  .response-stream { min-height:100px; max-height:30dvh!important; }
+  .pipeline { overflow:hidden; }
+  .pipeline-node { min-width:0; flex:1 1 auto; }
+  .pipeline-line { flex:0 1 12px; min-width:4px; }
+  .command-zone { position:sticky; bottom:calc(66px + env(safe-area-inset-bottom,0px)); z-index:30; }
+  .command-box { gap:5px; }
+  .command-box textarea { flex:1 1 100%; width:100%; }
+  .command-actions { width:100%; justify-content:flex-end; }
+  .mobile-nav { min-height:calc(64px + env(safe-area-inset-bottom,0px)); }
+  .mobile-nav-item { min-width:0; min-height:48px; }
+  .chat-mode { height:calc(100dvh - 130px)!important; min-height:calc(100dvh - 130px)!important; padding:5px!important; }
+  .cosmic-chat-layout { height:100%; min-height:0; }
+  .cosmic-chat-main { min-height:0; height:100%; }
+  .cosmic-chat-log { flex:1 1 auto; min-height:0; }
+  .avatar-mode { min-height:calc(100dvh - 130px)!important; }
+  .avatar-stage-v2 { height:clamp(340px,55dvh,560px)!important; min-height:320px!important; }
+  #cosmicAvatarCanvas { min-height:0!important; }
+}
+@media (max-width:480px) {
+  .mode-tab { min-height:40px!important; padding-inline:4px!important; font-size:9px!important; letter-spacing:.025em!important; }
+  .identity-text { min-width:0; }
+  .top-telemetry { gap:6px; }
+  .pipeline-node strong { font-size:clamp(6px,1.8vw,8px)!important; }
+  .pipeline-line { flex-basis:7px; }
+  .command-footer { font-size:9px; }
+  .cosmic-chat-head-actions button { min-height:40px; padding-inline:9px; }
+  .cosmic-chat-controls { gap:7px; }
+  .cosmic-chat-controls label { min-width:0; }
+  .cosmic-chat-controls select { max-width:43vw; min-width:0; }
+  .avatar-stage-v2 { height:48dvh!important; min-height:310px!important; }
+}
+@media (orientation:landscape) and (max-height:520px) and (max-width:950px) {
+  .hud-main { padding:5px 10px!important; }
+  .ai-core-area { flex-basis:160px!important; min-height:145px; }
+  .ai-core { width:118px!important; height:118px!important; }
+  .response-stream { max-height:24dvh!important; }
+  .cosmic-mode-view { overflow-y:auto!important; }
+  .avatar-stage-v2 { height:70dvh!important; min-height:260px!important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}
