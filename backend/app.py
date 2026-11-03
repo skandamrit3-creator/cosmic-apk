@@ -82,6 +82,14 @@ def memory_count():
     return jsonify({"success": True, "count": count})
 
 
+@app.get("/api/memory/context")
+def memory_context():
+    """Return saved user facts for the local Gemini Live session."""
+    if request.remote_addr not in ("127.0.0.1", "::1"):
+        return jsonify({"success": False, "error": "Memory context is available only to the local COSMIC app."}), 403
+    return jsonify({"success": True, "memory_context": get_memory_context()})
+
+
 # 4. Conversation creation
 @app.post("/api/conversations")
 def create_conversation():
