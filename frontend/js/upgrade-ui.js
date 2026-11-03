@@ -29,3 +29,29 @@ function installCharacterWorkspace(){
  document.querySelectorAll("[data-cosmic-mode]:not([data-cosmic-mode=characters])").forEach(b=>b.addEventListener("click",()=>{root.hidden=true;const mobile=document.querySelector(".mobile-nav");if(mobile)mobile.hidden=false;}));
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",installCharacterWorkspace,{once:true});else installCharacterWorkspace();
+
+
+function installEmptyAvatarStage(){
+ const host=document.querySelector("#cosmicAvatarMode");if(!host)return;
+ let pending=false;
+ const watch=()=>{
+  const stage=host.querySelector(".avatar-stage-v2"),canvas=host.querySelector("#cosmicAvatarCanvas");
+  if(!stage||!canvas||stage.dataset.emptyStateReady)return;
+  stage.dataset.emptyStateReady="1";canvas.style.visibility="hidden";
+  const empty=document.createElement("div");empty.className="avatar-empty-state";
+  const title=document.createElement("h2");title.textContent="YOUR 3D STAGE";
+  const note=document.createElement("p");note.textContent="No model loaded. Import your own GLB, GLTF or VRM to begin.";
+  const button=document.createElement("button");button.type="button";button.textContent="＋ IMPORT 3D MODEL";
+  const hint=document.createElement("small");hint.textContent="Your imported model is saved in your local character library.";
+  empty.append(title,note,button,hint);stage.append(empty);
+  button.onclick=()=>host.querySelector("#cosmicAvatarModelFile")?.click();
+  const reveal=()=>{if(!pending)return;const status=host.querySelector("#cosmicAvatarStatus");if(status&&/loaded in the 3D viewport/i.test(status.textContent)){canvas.style.visibility="visible";empty.remove();}};
+  const status=host.querySelector("#cosmicAvatarStatus");if(status)new MutationObserver(reveal).observe(status,{childList:true,subtree:true,characterData:true});
+  host.querySelector("#cosmicAvatarModelFile")?.addEventListener("change",e=>{if(e.target.files?.length)pending=true;});
+  host.querySelector("#cosmicAvatarLibrary")?.addEventListener("click",()=>{pending=true;});
+  host.querySelector("#cosmicAvatarSamples")?.addEventListener("click",()=>{pending=true;});
+ };
+ new MutationObserver(watch).observe(host,{childList:true,subtree:true});watch();
+}
+const avatarHost=document.querySelector("#cosmicAvatarMode");
+if(avatarHost)new MutationObserver(()=>installEmptyAvatarStage()).observe(avatarHost,{childList:true,subtree:true});
