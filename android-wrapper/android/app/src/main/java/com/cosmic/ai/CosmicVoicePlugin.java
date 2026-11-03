@@ -25,6 +25,7 @@ import android.content.IntentFilter;
 import androidx.core.content.ContextCompat;
 import androidx.activity.result.ActivityResult;
 import android.net.Uri;
+import android.net.TrafficStats;
 import android.webkit.URLUtil;
 import android.view.accessibility.AccessibilityNodeInfo;
 import com.getcapacitor.*;
@@ -39,6 +40,9 @@ public class CosmicVoicePlugin extends Plugin {
     private BroadcastReceiver liveReceiver;
     private long lastCpuTotal = -1L;
     private long lastCpuIdle = -1L;
+    private long lastNetworkRx = -1L;
+    private long lastNetworkTx = -1L;
+    private long lastNetworkSampleAt = -1L;
 
     @Override
     public void load() {
@@ -418,6 +422,24 @@ public class CosmicVoicePlugin extends Plugin {
             } catch (Exception ignored) {
                 out.put("cpuPercent", -1);
             }
+
+            long rxBytes = TrafficStats.getTotalRxBytes();
+            long txBytes = TrafficStats.getTotalTxBytes();
+            long networkNow = System.currentTimeMillis();
+            long rxRate = -1L;
+            long txRate = -1L;
+            if (rxBytes >= 0 && txBytes >= 0 && lastNetworkSampleAt > 0 && networkNow > lastNetworkSampleAt) {
+                long elapsed = networkNow - lastNetworkSampleAt;
+                rxRate = Math.max(0L, (rxBytes - lastNetworkRx) * 1000L / elapsed);
+                txRate = Math.max(0L, (txBytes - lastNetworkTx) * 1000L / elapsed);
+            }
+            if (rxBytes >= 0 && txBytes >= 0) {
+                lastNetworkRx = rxBytes;
+                lastNetworkTx = txBytes;
+                lastNetworkSampleAt = networkNow;
+            }
+            out.put("networkRxBytesPerSecond", rxRate);
+            out.put("networkTxBytesPerSecond", txRate);
 
             BatteryManager battery = (BatteryManager) getContext().getSystemService(Context.BATTERY_SERVICE);
             out.put("batteryPercent", battery != null ? battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY) : -1);
