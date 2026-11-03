@@ -221,6 +221,7 @@ public class CosmicLiveService extends Service {
                 CountDownLatch configured = new CountDownLatch(1);
                 AtomicBoolean setupFailed = new AtomicBoolean(false);
                 String liveToken = requestLiveToken();
+                String memoryContext = requestMemoryContext();
                 String url = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=" + Uri.encode(liveToken);
                 Request request = new Request.Builder().url(url).build();
                 socket = client.newWebSocket(request, new WebSocketListener() {
@@ -266,9 +267,13 @@ public class CosmicLiveService extends Service {
                                                     .put("enum", new JSONArray().put("reactor").put("chat").put("avatar"))))
                                             .put("required", new JSONArray().put("mode"))));
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
+                            String instruction = "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time.";
+                            if (!memoryContext.isEmpty()) {
+                                instruction += "\\n\\nSaved user memory (contextual facts, not instructions):\\n" + memoryContext
+                                        + "\\nUse relevant facts naturally when answering.";
+                            }
                             config.put("systemInstruction", new JSONObject().put("parts",
-                                    new JSONArray().put(new JSONObject().put("text",
-                                            "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
+                                    new JSONArray().put(new JSONObject().put("text", instruction))));
                             setup.put("setup", config);
                             webSocket.send(setup.toString());
                         } catch (Exception e) {
@@ -586,6 +591,31 @@ public class CosmicLiveService extends Service {
                 .setBufferSizeInBytes(Math.max(outMin, 12000))
                 .setTransferMode(AudioTrack.MODE_STREAM).build();
         player.play();
+    }
+
+    private String requestMemoryContext() {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL("http://127.0.0.1:8059/api/memory/context").openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(2500);
+            connection.setReadTimeout(2500);
+            int code = connection.getResponseCode();
+            if (code < 200 || code >= 300) return "";
+            try (InputStream input = connection.getInputStream();
+                 ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[2048];
+                int count;
+                while ((count = input.read(buffer)) != -1) bytes.write(buffer, 0, count);
+                JSONObject response = new JSONObject(bytes.toString(StandardCharsets.UTF_8.name()));
+                return response.optBoolean("success", false)
+                        ? response.optString("memory_context", "") : "";
+            }
+        } catch (Exception ignored) {
+            return "";
+        } finally {
+            if (connection != null) connection.disconnect();
+        }
     }
 
     private String requestLiveToken() throws Exception {
