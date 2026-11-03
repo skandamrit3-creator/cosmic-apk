@@ -265,7 +265,25 @@ public class CosmicLiveService extends Service {
                                             .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
                                                     .put("enum", new JSONArray().put("reactor").put("chat").put("avatar"))))
                                             .put("required", new JSONArray().put("mode"))));
-                            config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
+                            
+                            functions.put(new JSONObject().put("name", "set_theme")
+                                    .put("description", "Change COSMIC's visual theme to midnight, aurora, ember or light.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("theme", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("midnight").put("aurora").put("ember").put("light"))))
+                                            .put("required", new JSONArray().put("theme"))));
+                            functions.put(new JSONObject().put("name", "generate_image")
+                                    .put("description", "Generate an image in COSMIC using the currently selected image provider.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("prompt", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("prompt"))));
+                            functions.put(new JSONObject().put("name", "set_chat_provider")
+                                    .put("description", "Choose the chat model provider: auto, gemini, openai, groq, mistral or openrouter.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject().put("provider", new JSONObject().put("type", "STRING")
+                                                    .put("enum", new JSONArray().put("auto").put("gemini").put("openai").put("groq").put("mistral").put("openrouter"))))
+                                            .put("required", new JSONArray().put("provider"))));
+config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             config.put("systemInstruction", new JSONObject().put("parts",
                                     new JSONArray().put(new JSONObject().put("text",
                                             "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time."))));
