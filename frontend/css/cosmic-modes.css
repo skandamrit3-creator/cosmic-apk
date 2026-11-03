@@ -169,3 +169,23 @@ body[data-cosmic-mode="reactor"] .mode-tab.active{background:linear-gradient(120
 #cosmicChatImageMode{flex:0 0 auto;padding:0 14px;border:1px solid rgba(155,208,255,.3);background:rgba(83,105,151,.22);color:#dceaff}
 #cosmicChatImageMode.active{background:linear-gradient(135deg,#7657a8,#3f79a0);border-color:#b8a3ef;color:#fff;box-shadow:0 0 18px rgba(133,111,210,.28)}
 @media(max-width:520px){.cosmic-chat-compose{gap:6px;padding:7px}.cosmic-chat-compose textarea{min-width:0;padding:9px 6px}.cosmic-chat-compose button{padding:0 10px;font-size:11px}}
+
+
+/* Explicitly suppress hidden Reactor containers so modes never overlap */
+.hud-main[hidden],.topbar[hidden],.mobile-nav[hidden]{display:none!important}
+.cosmic-mode-view[hidden]{display:none!important}
+.cosmic-mode-view{inset:68px 0 0;height:calc(100dvh - 68px);max-height:calc(100dvh - 68px);overflow:hidden}
+@media(max-width:700px){.cosmic-mode-view{inset:58px 0 0;height:calc(100dvh - 58px);max-height:calc(100dvh - 58px)}}
+.mode-switch{display:flex;align-items:center;max-width:calc(100vw - 16px);gap:4px;padding:5px}
+.mode-tab{white-space:nowrap;padding:9px 12px}
+.cosmic-theme-picker{max-width:104px;min-width:0;padding:8px 6px;border:1px solid rgba(170,167,232,.2);border-radius:999px;background:rgba(24,25,39,.95);color:#e9e7f4;font:600 9px/1.2 system-ui}
+@media(max-width:520px){.mode-switch{top:6px;gap:2px;padding:4px}.mode-tab{padding:8px 7px;font-size:8px;letter-spacing:.03em}.cosmic-theme-picker{max-width:76px;padding:7px 3px;font-size:8px}}
+:root[data-cosmic-theme="nebula"]{--cosmic-theme-a:#18253b;--cosmic-theme-b:#090d18;--cosmic-theme-c:#25213a}
+:root[data-cosmic-theme="aurora"]{--cosmic-theme-a:#123c3a;--cosmic-theme-b:#07151b;--cosmic-theme-c:#18334a}
+:root[data-cosmic-theme="midnight"]{--cosmic-theme-a:#202434;--cosmic-theme-b:#080a11;--cosmic-theme-c:#151a2a}
+:root[data-cosmic-theme="solar"]{--cosmic-theme-a:#493021;--cosmic-theme-b:#120e13;--cosmic-theme-c:#33233b}
+:root[data-cosmic-theme] .cosmic-mode-view{background:radial-gradient(ellipse at 50% 0%,var(--cosmic-theme-a),var(--cosmic-theme-b) 70%,#07080d)!important}
+.cosmic-chat-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:10px;align-items:center;padding:10px 0}
+.cosmic-chat-controls label{display:flex;min-width:0;align-items:center;gap:8px;font-size:10px}
+.cosmic-chat-controls select{min-width:0;max-width:100%;flex:1;padding:9px 10px;border-radius:10px}
+@media(max-width:520px){.cosmic-chat-controls{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:6px}.cosmic-chat-controls label{display:grid;gap:4px;font-size:8px}.cosmic-chat-controls select{width:100%;font-size:11px}}
