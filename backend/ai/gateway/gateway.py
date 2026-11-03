@@ -264,7 +264,7 @@ class AIGateway:
         return result
 
 
-    def _gemini(self, model, key, message, history):
+    def _gemini(self, model, key, message, history, system_prompt=None):
         url = (
             "https://generativelanguage.googleapis.com/v1beta/models/"
             + model + ":generateContent"
@@ -280,7 +280,7 @@ class AIGateway:
             url, params={"key": key},
             headers={"Content-Type": "application/json"},
             json={
-                "systemInstruction": {"parts": [{"text": COSMIC_SYSTEM}]},
+                "systemInstruction": {"parts": [{"text": system_prompt or COSMIC_SYSTEM}]},
                 "contents": contents,
             }, timeout=60
         )
@@ -299,9 +299,9 @@ class AIGateway:
             raise RuntimeError("Gemini returned an empty response")
         return text
 
-    def _openai_compatible(self, provider, model, key, message, history):
+    def _openai_compatible(self, provider, model, key, message, history, system_prompt=None):
         cfg = CONFIG[provider]
-        messages = [{"role": "system", "content": COSMIC_SYSTEM}]
+        messages = [{"role": "system", "content": system_prompt or COSMIC_SYSTEM}]
         for item in history[-20:]:
             content = str(item.get("content", item.get("message", "")) or "")
             if content:
@@ -362,7 +362,7 @@ class AIGateway:
             return "gemini-3.5-flash-lite"
         return "gemini-3.8-flash"
 
-    def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
+    def chat(self, message, history=None, provider="auto", model="auto", mode="auto", system_prompt=None):
         # Reload app-private credentials for every request. Android .env files are
         # intentionally not bundled into the APK; API Setup stores keys on-device.
         load_saved_provider_keys()
@@ -413,10 +413,10 @@ class AIGateway:
             chosen_model = model if model != "auto" and candidate == provider else (self._auto_gemini_model(message) if candidate == "gemini" else cfg["default"])
             try:
                 if cfg.get("kind") == "gemini":
-                    answer = self._gemini(chosen_model, key, message, history)
+                    answer = self._gemini(chosen_model, key, message, history, system_prompt=system_prompt)
                 else:
                     answer = self._openai_compatible(
-                        candidate, chosen_model, key, message, history
+                        candidate, chosen_model, key, message, history, system_prompt=system_prompt
                     )
                 return {
                     "success": True,
@@ -434,7 +434,7 @@ class AIGateway:
                         model == "auto" and chosen_model != "gemini-3.8-flash"):
                     try:
                         fallback_model = "gemini-3.8-flash"
-                        fallback_answer = self._gemini(fallback_model, key, message, history)
+                        fallback_answer = self._gemini(fallback_model, key, message, history, system_prompt=system_prompt)
                         return {
                             "success": True, "provider": "gemini",
                             "model": fallback_model, "message": fallback_answer,
