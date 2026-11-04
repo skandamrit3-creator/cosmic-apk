@@ -5,6 +5,7 @@
   const API = () => String(window.COSMIC_API_BASE || window.location.origin).replace(/\/$/, "");
   const liveModel = () => ["gemini-3.8-live","gemini-3.8-live-extended-thinking"].includes(localStorage.getItem("COSMIC_LIVE_MODEL")) ? localStorage.getItem("COSMIC_LIVE_MODEL") : "gemini-3.8-live";
   const liveVoice = () => ["Kore","Aoede","Puck","Charon","Fenrir","Leda","Orus","Zephyr"].includes(localStorage.getItem("COSMIC_LIVE_VOICE")) ? localStorage.getItem("COSMIC_LIVE_VOICE") : "Kore";
+  const livePersona = () => String(localStorage.getItem("COSMIC_LIVE_PERSONA") || "").trim().slice(0,1200);
   const WS_BASE = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained";
   const state = {
     desired: false, connected: false, connecting: false, sharing: false,
@@ -24,7 +25,7 @@
       orb.setAttribute("aria-label", state.desired ? "Stop COSMIC Live voice" : "Start COSMIC Live voice");
       orb.title = state.desired ? "Stop live conversation" : "Start live conversation";
     }
-    if (shareButton) shareButton.disabled = !state.connected && !state.sharing;
+    if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); }
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
   }
 
@@ -33,14 +34,17 @@
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model" title="Live model"><option value="gemini-3.8-live">3.8 LIVE · FAST</option><option value="gemini-3.8-live-extended-thinking">3.8 LIVE · THINK</option></select><select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice" title="Voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select><div class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">LIVE VOICE OFF</div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" disabled>SHARE SCREEN</button><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button>';
+    root.innerHTML = '<div class="cosmic-live-main"><div class="cosmic-live-brand"><span class="cosmic-live-dot"></span><div><b>COSMIC LIVE</b><small class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">VOICE OFF · READY</small></div></div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" aria-label="Share screen" title="Share screen" disabled>▣</button><button class="cosmic-live-settings-toggle" id="cosmicLiveSettingsToggle" type="button" aria-label="Voice settings" aria-expanded="false" title="Voice settings">⚙</button></div><div class="cosmic-live-options" id="cosmicLiveOptions" hidden><label>LIVE MODEL<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model"><option value="gemini-3.8-live">GEMINI 3.8 · FAST</option><option value="gemini-3.8-live-extended-thinking">GEMINI 3.8 · THINK</option></select></label><label>VOICE<select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select></label><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button></div>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
     const modelSelect = root.querySelector("#cosmicLiveModel");
+    const settingsToggle = root.querySelector("#cosmicLiveSettingsToggle");
+    const optionsPanel = root.querySelector("#cosmicLiveOptions");
+    settingsToggle.addEventListener("click", () => { optionsPanel.hidden = !optionsPanel.hidden; settingsToggle.setAttribute("aria-expanded", String(!optionsPanel.hidden)); });
     const voiceSelect = root.querySelector("#cosmicLiveVoice");
     modelSelect.value = liveModel(); voiceSelect.value = liveVoice();
-    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); state.resumeHandle=""; if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
+    modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); state.resumeHandle=""; if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice(),persona:livePersona()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
     voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("VOICE SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live voice changed"); });
     shareButton = root.querySelector("#cosmicLiveShare");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
@@ -224,7 +228,7 @@
         const config = {
           responseModalities:["AUDIO"],
           speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}},
-          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked." + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
+          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked." + (livePersona() ? "\n\nActive COSMIC character persona: " + livePersona() : "") + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
           inputAudioTranscription:{},
@@ -300,7 +304,7 @@
         if (call.name !== "switch_mode" && window.COSMIC_BRAIN?.state?.enabled === false) throw new Error("COSMIC Brain is paused. Turn BRAIN ON to allow device actions.");
         if (call.name === "switch_mode") {
           const mode = String(args.mode || "").toLowerCase();
-          if (!["reactor","chat","avatar"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
+          if (!["reactor","chat","avatar","characters"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
           const tab = document.querySelector('[data-cosmic-mode="' + mode + '"]');
           if (!tab) throw new Error("Mode control is unavailable.");
           tab.click(); result = {success:true,mode};
@@ -451,7 +455,7 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "true");
       setStatus("STARTING ANDROID GEMINI LIVE…", "connecting");
       try {
-        const started = await nativeVoice.startLive({model:liveModel(),voice:liveVoice()});
+        const started = await nativeVoice.startLive({model:liveModel(),voice:liveVoice(),persona:livePersona()});
         state.connecting = false;
         if (started?.connected) {
           state.connected = true;
@@ -546,7 +550,7 @@
       try {
         await nativeVoice.startScreenShare();
         state.nativeScreen = true; state.sharing = true;
-        shareButton.textContent = "STOP SHARING";
+        shareButton.textContent = "■";
         setStatus("ANDROID SCREEN SHARING · 1 FPS", "live");
       } catch (error) { setStatus("ANDROID SCREEN SHARE FAILED · " + (error.message || "permission denied"), "error"); }
       return;
@@ -616,7 +620,7 @@
     if (state.screenVideo) { state.screenVideo.pause(); state.screenVideo.srcObject = null; }
     state.screenVideo = null;
     state.sharing = false;
-    if (shareButton) shareButton.textContent = "SHARE SCREEN";
+    if (shareButton) { shareButton.textContent = "▣"; shareButton.classList.remove("is-sharing"); }
     if (state.connected) setStatus("GEMINI LIVE · LISTENING", "live");
   }
 
@@ -644,6 +648,7 @@
   window.COSMIC_LIVE = {
     start, stop, toggle:() => state.desired ? stop() : start(false),
     sendText, startScreenShare, stopScreenShare,
+    async setPersona(persona){ const value=String(persona||"").trim().slice(0,1200); localStorage.setItem("COSMIC_LIVE_PERSONA",value); if(!state.desired)return true; if(state.nativeMode){ await window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice(),persona:value}); return true; } state.resumeHandle=""; if(state.socket)state.socket.close(1012,"COSMIC character changed"); return true; },
     get active(){return state.connected;},
     get listening(){return state.desired;}
   };
