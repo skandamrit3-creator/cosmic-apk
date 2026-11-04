@@ -141,6 +141,7 @@
     state.playing.clear();
     state.nextPlayTime = state.context?.currentTime || 0;
     window.COSMIC_AVATAR_TALK?.(false);
+    window.COSMIC_CHARACTER_TALK?.(false);
     window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
   }
 
