@@ -21,11 +21,22 @@
 
 <body>
 <div id="cosmic">
-    <nav class="mode-switch" aria-label="COSMIC interface modes">
-      <button class="mode-tab active" data-cosmic-mode="reactor">◈ REACTOR</button>
-      <button class="mode-tab" data-cosmic-mode="chat">◉ CHAT</button>
-      <button class="mode-tab" data-cosmic-mode="avatar">◎ AVATAR</button>
+    <nav class="mode-switch" aria-label="COSMIC navigation">
+      <button class="cosmic-menu-trigger" id="cosmicModeMenuButton" type="button" aria-haspopup="dialog" aria-expanded="false" aria-label="Open modes and appearance">☰</button>
     </nav>
+    <section class="cosmic-mode-dialog" id="cosmicModeDialog" role="dialog" aria-modal="true" aria-labelledby="cosmicModeDialogTitle" hidden>
+      <button class="cosmic-mode-backdrop" type="button" data-close-modes aria-label="Close menu"></button>
+      <div class="cosmic-mode-dialog-card">
+        <header class="cosmic-mode-dialog-head"><div><small>COSMIC WORKSPACE</small><h2 id="cosmicModeDialogTitle">Choose a space</h2></div><button type="button" data-close-modes aria-label="Close">×</button></header>
+        <div class="cosmic-mode-grid">
+          <button class="cosmic-mode-option active" data-cosmic-mode="reactor"><span>◈</span><b>Reactor</b><small>Live system workspace</small></button>
+          <button class="cosmic-mode-option" data-cosmic-mode="chat"><span>✧</span><b>Chat</b><small>Ask and create</small></button>
+          <button class="cosmic-mode-option" data-cosmic-mode="avatar"><span>◎</span><b>Avatar</b><small>Your 3D character</small></button>
+          <button class="cosmic-mode-option" data-cosmic-mode="characters"><span>🤖</span><b>Characters</b><small>2D voice companions</small></button>
+        </div>
+        <div class="cosmic-mode-dialog-foot"><span>APPEARANCE</span><select id="cosmicThemePicker" class="cosmic-theme-picker" aria-label="Choose COSMIC texture"><option value="nebula">Nebula</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="solar">Solar</option></select></div>
+      </div>
+    </section>
     <section id="cosmicChatMode" class="cosmic-mode-view chat-mode" hidden></section>
     <section id="cosmicAvatarMode" class="cosmic-mode-view avatar-mode" hidden></section>
 
