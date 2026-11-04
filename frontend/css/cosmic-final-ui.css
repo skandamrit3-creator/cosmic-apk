@@ -251,3 +251,24 @@ html,body,#cosmic{min-height:100%;background:var(--cosmic-final-bg)!important}
  .cosmic-mode-dialog-card{padding:10px}
  .cosmic-mode-option{min-height:68px}
 }
+
+
+/* Camera sharing is opt-in and visually secondary to the Live microphone. */
+.cosmic-live-camera{
+ width:42px;min-width:42px;height:42px;min-height:42px;padding:0;
+ display:grid;place-items:center;border:1px solid var(--cosmic-final-line);
+ border-radius:14px;background:rgba(255,255,255,.065);color:#e5eff8;
+ font-size:19px;font-weight:700;cursor:pointer;
+}
+.cosmic-live-camera:disabled{opacity:.32}
+.cosmic-live-camera.is-sharing{border-color:rgba(255,171,87,.5);background:rgba(255,151,61,.15);color:#ffd2a5}
+@media(max-width:850px){
+ .cosmic-live-main{grid-template-columns:minmax(0,1fr) 40px 36px 36px 36px;gap:5px}
+ .cosmic-live-orb{width:40px!important;height:40px!important;flex-basis:40px!important}
+ .cosmic-live-share,.cosmic-live-camera,.cosmic-live-settings-toggle{width:36px;min-width:36px;height:36px;min-height:36px;border-radius:12px;font-size:16px}
+}
+@media(max-width:380px){
+ .cosmic-live-main{grid-template-columns:minmax(0,1fr) 38px 33px 33px 33px;gap:4px}
+ .cosmic-live-orb{width:38px!important;height:38px!important;flex-basis:38px!important}
+ .cosmic-live-share,.cosmic-live-camera,.cosmic-live-settings-toggle{width:33px;min-width:33px;height:33px;min-height:33px}
+}
