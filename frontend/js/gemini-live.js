@@ -25,7 +25,7 @@
       orb.setAttribute("aria-label", state.desired ? "Stop COSMIC Live voice" : "Start COSMIC Live voice");
       orb.title = state.desired ? "Stop live conversation" : "Start live conversation";
     }
-    if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); }
+    if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); shareButton.textContent = state.sharing ? "■" : "▣"; }
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
   }
 
@@ -154,6 +154,7 @@
     for (let i=0; i<pcm.length; i++) peak = Math.max(peak, Math.abs(pcm[i] / 32768));
     window.COSMIC_AVATAR_AUDIO_LEVEL?.(Math.min(1, peak * 1.8));
     window.COSMIC_AVATAR_TALK?.(true);
+    window.COSMIC_CHARACTER_TALK?.(true);
     const buffer = state.context.createBuffer(1, pcm.length, 24000);
     const channel = buffer.getChannelData(0);
     for (let i=0; i<pcm.length; i++) channel[i] = pcm[i] / 32768;
@@ -168,6 +169,7 @@
       try { node.disconnect(); } catch (_) {}
       if (!state.playing.size) {
         window.COSMIC_AVATAR_TALK?.(false);
+        window.COSMIC_CHARACTER_TALK?.(false);
         window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
       }
     };
@@ -355,7 +357,9 @@
         setStatus("LIVE VOICE OFF","idle");
       } else if(/RECONNECTING/i.test(message)) {
         state.connected=false;state.desired=true;setStatus(message,"connecting");
-      } else if(/GEMINI CONNECTED|LISTENING|SCREEN SHARING/i.test(message)) {
+      } else if(/SCREEN SHARING/i.test(message)) {
+        state.sharing=true;state.desired=true;state.connected=true;state.connecting=false;setStatus(message,"live");
+      } else if(/GEMINI CONNECTED|LISTENING/i.test(message)) {
         state.desired=true;state.connected=true;state.connecting=false;setStatus(message,"live");
       } else if(/SCREEN SHARE STOPPED/i.test(message)) {
         state.sharing=false;setStatus("GEMINI LIVE · LISTENING","live");
@@ -372,9 +376,10 @@
       document.dispatchEvent(new CustomEvent("cosmic:live-transcript",{detail:{text:message,role:"user"}}));
     }
     else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
-    else if(type==="audio_start") window.COSMIC_AVATAR_TALK?.(true);
+    else if(type==="audio_start") { window.COSMIC_AVATAR_TALK?.(true); window.COSMIC_CHARACTER_TALK?.(true); }
     else if(type==="audio_end"||type==="turn_complete") {
       window.COSMIC_AVATAR_TALK?.(false);
+      window.COSMIC_CHARACTER_TALK?.(false);
       window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
     } else if(type==="tool_call") {
       try { const payload=JSON.parse(message); if(payload.functionCalls?.length)handleToolCalls(payload.functionCalls); }
@@ -563,7 +568,7 @@
         });
         await nativeScreen.startScreenShare();
         state.nativeScreen = true; state.sharing = true;
-        shareButton.textContent = "STOP SHARING";
+        shareButton.textContent = "■";
         setStatus("ANDROID SCREEN SHARING · 1 FPS", "live");
         return;
       } catch (error) {
