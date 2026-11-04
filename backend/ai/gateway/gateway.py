@@ -92,6 +92,14 @@ def load_saved_provider_keys():
                 if isinstance(value, str) and value.strip():
                     if not os.getenv(cfg["key"], "").strip():
                         os.environ[cfg["key"]] = value.strip()
+            cloudflare = saved.get("cloudflare_ai")
+            if isinstance(cloudflare, dict):
+                account = str(cloudflare.get("account_id", "")).strip()
+                token = str(cloudflare.get("token", "")).strip()
+                if account:
+                    os.environ.setdefault("CLOUDFLARE_ACCOUNT_ID", account)
+                if token:
+                    os.environ.setdefault("CLOUDFLARE_API_TOKEN", token)
     except (OSError, ValueError, TypeError):
         pass
 
@@ -100,7 +108,7 @@ def save_provider_keys(keys=None, clear=None):
     """Persist provider keys without ever returning their values to the client."""
     keys = keys if isinstance(keys, dict) else {}
     clear = set(clear or [])
-    allowed = set(CONFIG)
+    allowed = set(CONFIG) | {"cloudflare_ai"}
     unknown = (set(keys) | clear) - allowed
     if unknown:
         raise ValueError("Unknown providers: " + ", ".join(sorted(unknown)))
@@ -111,23 +119,39 @@ def save_provider_keys(keys=None, clear=None):
         existing = json.loads(path.read_text(encoding="utf-8"))
         if isinstance(existing, dict):
             saved.update({k: v for k, v in existing.items()
-                          if k in allowed and isinstance(v, str)})
+                          if k in allowed and (isinstance(v, str) or
+                              (k == "cloudflare_ai" and isinstance(v, dict)))})
     except (OSError, ValueError, TypeError):
         pass
 
     for provider in clear:
         saved.pop(provider, None)
-        os.environ.pop(CONFIG[provider]["key"], None)
+        if provider == "cloudflare_ai":
+            os.environ.pop("CLOUDFLARE_ACCOUNT_ID", None)
+            os.environ.pop("CLOUDFLARE_API_TOKEN", None)
+        else:
+            os.environ.pop(CONFIG[provider]["key"], None)
 
     for provider, value in keys.items():
         if not isinstance(value, str):
             raise ValueError("API keys must be text.")
         value = value.strip()
-        if len(value) > 512:
+        if len(value) > 1024:
             raise ValueError("API key is too long.")
         if value:
-            saved[provider] = value
-            os.environ[CONFIG[provider]["key"]] = value
+            if provider == "cloudflare_ai":
+                parts = value.split("|", 1)
+                if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
+                    raise ValueError("Cloudflare requires Account ID and API token separated by |.")
+                account_id, token = parts[0].strip(), parts[1].strip()
+                if len(account_id) > 128 or len(token) > 512:
+                    raise ValueError("Cloudflare credentials exceed the allowed length.")
+                saved[provider] = {"account_id": account_id, "token": token}
+                os.environ["CLOUDFLARE_ACCOUNT_ID"] = account_id
+                os.environ["CLOUDFLARE_API_TOKEN"] = token
+            else:
+                saved[provider] = value
+                os.environ[CONFIG[provider]["key"]] = value
 
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -141,9 +165,13 @@ def save_provider_keys(keys=None, clear=None):
         path.chmod(0o600)
     except OSError:
         pass
-    return [{"provider": provider,
-             "configured": bool(os.getenv(cfg["key"], "").strip())}
-            for provider, cfg in CONFIG.items()]
+    result = [{"provider": provider,
+                "configured": bool(os.getenv(cfg["key"], "").strip())}
+               for provider, cfg in CONFIG.items()]
+    result.append({"provider": "cloudflare_ai",
+                   "configured": bool(os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+                                      and os.getenv("CLOUDFLARE_API_TOKEN", "").strip())})
+    return result
 
 
 load_saved_provider_keys()
@@ -261,6 +289,15 @@ class AIGateway:
                     item["status"] = "network_error"
                     item["detail"] = str(exc)[:180]
             result.append(item)
+        cf_configured = bool(os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+                             and os.getenv("CLOUDFLARE_API_TOKEN", "").strip())
+        result.append({
+            "provider": "cloudflare_ai",
+            "configured": cf_configured,
+            "status": "configured_not_tested" if cf_configured else "not_configured",
+            "tested": False,
+            "purpose": "image_generation",
+        })
         return result
 
 
