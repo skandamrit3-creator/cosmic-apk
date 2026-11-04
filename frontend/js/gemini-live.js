@@ -245,8 +245,9 @@
   }
 
   async function connect(generation) {
-    const token = await getToken();
-    const memoryContext = await getMemoryContext();
+    // Token provisioning and local memory lookup are independent; run them concurrently
+    // so voice startup does not pay both network/IPC round trips in sequence.
+    const [token, memoryContext] = await Promise.all([getToken(), getMemoryContext()]);
     if (!state.desired || generation !== state.generation) return;
     const socket = new WebSocket(WS_BASE + "?access_token=" + encodeURIComponent(token));
     state.socket = socket;
