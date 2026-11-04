@@ -184,3 +184,70 @@ html,body,#cosmic{min-height:100%;background:var(--cosmic-final-bg)!important}
   #cosmicBotArt,.cosmic-live-dot,.cosmic-live-orb i{animation:none!important}
   #cosmic .mode-tab{transition:none!important}
 }
+
+/* COSMIC full-screen workspace + quiet mode picker. */
+#cosmic .mode-switch{
+ position:fixed!important;top:calc(env(safe-area-inset-top,0px) + 10px)!important;
+ left:auto!important;right:12px!important;z-index:14000!important;
+ display:block!important;width:auto!important;max-width:none!important;
+ padding:0!important;border:0!important;border-radius:0!important;
+ background:transparent!important;box-shadow:none!important;backdrop-filter:none!important;
+}
+#cosmic .cosmic-menu-trigger{
+ width:42px;height:42px;display:grid;place-items:center;
+ border:1px solid rgba(200,222,241,.18);border-radius:15px;
+ color:#eaf4ff;background:rgba(12,24,39,.72);
+ box-shadow:0 8px 24px rgba(0,0,0,.2);backdrop-filter:blur(20px);
+ font-size:18px;cursor:pointer;transition:transform .2s ease,background .2s ease;
+}
+#cosmic .cosmic-menu-trigger:active{transform:scale(.94)}
+.cosmic-mode-dialog[hidden]{display:none!important}
+.cosmic-mode-dialog{position:fixed;inset:0;z-index:15000;display:grid;place-items:start end;padding:calc(env(safe-area-inset-top,0px) + 60px) 12px 16px;box-sizing:border-box}
+.cosmic-mode-backdrop{position:absolute;inset:0;width:100%;height:100%;border:0;background:rgba(2,8,16,.46);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.cosmic-mode-dialog-card{
+ position:relative;width:min(370px,calc(100vw - 24px));padding:17px;
+ border:1px solid rgba(194,222,244,.2);border-radius:25px;
+ background:linear-gradient(145deg,rgba(22,39,59,.97),rgba(10,20,34,.97));
+ box-shadow:0 24px 80px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.08);
+ animation:cosmicMenuIn .2s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes cosmicMenuIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.cosmic-mode-dialog-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}
+.cosmic-mode-dialog-head small{font-size:8px;letter-spacing:.2em;color:#8da8c1;font-weight:800}
+.cosmic-mode-dialog-head h2{margin:5px 0 0;color:#f1f6fc;font-size:19px;font-weight:650;letter-spacing:-.035em}
+.cosmic-mode-dialog-head>button{width:34px;height:34px;border:1px solid rgba(200,222,241,.15);border-radius:12px;background:rgba(255,255,255,.06);color:#e7f0f8;font-size:22px}
+.cosmic-mode-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.cosmic-mode-option{
+ min-width:0;min-height:92px;padding:12px;text-align:left;display:grid;align-content:start;gap:5px;
+ border:1px solid rgba(193,218,238,.13);border-radius:17px;
+ background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
+ color:#e9f2fa;cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+.cosmic-mode-option>span{font-size:18px;color:var(--cosmic-final-accent,#a5dff0);line-height:1.1}
+.cosmic-mode-option>b{font-size:12px;font-weight:750;letter-spacing:.015em}
+.cosmic-mode-option>small{font-size:9px;color:#91a7ba;line-height:1.3}
+.cosmic-mode-option.active{border-color:rgba(147,215,239,.48);background:linear-gradient(145deg,rgba(121,194,226,.18),rgba(150,136,207,.1));box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.cosmic-mode-option:active{transform:scale(.975)}
+.cosmic-mode-dialog-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(193,218,238,.12)}
+.cosmic-mode-dialog-foot>span{font-size:8px;font-weight:800;letter-spacing:.16em;color:#8ea5ba}
+#cosmicThemePicker.cosmic-theme-picker{width:130px;max-width:48%;min-height:35px;padding:7px 10px;border:1px solid rgba(193,218,238,.16);border-radius:11px;background:#14263a;color:#eaf3fa;font-size:10px}
+#cosmic .cosmic-mode-view{inset:0!important;padding-top:0!important}
+#cosmic .cosmic-mode-view[hidden]{display:none!important}
+#cosmic .hud-main{padding-top:0!important}
+#cosmicLiveDock.cosmic-live-dock{z-index:13000}
+@media(max-width:850px){
+ #cosmic .mode-switch{top:calc(env(safe-area-inset-top,0px) + 8px)!important;right:10px!important;left:auto!important;width:auto!important}
+ #cosmic .cosmic-menu-trigger{width:39px;height:39px;border-radius:14px}
+ .cosmic-mode-dialog{padding:calc(env(safe-area-inset-top,0px) + 54px) 9px 12px}
+ .cosmic-mode-dialog-card{width:min(360px,calc(100vw - 18px));padding:14px;border-radius:22px}
+ .cosmic-mode-option{min-height:82px;padding:10px}
+ #cosmic .cosmic-mode-view{inset:0!important}
+ #cosmicCharactersMode{inset:0 0 calc(74px + env(safe-area-inset-bottom,0px))!important}
+ #cosmicLiveDock.cosmic-live-dock{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+ body:has(#cosmicChatMode:not([hidden])) #cosmicLiveDock.cosmic-live-dock{bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:850px){
+ .cosmic-mode-dialog{padding:48px 10px 8px}
+ .cosmic-mode-dialog-card{padding:10px}
+ .cosmic-mode-option{min-height:68px}
+}
