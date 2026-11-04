@@ -532,6 +532,7 @@
   }
 
   function stop() {
+    stopCamera();
     if (state.nativeMode) {
       state.desired = false; state.connected = false; state.connecting = false;
       localStorage.setItem("COSMIC_LIVE_AUTO", "false");
