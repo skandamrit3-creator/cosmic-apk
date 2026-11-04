@@ -36,7 +36,7 @@
     try{
       const nativeCamera=window.Capacitor?.Plugins?.CosmicVoice;if(nativeCamera?.requestCameraPermission){const permission=await nativeCamera.requestCameraPermission();if(!permission?.granted)throw new Error("Camera permission was not granted.");}
       state.cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:false});
-      state.cameraVideo=document.createElement("video");state.cameraVideo.muted=true;state.cameraVideo.playsInline=true;state.cameraVideo.srcObject=state.cameraStream;await state.cameraVideo.play();
+      state.cameraVideo=document.createElement("video");state.cameraVideo.muted=true;state.cameraVideo.playsInline=true;state.cameraVideo.srcObject=state.cameraStream;state.cameraVideo.className="cosmic-camera-preview";state.cameraVideo.setAttribute("aria-label","COSMIC live camera preview");document.body.append(state.cameraVideo);await state.cameraVideo.play();
       const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{alpha:false});canvas.width=640;canvas.height=360;
       state.cameraTimer=window.setInterval(()=>{try{if(!state.connected||!state.cameraVideo||state.cameraVideo.readyState<2)return;ctx.drawImage(state.cameraVideo,0,0,640,360);const data=canvas.toDataURL("image/jpeg",.55).split(",")[1];if(state.nativeMode)window.Capacitor?.Plugins?.CosmicVoice?.sendLiveVideoFrame?.({data}).catch(error=>console.warn("Native camera frame skipped",error));else send({realtimeInput:{video:{data,mimeType:"image/jpeg"}}});}catch(error){console.warn("COSMIC camera frame skipped",error);}},1100);
       setStatus("CAMERA SHARING · TAP CAMERA TO STOP","live");if(cameraButton)cameraButton.classList.add("is-sharing");
@@ -45,7 +45,7 @@
   function stopCamera(){
     if(state.cameraTimer)clearInterval(state.cameraTimer);state.cameraTimer=0;
     try{state.cameraStream?.getTracks().forEach(track=>track.stop());}catch(_){}
-    state.cameraStream=null;if(state.cameraVideo){state.cameraVideo.srcObject=null;state.cameraVideo=null;}
+    state.cameraStream=null;if(state.cameraVideo){state.cameraVideo.srcObject=null;state.cameraVideo.remove();state.cameraVideo=null;}
     if(cameraButton){cameraButton.classList.remove("is-sharing");cameraButton.textContent="⌖";}
   }
   function mount() {
