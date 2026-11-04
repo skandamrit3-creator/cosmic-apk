@@ -272,3 +272,11 @@ html,body,#cosmic{min-height:100%;background:var(--cosmic-final-bg)!important}
  .cosmic-live-orb{width:38px!important;height:38px!important;flex-basis:38px!important}
  .cosmic-live-share,.cosmic-live-camera,.cosmic-live-settings-toggle{width:33px;min-width:33px;height:33px;min-height:33px}
 }
+
+
+.cosmic-camera-preview{
+ position:fixed;z-index:12500;right:14px;bottom:calc(92px + env(safe-area-inset-bottom,0px));
+ width:clamp(92px,24vw,150px);aspect-ratio:3/4;max-height:28vh;object-fit:cover;
+ border:1px solid rgba(255,190,125,.45);border-radius:18px;background:#101a27;
+ box-shadow:0 12px 36px rgba(0,0,0,.4);pointer-events:none;
+}
