@@ -175,6 +175,8 @@
     let peak = 0;
     for (let i=0; i<pcm.length; i++) peak = Math.max(peak, Math.abs(pcm[i] / 32768));
     window.COSMIC_AVATAR_AUDIO_LEVEL?.(Math.min(1, peak * 1.8));
+    window.COSMIC_CHARACTER_AUDIO_LEVEL?.(Math.min(1, peak * 1.8));
+    document.dispatchEvent(new CustomEvent("cosmic:live-audio-level",{detail:{level:Math.min(1,peak*1.8)}}));
     window.COSMIC_AVATAR_TALK?.(true);
     window.COSMIC_CHARACTER_TALK?.(true);
     const buffer = state.context.createBuffer(1, pcm.length, 24000);
@@ -206,7 +208,8 @@
     document.dispatchEvent(new CustomEvent("cosmic:live-transcript", {detail:{text:value,role}}));
     const chat = document.getElementById("cosmicChatLog");
     const avatar = document.getElementById("avatarConversationLog");
-    const targets = [chat, avatar].filter(Boolean);
+    const myraa = document.getElementById("myraaConversationLog");
+    const targets = [chat, avatar, myraa].filter(Boolean);
     for (const target of targets) {
       const item = document.createElement("div");
       item.className = target.id === "cosmicChatLog"
@@ -261,7 +264,8 @@
             {name:"open_app",description:"Open an installed Android application by its visible name.",parameters:{type:"OBJECT",properties:{name:{type:"STRING",description:"Visible app name, such as YouTube or Chrome"}},required:["name"]}},
             {name:"open_url",description:"Open an HTTP or HTTPS website or deep link in the available browser.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Complete http or https URL"}},required:["url"]}},
             {name:"download_file",description:"Download a file from a direct HTTP or HTTPS URL using the device download manager.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Direct HTTP or HTTPS file URL"},fileName:{type:"STRING",description:"Optional filename"}},required:["url"]}},
-            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat or Avatar mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar"]}},required:["mode"]}},
+            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat, 3D Avatar or 2D MYRAA mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar","characters"]}},required:["mode"]}},
+            {name:"google_search",description:"Open Google Search results for a user-requested web search.",parameters:{type:"OBJECT",properties:{query:{type:"STRING",description:"Search phrase"}},required:["query"]}},
             {name:"navigate_back",description:"Navigate back in the current COSMIC view.",parameters:{type:"OBJECT",properties:{}}},
             {name:"system_action",description:"Perform a user-requested Android navigation action. Requires COSMIC Device Controls accessibility permission.",parameters:{type:"OBJECT",properties:{action:{type:"STRING",enum:["home","back","notifications","quicksettings","recents"]}},required:["action"]}}
           ]}]
@@ -329,9 +333,16 @@
         if (call.name === "switch_mode") {
           const mode = String(args.mode || "").toLowerCase();
           if (!["reactor","chat","avatar","characters"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
-          const tab = document.querySelector('[data-cosmic-mode="' + mode + '"]');
+          const tab = document.querySelector('[data-mode="' + mode + '"]') || document.querySelector('[data-cosmic-mode="' + mode + '"]');
           if (!tab) throw new Error("Mode control is unavailable.");
           tab.click(); result = {success:true,mode};
+        } else if (call.name === "google_search") {
+          const query = String(args.query || "").trim().slice(0, 500);
+          if (!query) throw new Error("Google search query is empty.");
+          const url = "https://www.google.com/search?q=" + encodeURIComponent(query);
+          if (typeof plugin?.openUrl === "function") await plugin.openUrl({url});
+          else window.open(url, "_blank", "noopener,noreferrer");
+          result = {success:true,query,url};
         } else if (call.name === "open_app") {
           const name = String(args.name || args.app_name || "").trim().slice(0,80);
           if (!name || typeof plugin?.launchApp !== "function") throw new Error("Android app launching is unavailable in this client.");
@@ -397,7 +408,7 @@
       transcript(message,"user");
       document.dispatchEvent(new CustomEvent("cosmic:live-transcript",{detail:{text:message,role:"user"}}));
     }
-    else if(type==="audio_level") window.COSMIC_AVATAR_AUDIO_LEVEL?.(Number(message)||0);
+    else if(type==="audio_level") { const level=Number(message)||0; window.COSMIC_AVATAR_AUDIO_LEVEL?.(level); window.COSMIC_CHARACTER_AUDIO_LEVEL?.(level); document.dispatchEvent(new CustomEvent("cosmic:live-audio-level",{detail:{level}})); }
     else if(type==="audio_start") { window.COSMIC_AVATAR_TALK?.(true); window.COSMIC_CHARACTER_TALK?.(true); }
     else if(type==="audio_end"||type==="turn_complete") {
       window.COSMIC_AVATAR_TALK?.(false);
