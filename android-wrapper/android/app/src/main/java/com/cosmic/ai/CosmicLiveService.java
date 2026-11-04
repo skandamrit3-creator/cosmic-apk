@@ -445,15 +445,24 @@ public class CosmicLiveService extends Service {
         try {
             windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
             TextView bubble = new TextView(this);
-            bubble.setText("✦");
-            bubble.setTextColor(android.graphics.Color.rgb(255, 213, 165));
-            bubble.setTextSize(25);
+            bubble.setText("●");
+            bubble.setTextColor(android.graphics.Color.rgb(255, 255, 255));
+            bubble.setTextSize(12);
             bubble.setContentDescription("COSMIC floating assistant. Tap to return to COSMIC and use voice or screen share.");
             bubble.setGravity(Gravity.CENTER);
             GradientDrawable background = new GradientDrawable();
             background.setShape(GradientDrawable.OVAL);
-            background.setColor(android.graphics.Color.rgb(34, 27, 28));
-            background.setStroke(3, android.graphics.Color.rgb(255, 151, 61));
+            background.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+            background.setGradientCenter(0.34f, 0.28f);
+            background.setGradientRadius(58f);
+            background.setColors(new int[] {
+                    android.graphics.Color.rgb(245, 252, 255),
+                    android.graphics.Color.rgb(114, 213, 255),
+                    android.graphics.Color.rgb(54, 119, 255),
+                    android.graphics.Color.rgb(93, 76, 220),
+                    android.graphics.Color.rgb(12, 18, 57)
+            });
+            background.setStroke(2, android.graphics.Color.rgb(165, 222, 255));
             bubble.setBackground(background);
             bubble.setElevation(12);
             WindowManager.LayoutParams params = new WindowManager.LayoutParams(
