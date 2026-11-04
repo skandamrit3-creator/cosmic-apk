@@ -266,6 +266,20 @@ public class CosmicVoicePlugin extends Plugin {
     }
 
     @PluginMethod
+    public void sendLiveVideoFrame(PluginCall call) {
+        String data = call.getString("data", "");
+        if (data == null || data.isEmpty() || data.length() > 900000) {
+            call.reject("Camera frame is empty or too large.");
+            return;
+        }
+        if (!CosmicLiveService.sendVideoFrame(data)) {
+            call.reject("Gemini Live session is not ready to receive camera frames.");
+            return;
+        }
+        call.resolve(new JSObject().put("sent", true));
+    }
+
+    @PluginMethod
     public void sendLiveText(PluginCall call) {
         String text = call.getString("text", "").trim();
         if (text.isEmpty()) { call.reject("Message is empty"); return; }
