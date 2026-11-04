@@ -249,9 +249,8 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     finally{conversationBusy=false;if(send)send.disabled=false;if(mic)mic.disabled=false;input?.focus();}
   }
   async function listenAvatarMessage(){
-    const mic=document.querySelector("#avatarConversationMic");
-    if(!window.COSMIC_LIVE?.toggle){status("Gemini Live voice controller is unavailable.","error");return;}
-    try{await window.COSMIC_LIVE.toggle();if(mic)mic.textContent=window.COSMIC_LIVE.listening?"STOP LIVE":"🎙 SPEAK";}
+    const mic=document.querySelector("#avatarConversationMic"),wasLoaded=!!window.COSMIC_LIVE;
+    try{if(!window.COSMIC_LIVE)await import("./gemini-live.js");const live=window.COSMIC_LIVE;if(wasLoaded&&live.listening)live.stop();else if(!live.listening)await live.start(false);if(mic)mic.textContent=live.listening?"STOP LIVE":"🎙 SPEAK";}
     catch(error){status("Gemini Live: "+(error.message||error),"error");}
   }
 
