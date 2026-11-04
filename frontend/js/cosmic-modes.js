@@ -1,6 +1,11 @@
 (() => {
 "use strict";
-const tabs=[...document.querySelectorAll("[data-cosmic-mode]")];
+const tabs=[...document.querySelectorAll("#cosmicModeDialog [data-cosmic-mode]")];
+const menu=document.querySelector("#cosmicModeDialog"),menuButton=document.querySelector("#cosmicModeMenuButton");
+function closeModeDialog(){if(menu)menu.hidden=true;if(menuButton)menuButton.setAttribute("aria-expanded","false");}
+if(menuButton)menuButton.addEventListener("click",()=>{menu.hidden=false;menuButton.setAttribute("aria-expanded","true");});
+menu?.querySelectorAll("[data-close-modes]").forEach(b=>b.addEventListener("click",closeModeDialog));
+menu?.addEventListener("keydown",e=>{if(e.key==="Escape")closeModeDialog();});
 const reactor=document.querySelector(".hud-main"),topbar=document.querySelector(".topbar"),mobile=document.querySelector(".mobile-nav");
 const chat=document.querySelector("#cosmicChatMode"),avatar=document.querySelector("#cosmicAvatarMode");
 let busy=false, imageMode=false, sessionId=localStorage.getItem("cosmic.chat.session.v1")||("chat-"+Date.now().toString(36)), lastPrompt="";
@@ -10,6 +15,7 @@ function showMode(mode){
  document.documentElement.dataset.cosmicMode=mode;
  document.body.dataset.cosmicMode=mode;
  tabs.forEach(t=>t.classList.toggle("active",t.dataset.cosmicMode===mode));
+ if(mode!=="characters")closeModeDialog();
  const isReactor=mode==="reactor";
  if(reactor)reactor.hidden=!isReactor;if(topbar)topbar.hidden=!isReactor;if(mobile)mobile.hidden=!isReactor;
  chat.hidden=mode!=="chat";avatar.hidden=mode!=="avatar";
@@ -245,5 +251,6 @@ function wireNavigation(){
 
 wireNavigation();
 tabs.forEach(t=>t.addEventListener("click",()=>showMode(t.dataset.cosmicMode)));
+const themePicker=document.querySelector("#cosmicThemePicker");if(themePicker){themePicker.value=localStorage.getItem("COSMIC_BACKGROUND_THEME")||"nebula";document.documentElement.dataset.cosmicTheme=themePicker.value;themePicker.addEventListener("change",()=>{document.documentElement.dataset.cosmicTheme=themePicker.value;localStorage.setItem("COSMIC_BACKGROUND_THEME",themePicker.value);});}
 showMode("reactor");
 })();
