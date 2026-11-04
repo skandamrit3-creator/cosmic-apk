@@ -310,10 +310,16 @@ def ai_provider_keys():
     """Return key-presence flags only; load device-saved keys before reporting."""
     from backend.ai.gateway.gateway import CONFIG, load_saved_provider_keys
     load_saved_provider_keys()
-    return jsonify({"success": True, "providers": [
+    providers = [
         {"provider": provider, "configured": bool(os.getenv(cfg["key"], "").strip())}
         for provider, cfg in CONFIG.items()
-    ]})
+    ]
+    providers.append({
+        "provider": "cloudflare_ai",
+        "configured": bool(os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+                           and os.getenv("CLOUDFLARE_API_TOKEN", "").strip())
+    })
+    return jsonify({"success": True, "providers": providers})
 
 
 @app.post("/api/ai/speech")
