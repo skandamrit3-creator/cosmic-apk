@@ -12,9 +12,9 @@
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
-    screenVideo: null, screenTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, bubbleActive: false
+    screenVideo: null, screenTimer: 0, cameraStream: null, cameraVideo: null, cameraTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, bubbleActive: false
   };
-  let root, orb, status, shareButton, bubbleButton, wakeButton;
+  let root, orb, status, shareButton, cameraButton, bubbleButton, wakeButton;
 
   function setStatus(value, mode) {
     if (status) { status.textContent = value; status.dataset.state = mode || "idle"; }
@@ -27,14 +27,32 @@
     }
     if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); shareButton.textContent = state.sharing ? "■" : "▣"; }
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
+    if (cameraButton) { cameraButton.classList.toggle("is-sharing",!!state.cameraStream); cameraButton.textContent=state.cameraStream?"●":"⌖"; cameraButton.setAttribute("aria-label",state.cameraStream?"Stop camera":"Share camera with COSMIC"); }
   }
 
+  async function startCamera() {
+    if(!state.connected){setStatus("START GEMINI LIVE BEFORE SHARING CAMERA","idle");return;}
+    if(!navigator.mediaDevices?.getUserMedia){setStatus("CAMERA ACCESS IS NOT AVAILABLE IN THIS WEBVIEW","error");return;}
+    try{
+      state.cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:false});
+      state.cameraVideo=document.createElement("video");state.cameraVideo.muted=true;state.cameraVideo.playsInline=true;state.cameraVideo.srcObject=state.cameraStream;await state.cameraVideo.play();
+      const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{alpha:false});canvas.width=640;canvas.height=360;
+      state.cameraTimer=window.setInterval(()=>{try{if(!state.connected||!state.cameraVideo||state.cameraVideo.readyState<2)return;ctx.drawImage(state.cameraVideo,0,0,640,360);const data=canvas.toDataURL("image/jpeg",.55).split(",")[1];send({realtimeInput:{video:{data,mimeType:"image/jpeg"}}});}catch(error){console.warn("COSMIC camera frame skipped",error);}},1100);
+      setStatus("CAMERA SHARING · TAP CAMERA TO STOP","live");if(cameraButton)cameraButton.classList.add("is-sharing");
+    }catch(error){stopCamera();setStatus("CAMERA PERMISSION / START FAILED · "+(error.message||error),"error");}
+  }
+  function stopCamera(){
+    if(state.cameraTimer)clearInterval(state.cameraTimer);state.cameraTimer=0;
+    try{state.cameraStream?.getTracks().forEach(track=>track.stop());}catch(_){}
+    state.cameraStream=null;if(state.cameraVideo){state.cameraVideo.srcObject=null;state.cameraVideo=null;}
+    if(cameraButton){cameraButton.classList.remove("is-sharing");cameraButton.textContent="⌖";}
+  }
   function mount() {
     if (document.getElementById("cosmicLiveDock")) return;
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<div class="cosmic-live-main"><div class="cosmic-live-brand"><span class="cosmic-live-dot"></span><div><b>COSMIC LIVE</b><small class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">VOICE OFF · READY</small></div></div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" aria-label="Share screen" title="Share screen" disabled>▣</button><button class="cosmic-live-settings-toggle" id="cosmicLiveSettingsToggle" type="button" aria-label="Voice settings" aria-expanded="false" title="Voice settings">⚙</button></div><div class="cosmic-live-options" id="cosmicLiveOptions" hidden><label>LIVE MODEL<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model"><option value="gemini-3.8-live">GEMINI 3.8 · FAST</option><option value="gemini-3.8-live-extended-thinking">GEMINI 3.8 · THINK</option></select></label><label>VOICE<select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select></label><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button></div>';
+    root.innerHTML = '<div class="cosmic-live-main"><div class="cosmic-live-brand"><span class="cosmic-live-dot"></span><div><b>COSMIC LIVE</b><small class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">VOICE OFF · READY</small></div></div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" aria-label="Share screen" title="Share screen" disabled>▣</button><button class="cosmic-live-camera" id="cosmicLiveCamera" type="button" aria-label="Share camera" title="Share camera" disabled>⌖</button><button class="cosmic-live-settings-toggle" id="cosmicLiveSettingsToggle" type="button" aria-label="Voice settings" aria-expanded="false" title="Voice settings">⚙</button></div><div class="cosmic-live-options" id="cosmicLiveOptions" hidden><label>LIVE MODEL<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model"><option value="gemini-3.8-live">GEMINI 3.8 · FAST</option><option value="gemini-3.8-live-extended-thinking">GEMINI 3.8 · THINK</option></select></label><label>VOICE<select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select></label><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button></div>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
@@ -47,6 +65,7 @@
     modelSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_MODEL", modelSelect.value); state.resumeHandle=""; if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice(),persona:livePersona()}).catch(error => setStatus("MODEL SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live model changed"); });
     voiceSelect.addEventListener("change", () => { localStorage.setItem("COSMIC_LIVE_VOICE", voiceSelect.value); localStorage.setItem("COSMIC_TTS_VOICE", voiceSelect.value); if (!state.desired) return; if (state.nativeMode) window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice()}).catch(error => setStatus("VOICE SWITCH FAILED · "+error.message,"error")); else if (state.socket) state.socket.close(1012,"COSMIC Live voice changed"); });
     shareButton = root.querySelector("#cosmicLiveShare");
+    cameraButton = root.querySelector("#cosmicLiveCamera");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
     wakeButton = root.querySelector("#cosmicLiveWake");
     const wakePlugin = window.Capacitor?.Plugins?.CosmicVoice;
@@ -63,6 +82,7 @@
     wakeButton.addEventListener("click",async()=>{wakeButton.disabled=true;try{const api=window.Capacitor?.Plugins?.CosmicVoice;if(!api)throw new Error("Local wake word is available in the Android app.");const current=await api.getWakeWordStatus();if(current?.enabled){await api.disableWakeWord();paintWake(false);setStatus("LOCAL WAKE WORD OFF","idle");}else{await api.enableWakeWord();paintWake(true);setStatus("DOWNLOADING VERIFIED OFFLINE MODEL · FIRST SETUP","connecting");}}catch(error){setStatus("WAKE WORD SETUP FAILED · "+(error.message||error),"error");}finally{wakeButton.disabled=false;}});
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
     shareButton.addEventListener("click", () => state.sharing ? stopScreenShare() : startScreenShare());
+    cameraButton.addEventListener("click", () => state.cameraStream ? stopCamera() : startCamera());
     bubbleButton.addEventListener("click", async () => { try { await window.Capacitor?.Plugins?.CosmicVoice?.openFloatingBubbleSettings?.(); setStatus("ALLOW DISPLAY OVER OTHER APPS, THEN RETURN TO COSMIC", "connecting"); } catch (error) { setStatus("BUBBLE SETUP FAILED · "+error.message, "error"); } });
     const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
     setStatus("LIVE VOICE OFF", "idle");
