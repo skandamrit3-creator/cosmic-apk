@@ -196,26 +196,25 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     if(avatarSpeechAudio){try{avatarSpeechAudio.pause();URL.revokeObjectURL(avatarSpeechAudio.src);}catch(_){}avatarSpeechAudio=null;}
     speaking=true;window.COSMIC_AVATAR_TALK?.(true);
     const finish=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);};
+    // Do not wait for a second cloud TTS request after the model has already answered.
+    // Native Android TTS or the browser speech engine starts locally with much lower overhead.
     const native=window.Capacitor?.Plugins?.CosmicVoice;
     if(typeof native?.speak==="function"){
-      try{await native.speak({text:value});setTimeout(finish,Math.max(1400,value.length*48));return;}
-      catch(error){console.warn("MYRAA native speech fallback:",error.message);}
+      try{await native.speak({text:value});setTimeout(finish,Math.max(1400,value.length*43));return;}
+      catch(error){console.warn("COSMIC native speech fallback:",error.message);}
     }
-    try{
-      const response=await fetch(apiBase()+"/api/ai/speech",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({text:value,voice:localStorage.getItem("COSMIC_TTS_VOICE")||localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore",
-          model:localStorage.getItem("COSMIC_TTS_MODEL")||(value.length>400?"gemini-3.8-flash-tts":"gemini-3.8-flash-lite-tts")})});
-      if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error||"Gemini speech HTTP "+response.status);}
-      const blob=await response.blob();if(!blob.size)throw new Error("Gemini speech returned empty audio.");
-      const url=URL.createObjectURL(blob),audio=new Audio(url);avatarSpeechAudio=audio;
-      audio.onended=()=>{URL.revokeObjectURL(url);if(avatarSpeechAudio===audio)avatarSpeechAudio=null;finish();};
-      audio.onerror=()=>{URL.revokeObjectURL(url);if(avatarSpeechAudio===audio)avatarSpeechAudio=null;finish();status("Gemini speech playback failed.","error");};
-      await audio.play();return;
-    }catch(error){console.warn("MYRAA Gemini speech fallback:",error.message);}
     if(window.speechSynthesis){
-      speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);
-      utterance.onend=utterance.onerror=finish;speechSynthesis.speak(utterance);
-    }else{finish();status("Text-to-speech is unavailable.","error");}
+      speechSynthesis.cancel();
+      const utterance=new SpeechSynthesisUtterance(value);
+      const voices=speechSynthesis.getVoices();
+      const preferred=voices.find(v=>/google.*(english|hindi)|english.*india|hindi/i.test(v.name+" "+v.lang));
+      if(preferred)utterance.voice=preferred;
+      utterance.rate=1.04;utterance.pitch=1;
+      utterance.onend=utterance.onerror=finish;
+      speechSynthesis.speak(utterance);
+      return;
+    }
+    finish();status("Local speech is unavailable. Start Gemini Live for streamed voice.","error");
   }
   function addConversationMessage(text,kind){
     const log=document.querySelector("#avatarConversationLog");if(!log)return;
