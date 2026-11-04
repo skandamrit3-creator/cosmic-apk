@@ -86,6 +86,7 @@ public class CosmicLiveService extends Service {
     private String resumeHandle = "";
     private volatile String liveModel = "gemini-3.8-live";
     private volatile String liveVoice = "Kore";
+    private volatile String livePersona = "";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -141,6 +142,13 @@ public class CosmicLiveService extends Service {
             String requestedVoice = intent.getStringExtra("live_voice");
             boolean changed = false;
             boolean modelChanged = false;
+            String requestedPersona = intent.getStringExtra("live_persona");
+            if (requestedPersona != null) {
+                requestedPersona = requestedPersona.trim();
+                if (requestedPersona.length() > 1200) requestedPersona = requestedPersona.substring(0, 1200);
+                changed |= !requestedPersona.equals(livePersona);
+                livePersona = requestedPersona;
+            }
             if ("gemini-3.8-live".equals(requestedModel) ||
                     "gemini-3.8-live-extended-thinking".equals(requestedModel)) {
                 modelChanged = !requestedModel.equals(liveModel);
@@ -156,7 +164,7 @@ public class CosmicLiveService extends Service {
                 liveVoice = requestedVoice;
             }
             android.content.SharedPreferences.Editor livePrefs = getSharedPreferences("cosmic_live", MODE_PRIVATE).edit()
-                    .putString("live_model", liveModel).putString("live_voice", liveVoice);
+                    .putString("live_model", liveModel).putString("live_voice", liveVoice).putString("live_persona", livePersona);
             if (changed) {
                 resumeHandle = "";
                 livePrefs.remove("resume_handle");
@@ -209,6 +217,7 @@ public class CosmicLiveService extends Service {
             resumeHandle = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("resume_handle", "");
             liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
             liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
+            livePersona = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_persona", livePersona);
             showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
@@ -261,13 +270,14 @@ public class CosmicLiveService extends Service {
                                     .put("description", "Navigate back within the COSMIC app.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT").put("properties", new JSONObject())));
                             functions.put(new JSONObject().put("name", "switch_mode")
-                                    .put("description", "Switch COSMIC interface to Reactor, Chat or Avatar mode.")
+                                    .put("description", "Switch COSMIC interface to Reactor, Chat, Avatar or Characters mode.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
                                             .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
-                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar"))))
+                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar").put("characters"))))
                                             .put("required", new JSONArray().put("mode"))));
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             String instruction = "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time.";
+                            if (!livePersona.isEmpty()) instruction += "\\n\\nActive COSMIC character persona: " + livePersona;
                             if (!memoryContext.isEmpty()) {
                                 instruction += "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext
                                         + "\nUse relevant facts naturally when answering.";
