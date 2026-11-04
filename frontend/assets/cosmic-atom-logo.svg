@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+ <radialGradient id="space" cx="50%" cy="45%" r="65%"><stop stop-color="#253d91"/><stop offset=".52" stop-color="#10174c"/><stop offset="1" stop-color="#090b25"/></radialGradient>
+ <radialGradient id="core" cx="34%" cy="28%" r="75%"><stop stop-color="#fff"/><stop offset=".18" stop-color="#b8f5ff"/><stop offset=".48" stop-color="#36aaff"/><stop offset=".78" stop-color="#7057ff"/><stop offset="1" stop-color="#23135f"/></radialGradient>
+ <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9f8ff"/><stop offset=".35" stop-color="#3b9eff"/><stop offset=".7" stop-color="#7566ff"/><stop offset="1" stop-color="#e5c5ff"/></linearGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3b0"/><stop offset=".4" stop-color="#ffbd54"/><stop offset="1" stop-color="#e97824"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="512" height="512" rx="112" fill="url(#space)"/>
+<circle cx="256" cy="256" r="186" fill="none" stroke="#655dff" stroke-opacity=".2" stroke-width="2"/>
+<g fill="none" stroke-linecap="round" filter="url(#glow)">
+ <ellipse cx="256" cy="256" rx="188" ry="72" transform="rotate(-35 256 256)" stroke="url(#blue)" stroke-width="15"/>
+ <ellipse cx="256" cy="256" rx="188" ry="72" transform="rotate(35 256 256)" stroke="url(#gold)" stroke-width="13"/>
+ <ellipse cx="256" cy="256" rx="188" ry="72" transform="rotate(90 256 256)" stroke="url(#blue)" stroke-width="11"/>
+</g>
+<circle cx="256" cy="256" r="79" fill="#438fff" opacity=".25" filter="url(#glow)"/>
+<circle cx="256" cy="256" r="57" fill="url(#core)" stroke="#d6f7ff" stroke-opacity=".85" stroke-width="4"/>
+<circle cx="278" cy="234" r="13" fill="#fff" opacity=".9"/>
+<circle cx="373" cy="171" r="17" fill="url(#gold)" stroke="#fff1bd" stroke-width="3" filter="url(#glow)"/>
+<circle cx="141" cy="346" r="8" fill="#91dcff" filter="url(#glow)"/>
+</svg>
