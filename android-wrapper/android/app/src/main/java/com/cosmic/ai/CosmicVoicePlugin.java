@@ -33,7 +33,8 @@ import java.util.*;
 
 @CapacitorPlugin(name = "CosmicVoice",
  permissions = {@Permission(alias = "microphone",
- strings = {Manifest.permission.RECORD_AUDIO})})
+ strings = {Manifest.permission.RECORD_AUDIO}), @Permission(alias = "camera",
+ strings = {Manifest.permission.CAMERA})})
 public class CosmicVoicePlugin extends Plugin {
     private TextToSpeech tts;
     private BroadcastReceiver liveReceiver;
@@ -103,6 +104,22 @@ public class CosmicVoicePlugin extends Plugin {
                 .getBoolean("wake_word_enabled", false);
         call.resolve(new JSObject().put("enabled", enabled)
                 .put("running", CosmicWakeWordService.isRunning()));
+    }
+
+    @PluginMethod
+    public void requestCameraPermission(PluginCall call) {
+        if (getPermissionState("camera") == PermissionState.GRANTED) {
+            call.resolve(new JSObject().put("granted", true));
+            return;
+        }
+        requestPermissionForAlias("camera", call, "cameraPermissionResult");
+    }
+
+    @PermissionCallback
+    private void cameraPermissionResult(PluginCall call) {
+        boolean granted = getPermissionState("camera") == PermissionState.GRANTED;
+        if (granted) call.resolve(new JSObject().put("granted", true));
+        else call.reject("Camera permission denied.");
     }
 
     @PluginMethod
