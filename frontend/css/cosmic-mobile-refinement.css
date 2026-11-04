@@ -113,3 +113,5 @@
  #cosmicLiveDock .cosmic-live-brand small{max-width:120px}
 }
 @media(prefers-reduced-motion:reduce){.icon-button,.nav-tab,.send-button{transition:none}}
+
+@media(max-width:850px){.avatar-studio-v2 .avatar-panel{display:none}.avatar-studio-v2.settings-open .avatar-panel{display:block}.avatar-studio-v2.settings-open .avatar-stage-v2{height:48vh;min-height:340px}.avatar-settings-close{position:sticky;top:0;z-index:5;margin:0 0 8px auto;display:block}.avatar-stage-actions .avatar-action{min-height:32px;padding:6px 8px;font-size:8px}.avatar-chat-dock{padding:7px}.avatar-conversation-log-stage{max-height:70px}}
