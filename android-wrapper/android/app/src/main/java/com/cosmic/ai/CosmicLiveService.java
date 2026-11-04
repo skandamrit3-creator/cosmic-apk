@@ -277,7 +277,7 @@ public class CosmicLiveService extends Service {
                                             .put("required", new JSONArray().put("mode"))));
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
                             String instruction = "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time.";
-                            if (!livePersona.isEmpty()) instruction += "\\n\\nActive COSMIC character persona: " + livePersona;
+                            if (!livePersona.isEmpty()) instruction += "\n\nActive COSMIC character persona: " + livePersona;
                             if (!memoryContext.isEmpty()) {
                                 instruction += "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext
                                         + "\nUse relevant facts naturally when answering.";
