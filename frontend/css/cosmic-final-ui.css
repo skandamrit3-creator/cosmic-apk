@@ -1,0 +1,186 @@
+/* COSMIC unified finish layer: four modes, four shared textures, mobile-first controls. */
+:root{
+  --cosmic-final-safe-top:env(safe-area-inset-top,0px);
+  --cosmic-final-safe-bottom:env(safe-area-inset-bottom,0px);
+  --cosmic-final-panel:rgba(16,29,45,.76);
+  --cosmic-final-line:rgba(195,220,240,.16);
+}
+:root[data-cosmic-theme="nebula"]{
+  --cosmic-final-bg:#081321;--cosmic-final-bg2:#11152b;--cosmic-final-accent:#8edcf1;
+  --cosmic-final-glow:rgba(107,148,220,.22);--cosmic-final-panel:rgba(16,29,48,.78);
+}
+:root[data-cosmic-theme="aurora"]{
+  --cosmic-final-bg:#071a1c;--cosmic-final-bg2:#17243a;--cosmic-final-accent:#8de3cf;
+  --cosmic-final-glow:rgba(88,210,177,.2);--cosmic-final-panel:rgba(12,39,39,.78);
+}
+:root[data-cosmic-theme="midnight"]{
+  --cosmic-final-bg:#090e18;--cosmic-final-bg2:#171c2b;--cosmic-final-accent:#b9c8e6;
+  --cosmic-final-glow:rgba(117,139,184,.18);--cosmic-final-panel:rgba(22,27,42,.82);
+}
+:root[data-cosmic-theme="solar"]{
+  --cosmic-final-bg:#1b1110;--cosmic-final-bg2:#2a1d2a;--cosmic-final-accent:#ffc58a;
+  --cosmic-final-glow:rgba(230,146,81,.2);--cosmic-final-panel:rgba(43,28,27,.78);
+}
+html,body,#cosmic{min-height:100%;background:var(--cosmic-final-bg)!important}
+#cosmic{
+  isolation:isolate;
+  background:
+    radial-gradient(60rem 38rem at 8% -12%,var(--cosmic-final-glow),transparent 68%),
+    radial-gradient(52rem 34rem at 102% 38%,rgba(152,126,194,.13),transparent 65%),
+    linear-gradient(145deg,var(--cosmic-final-bg),var(--cosmic-final-bg2) 58%,var(--cosmic-final-bg))!important;
+}
+#cosmic:after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.13;
+  background-image:radial-gradient(rgba(220,239,255,.45) .55px,transparent .8px),linear-gradient(115deg,transparent 0 48%,rgba(255,255,255,.025) 50%,transparent 52%);
+  background-size:17px 17px,100% 100%;
+}
+#cosmic .topbar,#cosmic .left-rail,#cosmic .right-panel .hud-panel,
+#cosmic .core-stage,#cosmic .command-zone,#cosmic .response-stream,
+#cosmic .character-roster,#cosmic .character-stage,#cosmic .avatar-card,
+#cosmic .avatar-panel{
+  background-color:var(--cosmic-final-panel);
+  border-color:var(--cosmic-final-line);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+#cosmic .topbar{background:color-mix(in srgb,var(--cosmic-final-panel) 82%,transparent)}
+#cosmic .cosmic-mode-view{
+  background:
+    radial-gradient(ellipse at 52% 0%,var(--cosmic-final-glow),transparent 56%),
+    linear-gradient(155deg,var(--cosmic-final-bg),var(--cosmic-final-bg2) 56%,var(--cosmic-final-bg))!important;
+}
+#cosmic .mode-switch{
+  z-index:12000!important;left:50%!important;right:auto!important;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  width:max-content;max-width:calc(100vw - 16px);box-sizing:border-box;
+  padding:5px;border:1px solid var(--cosmic-final-line);border-radius:17px;
+  background:rgba(7,15,26,.9);box-shadow:0 9px 32px rgba(0,0,0,.28);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+#cosmic .mode-tab{
+  flex:1 1 auto;min-width:0;min-height:40px;padding:9px 12px;
+  border:1px solid transparent;border-radius:12px;background:transparent;
+  color:#b7c6d7;font-size:9px;font-weight:750;letter-spacing:.045em;
+  white-space:nowrap;transition:background .2s ease,border-color .2s ease,transform .2s ease;
+}
+#cosmic .mode-tab.active{
+  color:#fff;border-color:color-mix(in srgb,var(--cosmic-final-accent) 40%,transparent);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--cosmic-final-accent) 23%,transparent),rgba(174,145,220,.16));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 5px 18px rgba(0,0,0,.12);
+}
+#cosmic .cosmic-theme-picker{
+  flex:0 0 auto;width:88px;max-width:88px;min-width:0;min-height:36px;
+  padding:7px 6px;border:1px solid var(--cosmic-final-line);border-radius:11px;
+  background:rgba(255,255,255,.07);color:#edf4fb;font-size:9px;font-weight:700;
+}
+#cosmic .mode-tab:active,#cosmic .cosmic-live-dock button:active{transform:scale(.97)}
+/* A compact voice capsule replaces the old crowded row of selectors and buttons. */
+#cosmicLiveDock.cosmic-live-dock{
+  position:fixed;z-index:13000;left:50%;right:auto;bottom:22px;transform:translateX(-50%);
+  display:block;width:min(440px,calc(100vw - 24px));max-width:calc(100vw - 24px);
+  box-sizing:border-box;padding:8px;border:1px solid rgba(178,216,237,.2);
+  border-radius:22px;background:rgba(7,16,28,.93);
+  box-shadow:0 14px 42px rgba(0,0,0,.38),0 0 30px var(--cosmic-final-glow);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+}
+.cosmic-live-main{display:grid;grid-template-columns:minmax(0,1fr) 46px 42px 42px;align-items:center;gap:8px;min-height:48px}
+.cosmic-live-brand{display:flex;align-items:center;gap:9px;min-width:0;padding:0 5px}
+.cosmic-live-brand>div{display:grid;gap:3px;min-width:0}
+.cosmic-live-brand b{font-size:10px;letter-spacing:.14em;color:#edf5fb}
+.cosmic-live-brand small{display:block;max-width:190px;font-size:8px;letter-spacing:.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cosmic-live-dot{width:9px;height:9px;flex:0 0 9px;border-radius:50%;background:#708397;box-shadow:0 0 0 4px rgba(140,170,195,.1)}
+.cosmic-live-status[data-state=live]~*{color:#9de9c8}
+.cosmic-live-dock:has(.cosmic-live-status[data-state=live]) .cosmic-live-dot{background:#70e2ad;box-shadow:0 0 0 4px rgba(112,226,173,.13),0 0 16px rgba(112,226,173,.45)}
+.cosmic-live-dock:has(.cosmic-live-status[data-state=connecting]) .cosmic-live-dot{background:#f0c778;animation:cosmicLiveDotPulse 1s ease-in-out infinite}
+@keyframes cosmicLiveDotPulse{50%{opacity:.35;transform:scale(.78)}}
+.cosmic-live-orb{width:46px!important;height:46px!important;flex:0 0 46px!important}
+.cosmic-live-orb-core{font-size:17px!important}
+.cosmic-live-share,.cosmic-live-settings-toggle{
+  width:42px;min-width:42px;height:42px;min-height:42px;padding:0;
+  display:grid;place-items:center;border:1px solid var(--cosmic-final-line);
+  border-radius:14px;background:rgba(255,255,255,.065);color:#e5eff8;
+  font-size:19px;font-weight:700;cursor:pointer;
+}
+.cosmic-live-share:disabled{opacity:.34}
+.cosmic-live-share.is-sharing{border-color:rgba(255,125,117,.5);background:rgba(255,102,92,.15);color:#ffc1ba}
+.cosmic-live-settings-toggle[aria-expanded=true]{background:rgba(142,220,241,.16);border-color:rgba(142,220,241,.4)}
+.cosmic-live-options{
+  display:flex;align-items:end;flex-wrap:wrap;gap:8px;margin-top:8px;padding:10px 4px 3px;
+  border-top:1px solid rgba(190,215,235,.12);
+}
+.cosmic-live-options[hidden]{display:none!important}
+.cosmic-live-options label{display:grid;gap:5px;flex:1 1 125px;min-width:0;color:#92a8bc;font-size:8px;font-weight:800;letter-spacing:.09em}
+.cosmic-live-choice{width:100%;min-height:36px;padding:7px 9px;border:1px solid var(--cosmic-final-line);border-radius:10px;background:#122235;color:#eef6fc;font-size:10px}
+.cosmic-live-wake,.cosmic-live-bubble{
+  min-height:36px;padding:0 11px;border:1px solid var(--cosmic-final-line);
+  border-radius:10px;background:rgba(255,255,255,.06);color:#dceaf5;
+  font-size:9px;font-weight:800;letter-spacing:.035em;cursor:pointer;
+}
+.cosmic-live-wake.is-enabled{border-color:rgba(111,222,174,.4);background:rgba(111,222,174,.1);color:#a8f0ce}
+.cosmic-live-bubble[hidden]{display:none!important}
+/* 2D orange robot companion: crisp SVG art, animated eyes and speech mouth. */
+.character-avatar.bot{background:linear-gradient(145deg,#ffd08a,#ff8d2e 58%,#b84b1a);color:#2d1a10;box-shadow:0 3px 12px rgba(255,143,50,.25)}
+.character-voice-button{
+  min-height:34px;padding:7px 12px;border:1px solid rgba(255,171,87,.34);
+  border-radius:11px;background:linear-gradient(135deg,rgba(255,160,65,.2),rgba(224,93,35,.14));
+  color:#ffd7ad;font-size:9px;font-weight:850;letter-spacing:.06em;cursor:pointer;
+}
+#cosmicBotArt{display:block;width:100%;height:100%;max-width:100%;max-height:100%;overflow:visible;filter:drop-shadow(0 12px 22px rgba(255,127,40,.18))}
+#cosmicBotArt .bot-mouth{transform-box:fill-box;transform-origin:center;transform:scaleY(.25)}
+#cosmicBotArt.is-speaking .bot-mouth{animation:cosmicBotTalk .16s ease-in-out infinite alternate}
+@keyframes cosmicBotTalk{from{transform:scaleY(.25)}to{transform:scaleY(1.65)}}
+#cosmicBotArt.is-speaking{animation:cosmicBotBounce .55s ease-in-out infinite alternate}
+@keyframes cosmicBotBounce{to{transform:translateY(-3px)}}
+#cosmicBotArt g[fill="#8ff2ff"]{transform-box:fill-box;transform-origin:center;animation:cosmicBotBlink 4.8s infinite}
+@keyframes cosmicBotBlink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.08)}}
+.character-portrait-placeholder.cosmic-bot-portrait{
+  padding:8px;box-sizing:border-box;
+  background:radial-gradient(ellipse at 50% 34%,rgba(255,165,76,.2),rgba(22,28,43,.94) 68%);
+  border-color:rgba(255,176,99,.3);
+}
+/* Keep the four mode buttons visible together on phone widths. */
+@media(max-width:850px){
+  #cosmic .mode-switch{
+    top:calc(var(--cosmic-final-safe-top) + 7px)!important;left:50%!important;
+    display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr)) 62px;
+    gap:3px;width:calc(100vw - 16px);max-width:620px;padding:4px;
+    overflow:visible;
+  }
+  #cosmic .mode-tab{width:100%;min-width:0;min-height:39px;padding:7px 2px;font-size:clamp(7px,2.15vw,9px);letter-spacing:-.015em}
+  #cosmic .cosmic-theme-picker{width:62px;max-width:62px;min-width:0;padding:6px 3px;font-size:8px}
+  .cosmic-mode-view{inset:calc(var(--cosmic-final-safe-top) + 58px) 0 0!important}
+  #cosmicLiveDock.cosmic-live-dock{bottom:calc(70px + var(--cosmic-final-safe-bottom));width:min(420px,calc(100vw - 18px));padding:7px}
+  .cosmic-live-main{grid-template-columns:minmax(0,1fr) 43px 40px 40px;gap:6px}
+  .cosmic-live-orb{width:43px!important;height:43px!important;flex-basis:43px!important}
+  .cosmic-live-share,.cosmic-live-settings-toggle{width:40px;min-width:40px;height:40px;min-height:40px}
+  .cosmic-live-brand b{font-size:9px}
+  .cosmic-live-brand small{max-width:150px;font-size:7px}
+  #cosmicCharactersMode{inset:calc(var(--cosmic-final-safe-top) + 58px) 0 calc(78px + var(--cosmic-final-safe-bottom))!important}
+  body:has(#cosmicCharactersMode:not([hidden])) #cosmicLiveDock.cosmic-live-dock{bottom:calc(8px + var(--cosmic-final-safe-bottom))}
+  body:has(#cosmicChatMode:not([hidden])) #cosmicLiveDock.cosmic-live-dock{bottom:calc(86px + var(--cosmic-final-safe-bottom))}
+}
+@media(max-width:380px){
+  #cosmic .mode-switch{width:calc(100vw - 12px);grid-template-columns:repeat(4,minmax(0,1fr)) 57px;gap:2px;padding:3px}
+  #cosmic .mode-tab{font-size:7px;padding-inline:1px;letter-spacing:-.03em}
+  #cosmic .cosmic-theme-picker{width:57px;max-width:57px;font-size:7px}
+  .cosmic-live-brand{gap:6px;padding-left:2px}
+  .cosmic-live-brand small{max-width:112px}
+  .cosmic-live-main{grid-template-columns:minmax(0,1fr) 41px 38px 38px;gap:5px}
+  .cosmic-live-orb{width:41px!important;height:41px!important;flex-basis:41px!important}
+  .cosmic-live-share,.cosmic-live-settings-toggle{width:38px;min-width:38px;height:38px;min-height:38px}
+}
+@media(min-width:851px){
+  #cosmicCharactersMode{bottom:78px!important}
+  body:has(#cosmicCharactersMode:not([hidden])) #cosmicLiveDock.cosmic-live-dock{bottom:14px}
+  body:has(#cosmicChatMode:not([hidden])) #cosmicLiveDock.cosmic-live-dock{bottom:18px}
+}
+@media(orientation:landscape) and (max-height:520px) and (max-width:850px){
+  #cosmic .mode-switch{top:4px!important}
+  .cosmic-mode-view{inset:48px 0 0!important}
+  #cosmicCharactersMode{inset:48px 0 64px!important}
+  #cosmicLiveDock.cosmic-live-dock{bottom:calc(5px + var(--cosmic-final-safe-bottom))}
+  .cosmic-live-options{max-height:38dvh;overflow:auto}
+}
+@media(prefers-reduced-motion:reduce){
+  #cosmicBotArt,.cosmic-live-dot,.cosmic-live-orb i{animation:none!important}
+  #cosmic .mode-tab{transition:none!important}
+}
