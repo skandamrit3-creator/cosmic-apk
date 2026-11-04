@@ -126,7 +126,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     loader=new GLTFLoader();loader.crossOrigin="anonymous";loader.register(parser=>new VRMLoaderPlugin(parser));clock=new THREE.Clock();
     const resize=()=>{const r=canvas.getBoundingClientRect();renderer.setSize(Math.max(1,r.width),Math.max(1,r.height),false);camera.aspect=Math.max(1,r.width)/Math.max(1,r.height);camera.updateProjectionMatrix();};
     new ResizeObserver(resize).observe(canvas);resize();
-    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame,gesture=Date.now()<gestureUntil?activeGesture:"idle";currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=gesture==="celebrate"?.82:gesture==="explain"?-.42:-.08+idle+talk*.35;l.rotation.x=gesture==="think"?-.45:Math.sin(t*.9)*.025;}if(r){r.rotation.z=gesture==="wave"?-.92:gesture==="celebrate"?-.82:gesture==="explain"?.42:.08-idle-talk*.55;r.rotation.x=gesture==="wave"?Math.sin(t*8)*.22:gesture==="think"?.35:Math.cos(t*1.1)*.03;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(0,Math.sin(t*10))*.055:.018;mouth.scale.y=mood==="happy"?.026:mood==="sad"?.012:mood==="surprised"?.065:open;mouth.scale.x=mood==="surprised"?.095:mood==="happy"?.085:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=(mood==="surprised"?.125:mood==="sad"?.082:.105)*blink;});(currentRoot.userData.eyeBrows||[]).forEach((brow,i)=>{const side=i===0?-1:1;brow.rotation.z=mood==="angry"?side*.24:mood==="sad"?-side*.13:mood==="surprised"?side*.12:0;brow.position.y=mood==="surprised"?2.28:2.255;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else if(mood==="angry"){currentRoot.rotation.z=-.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
+    const animate=()=>{requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);state.frame+=dt;if(currentRoot?.userData.preview){const t=state.frame,gesture=Date.now()<gestureUntil?activeGesture:"idle";currentRoot.rotation.y=Math.sin(t*.22)*.045;const idle=Math.sin(t*1.35)*.035,talk=speaking?Math.sin(t*2.8)*.11:0;const l=currentRoot.userData.leftArm,r=currentRoot.userData.rightArm;if(l){l.rotation.z=gesture==="celebrate"?.32:gesture==="explain"?-.16:-.045+idle+talk*.22;l.rotation.x=gesture==="think"?-.45:Math.sin(t*.9)*.025;}if(r){r.rotation.z=gesture==="wave"?-.44:gesture==="celebrate"?-.32:gesture==="explain"?.16:.045-idle-talk*.28;r.rotation.x=gesture==="wave"?Math.sin(t*7)*.12:gesture==="think"?.2:Math.cos(t*1.1)*.025;}const mouth=currentRoot.userData.mouth;const mood=state.mood;if(mouth){const open=speaking?.018+Math.max(audioLevel,Math.max(0,Math.sin(t*10))*.12)*.075:.018;mouth.scale.y=mood==="happy"?.026:mood==="sad"?.012:mood==="surprised"?.065:open;mouth.scale.x=mood==="surprised"?.095:mood==="happy"?.085:.075;}const blink=(Math.sin(t*.43)>0.997)?0.08:1;(currentRoot.userData.eyeLids||[]).forEach(eye=>{eye.scale.y=(mood==="surprised"?.125:mood==="sad"?.082:.105)*blink;});(currentRoot.userData.eyeBrows||[]).forEach((brow,i)=>{const side=i===0?-1:1;brow.rotation.z=mood==="angry"?side*.24:mood==="sad"?-side*.13:mood==="surprised"?side*.12:0;brow.position.y=mood==="surprised"?2.28:2.255;});if(mood==="happy"){currentRoot.rotation.z=Math.sin(t*.6)*.012;}else if(mood==="sad"){currentRoot.rotation.z=.018;}else if(mood==="surprised"){currentRoot.rotation.z=Math.sin(t*.8)*.008;}else if(mood==="angry"){currentRoot.rotation.z=-.008;}else{currentRoot.rotation.z=0;}}if(currentVrm){
       currentVrm.update(dt);
       const em=currentVrm.expressionManager;
       if(em){
@@ -142,9 +142,9 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       if(gestureBones){const motion=speaking?1:0.16,t=state.frame,wave=Math.sin(t*2.4)*motion,gesture=Date.now()<gestureUntil?activeGesture:"idle";
         for(const [bone,base,side] of [[gestureBones.right,gestureBones.rightBase,1],[gestureBones.left,gestureBones.leftBase,-1]]){
           if(!bone||!base)continue;
-          bone.rotation.x=base.x+(gesture==="think"&&side<0?-.55:gesture==="celebrate"?-.7:gesture==="wave"&&side>0?-.85:wave*.13);
+          bone.rotation.x=base.x+(gesture==="think"&&side<0?-.25:gesture==="celebrate"?-.3:gesture==="wave"&&side>0?-.42:wave*.07);
           bone.rotation.y=base.y+Math.cos(t*1.8)*motion*.09;
-          bone.rotation.z=base.z+(gesture==="wave"&&side>0?-.9:gesture==="explain"?side*.35:gesture==="celebrate"?side*.7:side*(.10+Math.sin(t*1.7)*.07)*motion);
+          bone.rotation.z=base.z+(gesture==="wave"&&side>0?-.45:gesture==="explain"?side*.16:gesture==="celebrate"?side*.28:side*(.06+Math.sin(t*1.7)*.035)*motion);
         }
       }
     }controls.update();renderer.render(scene,camera);};animate();
@@ -195,7 +195,12 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
     const value=String(text||"").trim();if(!value)return;
     if(avatarSpeechAudio){try{avatarSpeechAudio.pause();URL.revokeObjectURL(avatarSpeechAudio.src);}catch(_){}avatarSpeechAudio=null;}
     speaking=true;window.COSMIC_AVATAR_TALK?.(true);
-    const finish=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);};
+    const finish=()=>{speaking=false;window.COSMIC_AVATAR_TALK?.(false);window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);};
+    const native=window.Capacitor?.Plugins?.CosmicVoice;
+    if(typeof native?.speak==="function"){
+      try{await native.speak({text:value});setTimeout(finish,Math.max(1400,value.length*48));return;}
+      catch(error){console.warn("MYRAA native speech fallback:",error.message);}
+    }
     try{
       const response=await fetch(apiBase()+"/api/ai/speech",{method:"POST",headers:{"Content-Type":"application/json"},
         body:JSON.stringify({text:value,voice:localStorage.getItem("COSMIC_TTS_VOICE")||localStorage.getItem("COSMIC_LIVE_VOICE")||"Kore",
@@ -207,11 +212,6 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
       audio.onerror=()=>{URL.revokeObjectURL(url);if(avatarSpeechAudio===audio)avatarSpeechAudio=null;finish();status("Gemini speech playback failed.","error");};
       await audio.play();return;
     }catch(error){console.warn("MYRAA Gemini speech fallback:",error.message);}
-    const native=window.Capacitor?.Plugins?.CosmicVoice;
-    if(typeof native?.speak==="function"){
-      try{await native.speak({text:value});setTimeout(finish,Math.max(1800,value.length*65));return;}
-      catch(error){console.warn("MYRAA native speech fallback:",error.message);}
-    }
     if(window.speechSynthesis){
       speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(value);
       utterance.onend=utterance.onerror=finish;speechSynthesis.speak(utterance);
@@ -290,6 +290,7 @@ import { VRMLoaderPlugin } from "@pixiv/three-vrm";
   function buildUI(host){
     if(host.dataset.avatarV2==="1")return;host.dataset.avatarV2="1";host.innerHTML=markup();initScene($("#cosmicAvatarCanvas",host));
     const studio=host.querySelector(".avatar-studio-v2"),panel=host.querySelector(".avatar-panel");
+    if(window.COSMIC_LIVE?.setPersona){window.COSMIC_LIVE.setPersona("You are MYRAA, COSMIC’s original companion. Be warm, expressive, emotionally intelligent and concise in spoken conversation. Speak in the user’s language, including Hindi or Indian English. You are a fictional AI companion, not a human.").catch(error=>console.warn("MYRAA persona setup:",error.message));}
     host.querySelector("#cosmicAvatarSettings")?.addEventListener("click",()=>studio.classList.toggle("settings-open"));
     const closeSettings=document.createElement("button");closeSettings.type="button";closeSettings.className="avatar-settings-close";closeSettings.textContent="CLOSE";closeSettings.onclick=()=>studio.classList.remove("settings-open");panel?.prepend(closeSettings);
     const lm=host.querySelector("#cosmicAvatarLiveModel"),lv=host.querySelector("#cosmicAvatarVoice"),mm=host.querySelector("#cosmicAvatarMood");
