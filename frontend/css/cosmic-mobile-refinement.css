@@ -115,3 +115,58 @@
 @media(prefers-reduced-motion:reduce){.icon-button,.nav-tab,.send-button{transition:none}}
 
 @media(max-width:850px){.avatar-studio-v2 .avatar-panel{display:none}.avatar-studio-v2.settings-open .avatar-panel{display:block}.avatar-studio-v2.settings-open .avatar-stage-v2{height:48vh;min-height:340px}.avatar-settings-close{position:sticky;top:0;z-index:5;margin:0 0 8px auto;display:block}.avatar-stage-actions .avatar-action{min-height:32px;padding:6px 8px;font-size:8px}.avatar-chat-dock{padding:7px}.avatar-conversation-log-stage{max-height:70px}}
+
+
+/* Mobile-first final pass: keep ChatGPT-style composer visible and controls out of the way. */
+@media(max-width:900px){
+  .workspace{min-height:0;padding-top:10px}
+  .chat-view{display:flex!important;flex-direction:column;height:calc(100dvh - 82px)!important;min-height:0!important;overflow:hidden}
+  .chat-main{display:flex;flex:1 1 auto;width:100%;height:100%!important;min-height:0!important;overflow:hidden}
+  .chat-toolbar{flex:0 0 auto;border-bottom:1px solid var(--line);padding:2px 0 8px}
+  .message-list{flex:1 1 auto;min-height:0!important;max-height:none!important;overflow-y:auto;overscroll-behavior:contain;padding:12px 2px}
+  .composer{position:relative;flex:0 0 auto;margin-top:4px;padding:7px 9px;background:rgba(10,16,27,.78);backdrop-filter:blur(20px)}
+  .composer textarea{width:100%;min-height:38px;max-height:112px;line-height:1.45}
+  .disclaimer{flex:0 0 auto;margin:4px 0 0}
+  .chat-sidebar{display:none!important}
+  .chat-toolbar .model-controls{display:none!important}
+  .chat-drawer{z-index:100}
+  .chat-tools-toggle,.icon-button,.voice-button,.send-button,.drawer-close{backdrop-filter:blur(16px);background:rgba(255,255,255,.055)}
+  .chat-tools-toggle{width:34px;height:34px}
+  .chat-drawer-inner{padding-bottom:calc(22px + env(safe-area-inset-bottom))}
+  .drawer-section h3{font-size:9px}
+  .drawer-hint{font-size:9px}
+  .theme-choice{min-height:36px}
+  .myraa-layout{min-height:0!important}
+}
+@media(max-width:600px){
+  .app-header{height:56px!important;min-height:56px!important;padding:0 8px!important;gap:5px!important}
+  .brand-orb{width:22px!important;height:22px!important;flex-basis:22px!important}
+  .brand b{font-size:10px!important;letter-spacing:.08em!important}
+  .primary-nav{flex:1 1 auto;min-width:0;gap:1px;padding:2px}
+  .nav-tab{height:33px;min-width:0;padding:0 1px;font-size:7px;letter-spacing:0}
+  .nav-tab span{font-size:10px;margin-right:1px}
+  .header-actions{flex:0 0 auto}
+  .workspace{padding:8px 9px calc(10px + env(safe-area-inset-bottom))}
+  .chat-view{height:calc(100dvh - 76px)!important}
+  .chat-toolbar h1{font-size:18px}
+  .chat-toolbar .eyebrow{font-size:7px}
+  .message-list{gap:9px;padding:9px 0}
+  .message{max-width:96%;padding:9px 11px;font-size:12px;line-height:1.55}
+  .welcome-card{padding:12px 5px}
+  .welcome-card h2{font-size:19px}
+  .welcome-card p{font-size:11px}
+  .suggestion-row{gap:5px;margin-top:12px}
+  .suggestion-row button{padding:7px 9px;font-size:9px}
+  .composer{border-radius:13px;padding:6px 7px}
+  .composer textarea{font-size:13px;min-height:36px;padding:5px 4px}
+  .voice-button,.send-button{width:32px;height:32px;flex-basis:32px}
+  .disclaimer{font-size:7px}
+  #cosmicLiveDock{left:auto;right:9px;bottom:calc(70px + env(safe-area-inset-bottom));width:auto;max-width:180px;padding:5px 7px;border-radius:13px;opacity:.94}
+  #cosmicLiveDock .cosmic-live-brand{gap:5px}
+  #cosmicLiveDock .cosmic-live-brand b{font-size:8px}
+  #cosmicLiveDock .cosmic-live-status{font-size:6px}
+  #cosmicLiveDock .cosmic-live-orb,#cosmicLiveDock .cosmic-live-share,#cosmicLiveDock .cosmic-live-camera,#cosmicLiveDock .cosmic-live-settings-toggle{min-width:29px;min-height:29px}
+  #cosmicLiveDock .cosmic-live-options{grid-template-columns:1fr 1fr}
+  .myraa-stage{height:34dvh;min-height:220px}
+  .myraa-chat-panel{min-height:calc(56dvh - 45px)}
+}
