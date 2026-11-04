@@ -480,6 +480,55 @@ def generate_image():
 
     from backend.ai.gateway.gateway import load_saved_provider_keys
     load_saved_provider_keys()
+    selected_provider = str(data.get("provider", "auto")).strip().lower()
+    if selected_provider not in {"auto", "gemini", "cloudflare", "cloudflare_ai"}:
+        return jsonify({"success": False, "error": "Choose Auto, Gemini, or Cloudflare FLUX for image generation."}), 400
+    cf_account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+    cf_token = os.getenv("CLOUDFLARE_API_TOKEN", "").strip()
+    use_cloudflare = selected_provider in {"cloudflare", "cloudflare_ai"} or (
+        selected_provider == "auto" and not os.getenv("GEMINI_API_KEY", "").strip()
+        and bool(cf_account and cf_token)
+    )
+    if use_cloudflare:
+        if not cf_account or not cf_token:
+            return jsonify({"success": False, "error": "Cloudflare is selected but its Account ID or API token is missing. Save both in API settings."}), 400
+        try:
+            cf_response = requests.post(
+                "https://api.cloudflare.com/client/v4/accounts/" + cf_account
+                + "/ai/run/@cf/black-forest-labs/flux-1-schnell",
+                headers={"Authorization": "Bearer " + cf_token,
+                         "Content-Type": "application/json"},
+                json={"prompt": prompt}, timeout=90
+            )
+            if not cf_response.ok:
+                detail = (cf_response.text or "").replace("\\n", " ")[:350]
+                return jsonify({"success": False, "error": "Cloudflare FLUX HTTP "
+                    + str(cf_response.status_code) + ": " + detail}), 502
+            encoded = (cf_response.json().get("result") or {}).get("image")
+            if not encoded:
+                return jsonify({"success": False, "error": "Cloudflare FLUX returned no image data."}), 502
+            image_bytes = base64.b64decode(encoded, validate=True)
+            if not image_bytes or len(image_bytes) > 25 * 1024 * 1024:
+                return jsonify({"success": False, "error": "Cloudflare image was empty or exceeded 25 MB."}), 502
+            data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
+            image_dir = data_root / "generated-images"
+            image_dir.mkdir(parents=True, exist_ok=True)
+            filename = uuid.uuid4().hex + ".png"
+            (image_dir / filename).write_bytes(image_bytes)
+            return jsonify({"success": True, "url": "/api/images/generated/" + filename,
+                "filename": filename, "size_bytes": len(image_bytes),
+                "model": "@cf/black-forest-labs/flux-1-schnell",
+                "provider": "cloudflare_ai", "mime_type": "image/png"})
+        except (ValueError, TypeError) as exc:
+            return jsonify({"success": False, "error": "Invalid Cloudflare FLUX response: " + str(exc)}), 502
+        except requests.RequestException as exc:
+            return jsonify({"success": False, "error": "Cloudflare FLUX request failed: " + str(exc)[:220]}), 502
+        except OSError:
+            app.logger.exception("Could not save Cloudflare image")
+            return jsonify({"success": False, "error": "Could not save the Cloudflare image on this device."}), 500
+    if selected_provider in {"cloudflare", "cloudflare_ai"}:
+        return jsonify({"success": False, "error": "Cloudflare was explicitly selected but credentials are unavailable; COSMIC will not silently switch providers."}), 400
+
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return jsonify({"success": False, "error": "Gemini API key is not configured. Open API SETUP and add your Gemini key."}), 400
@@ -551,11 +600,12 @@ def generate_image():
 
 @app.get("/api/images/generated/<filename>")
 def serve_generated_image(filename):
-    if not filename.endswith(".jpg") or not filename[:-4].isalnum():
+    if not (filename.endswith(".jpg") or filename.endswith(".png")) or not filename.rsplit(".", 1)[0].isalnum():
         return jsonify({"success": False, "error": "Invalid image name"}), 404
     data_root = Path(os.getenv("COSMIC_DATABASE", "data/local/cosmic.db")).resolve().parent
     image_dir = data_root / "generated-images"
-    return send_from_directory(image_dir, filename, mimetype="image/jpeg", as_attachment=False, max_age=86400)
+    mime_type = "image/png" if filename.endswith(".png") else "image/jpeg"
+    return send_from_directory(image_dir, filename, mimetype=mime_type, as_attachment=False, max_age=86400)
 
 
 @app.get("/api/history")
