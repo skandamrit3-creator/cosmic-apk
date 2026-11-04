@@ -111,6 +111,19 @@ public class CosmicLiveService extends Service {
         }
     }
 
+    public static boolean sendVideoFrame(String base64Jpeg) {
+        CosmicLiveService service = instance;
+        WebSocket ws = service == null ? null : service.socket;
+        if (ws == null || !service.ready.get() || base64Jpeg == null || base64Jpeg.length() > 900000) return false;
+        try {
+            JSONObject video = new JSONObject().put("data", base64Jpeg).put("mimeType", "image/jpeg");
+            return ws.send(new JSONObject().put("realtimeInput", new JSONObject().put("video", video)).toString());
+        } catch (Exception error) {
+            Log.w(TAG, "Camera frame could not be sent", error);
+            return false;
+        }
+    }
+
     public static boolean sendText(String text) {
         CosmicLiveService service = instance;
         WebSocket ws = service == null ? null : service.socket;
