@@ -27,13 +27,14 @@
     }
     if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); shareButton.textContent = state.sharing ? "■" : "▣"; }
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
-    if (cameraButton) { cameraButton.classList.toggle("is-sharing",!!state.cameraStream); cameraButton.textContent=state.cameraStream?"●":"⌖"; cameraButton.setAttribute("aria-label",state.cameraStream?"Stop camera":"Share camera with COSMIC"); }
+    if (cameraButton) { cameraButton.disabled=!state.connected&&!state.cameraStream; cameraButton.classList.toggle("is-sharing",!!state.cameraStream); cameraButton.textContent=state.cameraStream?"●":"⌖"; cameraButton.setAttribute("aria-label",state.cameraStream?"Stop camera":"Share camera with COSMIC"); }
   }
 
   async function startCamera() {
     if(!state.connected){setStatus("START GEMINI LIVE BEFORE SHARING CAMERA","idle");return;}
     if(!navigator.mediaDevices?.getUserMedia){setStatus("CAMERA ACCESS IS NOT AVAILABLE IN THIS WEBVIEW","error");return;}
     try{
+      const nativeCamera=window.Capacitor?.Plugins?.CosmicVoice;if(nativeCamera?.requestCameraPermission){const permission=await nativeCamera.requestCameraPermission();if(!permission?.granted)throw new Error("Camera permission was not granted.");}
       state.cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}},audio:false});
       state.cameraVideo=document.createElement("video");state.cameraVideo.muted=true;state.cameraVideo.playsInline=true;state.cameraVideo.srcObject=state.cameraStream;await state.cameraVideo.play();
       const canvas=document.createElement("canvas"),ctx=canvas.getContext("2d",{alpha:false});canvas.width=640;canvas.height=360;
