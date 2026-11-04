@@ -214,7 +214,9 @@
       const item = document.createElement("div");
       item.className = target.id === "cosmicChatLog"
         ? "cosmic-chat-msg " + (role === "user" ? "user" : "assistant")
-        : "avatar-conversation-message " + (role === "user" ? "user" : "assistant");
+        : target.id === "myraaConversationLog"
+          ? "myraa-message " + (role === "user" ? "user" : "assistant")
+          : "avatar-conversation-message " + (role === "user" ? "user" : "assistant");
       item.textContent = value;
       target.append(item);
       target.scrollTop = target.scrollHeight;
