@@ -10,7 +10,7 @@
   const state = {
     desired: false, connected: false, connecting: false, sharing: false,
     socket: null, stream: null, context: null, source: null, processor: null,
-    silentGain: null, nextPlayTime: 0, playing: new Set(), resumeHandle: "",
+    silentGain: null, nextPlayTime: 0, playing: new Set(), analyser: null, meterFrame: 0, meterData: null, resumeHandle: "",
     reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
     screenVideo: null, screenTimer: 0, cameraStream: null, cameraVideo: null, cameraTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, bubbleActive: false
   };
@@ -46,14 +46,14 @@
     if(state.cameraTimer)clearInterval(state.cameraTimer);state.cameraTimer=0;
     try{state.cameraStream?.getTracks().forEach(track=>track.stop());}catch(_){}
     state.cameraStream=null;if(state.cameraVideo){state.cameraVideo.srcObject=null;state.cameraVideo.remove();state.cameraVideo=null;}
-    if(cameraButton){cameraButton.classList.remove("is-sharing");cameraButton.textContent="⌖";}
+    if(cameraButton){cameraButton.classList.remove("is-sharing");cameraButton.textContent="◉";}
   }
   function mount() {
     if (document.getElementById("cosmicLiveDock")) return;
     root = document.createElement("section");
     root.id = "cosmicLiveDock";
     root.className = "cosmic-live-dock";
-    root.innerHTML = '<div class="cosmic-live-main"><div class="cosmic-live-brand"><span class="cosmic-live-dot"></span><div><b>COSMIC LIVE</b><small class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">VOICE OFF · READY</small></div></div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" aria-label="Share screen" title="Share screen" disabled>▣</button><button class="cosmic-live-camera" id="cosmicLiveCamera" type="button" aria-label="Share camera" title="Share camera" disabled>⌖</button><button class="cosmic-live-settings-toggle" id="cosmicLiveSettingsToggle" type="button" aria-label="Voice settings" aria-expanded="false" title="Voice settings">⚙</button></div><div class="cosmic-live-options" id="cosmicLiveOptions" hidden><label>LIVE MODEL<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model"><option value="gemini-3.8-live">GEMINI 3.8 · FAST</option><option value="gemini-3.8-live-extended-thinking">GEMINI 3.8 · THINK</option></select></label><label>VOICE<select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select></label><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button></div>';
+    root.innerHTML = '<div class="cosmic-live-main"><div class="cosmic-live-brand"><span class="cosmic-live-dot"></span><div><b>COSMIC LIVE</b><small class="cosmic-live-status" id="cosmicLiveStatus" data-state="idle" role="status">VOICE OFF · READY</small></div></div><button class="cosmic-live-orb" id="cosmicLiveToggle" type="button" aria-label="Start COSMIC Live voice" title="Start live conversation"><span class="cosmic-live-orb-core">C</span><i></i></button><button class="cosmic-live-share" id="cosmicLiveShare" type="button" aria-label="Share screen" title="Share screen" disabled>▣</button><button class="cosmic-live-camera" id="cosmicLiveCamera" type="button" aria-label="Share camera with COSMIC vision" title="Share camera with COSMIC vision" disabled>◉</button><button class="cosmic-live-settings-toggle" id="cosmicLiveSettingsToggle" type="button" aria-label="Voice settings" aria-expanded="false" title="Voice settings">⚙</button></div><div class="cosmic-live-options" id="cosmicLiveOptions" hidden><label>LIVE MODEL<select class="cosmic-live-choice" id="cosmicLiveModel" aria-label="Gemini Live model"><option value="gemini-3.8-live">GEMINI 3.8 · FAST</option><option value="gemini-3.8-live-extended-thinking">GEMINI 3.8 · THINK</option></select></label><label>VOICE<select class="cosmic-live-choice cosmic-live-voice" id="cosmicLiveVoice" aria-label="COSMIC voice"><option value="Kore">KORE</option><option value="Aoede">AOEDE</option><option value="Puck">PUCK</option><option value="Charon">CHARON</option><option value="Fenrir">FENRIR</option><option value="Leda">LEDA</option><option value="Orus">ORUS</option><option value="Zephyr">ZEPHYR</option></select></label><button class="cosmic-live-wake" id="cosmicLiveWake" type="button">ENABLE OK COSMIC</button><button class="cosmic-live-wake cosmic-live-assistant" id="cosmicLiveAssistant" type="button">MAKE COSMIC DEFAULT ASSISTANT</button><button class="cosmic-live-bubble" id="cosmicLiveBubble" type="button" hidden>FLOATING BUBBLE</button></div>';
     document.body.append(root);
     orb = root.querySelector("#cosmicLiveToggle");
     status = root.querySelector("#cosmicLiveStatus");
@@ -69,7 +69,22 @@
     cameraButton = root.querySelector("#cosmicLiveCamera");
     bubbleButton = root.querySelector("#cosmicLiveBubble");
     wakeButton = root.querySelector("#cosmicLiveWake");
+    const assistantButton = root.querySelector("#cosmicLiveAssistant");
     const wakePlugin = window.Capacitor?.Plugins?.CosmicVoice;
+    assistantButton?.addEventListener("click", async () => {
+      assistantButton.disabled = true;
+      try {
+        if (typeof wakePlugin?.requestDefaultAssistant !== "function") throw new Error("Default assistant selection is available in the installed Android app.");
+        const result = await wakePlugin.requestDefaultAssistant();
+        if (!result?.selected) throw new Error(result?.message || "COSMIC was not selected.");
+        assistantButton.textContent = "COSMIC IS DEFAULT ASSISTANT";
+        setStatus("COSMIC SELECTED AS ANDROID ASSISTANT · ENABLE LOCAL WAKE WORD", "idle");
+      } catch (error) {
+        setStatus("ASSISTANT SETUP · " + (error?.message || error), "paused");
+      } finally {
+        assistantButton.disabled = false;
+      }
+    });
     const paintWake = enabled => { if(wakeButton){wakeButton.textContent=enabled?"WAKE WORD ON":"ENABLE OK COSMIC";wakeButton.classList.toggle("is-enabled",!!enabled);wakeButton.setAttribute("aria-pressed",String(!!enabled));} };
     wakePlugin?.getWakeWordStatus?.().then(async result=>{
       paintWake(!!result?.enabled);
@@ -80,7 +95,7 @@
         catch(error){setStatus("WAKE WORD RESUME FAILED · "+(error?.message||error),"error");}
       }
     }).catch(()=>{});
-    wakeButton.addEventListener("click",async()=>{wakeButton.disabled=true;try{const api=window.Capacitor?.Plugins?.CosmicVoice;if(!api)throw new Error("Local wake word is available in the Android app.");const current=await api.getWakeWordStatus();if(current?.enabled){await api.disableWakeWord();paintWake(false);setStatus("LOCAL WAKE WORD OFF","idle");}else{await api.enableWakeWord();paintWake(true);setStatus("DOWNLOADING VERIFIED OFFLINE MODEL · FIRST SETUP","connecting");}}catch(error){setStatus("WAKE WORD SETUP FAILED · "+(error.message||error),"error");}finally{wakeButton.disabled=false;}});
+    wakeButton.addEventListener("click",async()=>{wakeButton.disabled=true;try{const api=window.Capacitor?.Plugins?.CosmicVoice;if(!api)throw new Error("Local wake word is available in the Android app.");const current=await api.getWakeWordStatus();if(current?.enabled){await api.disableWakeWord();try{await api.stopLive();}catch(_){}localStorage.setItem("COSMIC_LIVE_AUTO","false");paintWake(false);setStatus("COSMIC VOICE STANDBY DISABLED","idle");}else{localStorage.setItem("COSMIC_LIVE_AUTO","true");await api.enableWakeWord();paintWake(true);setStatus("LOCAL WAKE WORD STARTED · FIRST SETUP MAY DOWNLOAD THE OFFLINE MODEL","connecting");}}catch(error){setStatus("WAKE WORD SETUP FAILED · "+(error.message||error),"error");}finally{wakeButton.disabled=false;}});
     orb.addEventListener("click", () => state.desired ? stop() : start(false));
     shareButton.addEventListener("click", () => state.sharing ? stopScreenShare() : startScreenShare());
     cameraButton.addEventListener("click", () => state.cameraStream ? stopCamera() : startCamera());
@@ -92,26 +107,44 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "true");
     }
     if (localStorage.getItem("COSMIC_LIVE_AUTO") === "true") {
-      state.desired = true;
-      setStatus("CHECKING GEMINI LIVE KEY…", "connecting");
-      fetch(API() + "/api/ai/provider-keys", {cache:"no-store"})
-        .then(r => r.json())
-        .then(data => {
-          const configured = (data.providers || []).some(p => p.provider === "gemini" && p.configured);
-          if (!configured) {
-            state.desired = false;
-            setStatus("ADD GEMINI KEY IN API SETUP · LIVE AUTO-START READY", "paused");
-            return;
+      if (typeof nativeVoice?.enableWakeWord === "function") {
+        // Android: keep only the lightweight offline detector active in standby.
+        // Open the paid/online Live session only after the user says the wake phrase.
+        state.desired = false;
+        setStatus("STARTING LOCAL COSMIC WAKE WORD…", "connecting");
+        nativeVoice.getWakeWordStatus?.().then(async result => {
+          if (!result?.enabled || !result?.running) await nativeVoice.enableWakeWord();
+          if (wakeButton) {
+            wakeButton.textContent = "WAKE WORD ON";
+            wakeButton.classList.add("is-enabled");
+            wakeButton.setAttribute("aria-pressed", "true");
           }
-          if (typeof nativeVoice?.startLive === "function") start(true);
-          else if (navigator.permissions?.query) {
-            navigator.permissions.query({name:"microphone"}).then(permission => {
-              if (permission.state === "granted" && state.desired) start(true);
-              else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
-            }).catch(() => { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); });
-          } else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
-        })
-        .catch(() => { state.desired = false; setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"); });
+          setStatus("LOCAL WAKE WORD ACTIVE · SAY OK COSMIC", "idle");
+        }).catch(error => {
+          setStatus("WAKE WORD NEEDS MICROPHONE PERMISSION · " + (error?.message || error), "paused");
+        });
+      } else {
+        // Browser fallback: there is no native local hotword service, so use an explicit Live session.
+        state.desired = true;
+        setStatus("CHECKING GEMINI LIVE KEY…", "connecting");
+        fetch(API() + "/api/ai/provider-keys", {cache:"no-store"})
+          .then(r => r.json())
+          .then(data => {
+            const configured = (data.providers || []).some(p => p.provider === "gemini" && p.configured);
+            if (!configured) {
+              state.desired = false;
+              setStatus("ADD GEMINI KEY IN API SETUP · LIVE AUTO-START READY", "paused");
+              return;
+            }
+            if (navigator.permissions?.query) {
+              navigator.permissions.query({name:"microphone"}).then(permission => {
+                if (permission.state === "granted" && state.desired) start(true);
+                else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
+              }).catch(() => { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); });
+            } else { state.desired = false; setStatus("TAP LIVE ORB TO ALLOW MICROPHONE", "paused"); }
+          })
+          .catch(() => { state.desired = false; setStatus("LIVE AUTO-START · CHECK API SETUP", "paused"); });
+      }
     }
   }
 
@@ -154,7 +187,35 @@
     return false;
   }
 
+  function stopPlaybackMeter() {
+    if (state.meterFrame) cancelAnimationFrame(state.meterFrame);
+    state.meterFrame = 0;
+    document.dispatchEvent(new CustomEvent("cosmic:live-audio-level", {detail:{level:0}}));
+  }
+
+  function startPlaybackMeter() {
+    if (!state.analyser || state.meterFrame) return;
+    const analyser = state.analyser;
+    const data = state.meterData || (state.meterData = new Uint8Array(analyser.fftSize));
+    const tick = () => {
+      state.meterFrame = 0;
+      if (!state.playing.size) return;
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const sample = (data[i] - 128) / 128;
+        sum += sample * sample;
+      }
+      const rms = Math.sqrt(sum / data.length);
+      const level = Math.max(0, Math.min(1, (rms - 0.012) * 5.2));
+      document.dispatchEvent(new CustomEvent("cosmic:live-audio-level", {detail:{level}}));
+      state.meterFrame = requestAnimationFrame(tick);
+    };
+    state.meterFrame = requestAnimationFrame(tick);
+  }
+
   function stopPlayback() {
+    stopPlaybackMeter();
     for (const node of state.playing) {
       try { node.stop(); } catch (_) {}
       try { node.disconnect(); } catch (_) {}
@@ -164,37 +225,42 @@
     window.COSMIC_AVATAR_TALK?.(false);
     window.COSMIC_CHARACTER_TALK?.(false);
     window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
+    window.COSMIC_CHARACTER_AUDIO_LEVEL?.(0);
   }
 
   function playPcm(base64) {
     if (!state.context) return;
     const raw = atob(base64);
     const pcm = new Int16Array(raw.length / 2);
-    for (let i=0; i<pcm.length; i++) pcm[i] = (raw.charCodeAt(i*2) & 255) | (raw.charCodeAt(i*2+1) << 8);
+    for (let i = 0; i < pcm.length; i++) pcm[i] = (raw.charCodeAt(i * 2) & 255) | (raw.charCodeAt(i * 2 + 1) << 8);
     if (!pcm.length) return;
-    let peak = 0;
-    for (let i=0; i<pcm.length; i++) peak = Math.max(peak, Math.abs(pcm[i] / 32768));
-    window.COSMIC_AVATAR_AUDIO_LEVEL?.(Math.min(1, peak * 1.8));
-    window.COSMIC_CHARACTER_AUDIO_LEVEL?.(Math.min(1, peak * 1.8));
-    document.dispatchEvent(new CustomEvent("cosmic:live-audio-level",{detail:{level:Math.min(1,peak*1.8)}}));
     window.COSMIC_AVATAR_TALK?.(true);
     window.COSMIC_CHARACTER_TALK?.(true);
     const buffer = state.context.createBuffer(1, pcm.length, 24000);
     const channel = buffer.getChannelData(0);
-    for (let i=0; i<pcm.length; i++) channel[i] = pcm[i] / 32768;
+    for (let i = 0; i < pcm.length; i++) channel[i] = pcm[i] / 32768;
     const node = state.context.createBufferSource();
     node.buffer = buffer;
-    node.connect(state.context.destination);
+    if (!state.analyser) {
+      state.analyser = state.context.createAnalyser();
+      state.analyser.fftSize = 512;
+      state.analyser.smoothingTimeConstant = 0.68;
+      state.analyser.connect(state.context.destination);
+    }
+    node.connect(state.analyser);
     const startAt = Math.max(state.context.currentTime + 0.025, state.nextPlayTime);
     state.nextPlayTime = startAt + buffer.duration;
     state.playing.add(node);
+    startPlaybackMeter();
     node.onended = () => {
       state.playing.delete(node);
       try { node.disconnect(); } catch (_) {}
       if (!state.playing.size) {
+        stopPlaybackMeter();
         window.COSMIC_AVATAR_TALK?.(false);
         window.COSMIC_CHARACTER_TALK?.(false);
         window.COSMIC_AVATAR_AUDIO_LEVEL?.(0);
+        window.COSMIC_CHARACTER_AUDIO_LEVEL?.(0);
       }
     };
     node.start(startAt);
@@ -258,7 +324,7 @@
         const config = {
           responseModalities:["AUDIO"],
           speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}},
-          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. You are speaking aloud, so avoid markdown and long lists unless asked." + (livePersona() ? "\n\nActive COSMIC character persona: " + livePersona() : "") + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
+          systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. For home automation, use the user's saved relay names when available; never guess a channel or appliance mapping. The user may rename a relay by voice with name_home_relay, then control it by that saved name. Relay ON requires explicit on-screen confirmation. A controller-reported state is not proof that an appliance physically changed state. When camera frames are actively shared, interpret visible objects and scenes and answer the user's visual questions; do not claim camera access when it is off. You are speaking aloud, so avoid markdown and long lists unless asked." + (livePersona() ? "\n\nActive COSMIC character persona: " + livePersona() : "") + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
           inputAudioTranscription:{},
@@ -267,10 +333,12 @@
             {name:"open_app",description:"Open an installed Android application by its visible name.",parameters:{type:"OBJECT",properties:{name:{type:"STRING",description:"Visible app name, such as YouTube or Chrome"}},required:["name"]}},
             {name:"open_url",description:"Open an HTTP or HTTPS website or deep link in the available browser.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Complete http or https URL"}},required:["url"]}},
             {name:"download_file",description:"Download a file from a direct HTTP or HTTPS URL using the device download manager.",parameters:{type:"OBJECT",properties:{url:{type:"STRING",description:"Direct HTTP or HTTPS file URL"},fileName:{type:"STRING",description:"Optional filename"}},required:["url"]}},
-            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat, 3D Avatar or 2D MYRAA mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar","characters"]}},required:["mode"]}},
+            {name:"switch_mode",description:"Switch COSMIC interface to Reactor, Chat, 3D Avatar or 2D MYRAA mode.",parameters:{type:"OBJECT",properties:{mode:{type:"STRING",enum:["reactor","chat","avatar","characters","home"]}},required:["mode"]}},
             {name:"google_search",description:"Open Google Search results for a user-requested web search.",parameters:{type:"OBJECT",properties:{query:{type:"STRING",description:"Search phrase"}},required:["query"]}},
             {name:"navigate_back",description:"Navigate back in the current COSMIC view.",parameters:{type:"OBJECT",properties:{}}},
-            {name:"system_action",description:"Perform a user-requested Android navigation action. Requires COSMIC Device Controls accessibility permission.",parameters:{type:"OBJECT",properties:{action:{type:"STRING",enum:["home","back","notifications","quicksettings","recents"]}},required:["action"]}}
+            {name:"system_action",description:"Perform a user-requested Android navigation action. Requires COSMIC Device Controls accessibility permission.",parameters:{type:"OBJECT",properties:{action:{type:"STRING",enum:["home","back","notifications","quicksettings","recents"]}},required:["action"]}},
+            {name:"set_home_relay",description:"Set a COSMIC relay by its number 1 through 8 or its exact saved custom name. Requires a connected paired HC-05 Arduino controller; turning a relay ON requires the user to confirm in the app.",parameters:{type:"OBJECT",properties:{channel:{type:"STRING",description:"Relay number 1 through 8 or exact saved relay name"},state:{type:"STRING",enum:["ON","OFF"]}},required:["channel","state"]}},
+            {name:"name_home_relay",description:"Save a spoken custom name for a specific COSMIC relay channel. Only rename the explicitly identified channel.",parameters:{type:"OBJECT",properties:{channel:{type:"INTEGER",description:"Relay channel number 1 through 8"},name:{type:"STRING",description:"Short unique name for this relay"}},required:["channel","name"]}}
           ]}]
         };
         socket.send(JSON.stringify({setup:{
@@ -335,7 +403,7 @@
         if (call.name !== "switch_mode" && window.COSMIC_BRAIN?.state?.enabled === false) throw new Error("COSMIC Brain is paused. Turn BRAIN ON to allow device actions.");
         if (call.name === "switch_mode") {
           const mode = String(args.mode || "").toLowerCase();
-          if (!["reactor","chat","avatar","characters"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
+          if (!["reactor","chat","avatar","characters","home"].includes(mode)) throw new Error("Unsupported COSMIC mode.");
           const tab = document.querySelector('[data-mode="' + mode + '"]') || document.querySelector('[data-cosmic-mode="' + mode + '"]');
           if (!tab) throw new Error("Mode control is unavailable.");
           tab.click(); result = {success:true,mode};
@@ -371,6 +439,16 @@
           if(!["home","back","notifications","quicksettings","recents"].includes(action))throw new Error("Unsupported Android action.");
           if(typeof plugin?.systemAction!=="function")throw new Error("Android device-control bridge is unavailable.");
           await plugin.systemAction({action});result={success:true,action};
+         } else if (call.name === "set_home_relay") {
+          const channel=args.channel, relayState=String(args.state||"").toUpperCase();
+          if(!channel||!["ON","OFF"].includes(relayState))throw new Error("Specify a relay number or saved name, and ON or OFF.");
+          if(typeof window.COSMIC_HOME_AUTOMATION_SET!=="function")throw new Error("Home Automation control module is unavailable in this client.");
+          result=await window.COSMIC_HOME_AUTOMATION_SET(channel,relayState);
+          result.message="Arduino controller reported "+(result.name||("relay "+result.channel))+" "+relayState+". This does not verify the physical appliance.";
+        } else if (call.name === "name_home_relay") {
+          if(typeof window.COSMIC_HOME_AUTOMATION_RENAME!=="function")throw new Error("Home Automation naming module is unavailable in this client.");
+          result=window.COSMIC_HOME_AUTOMATION_RENAME(args.channel,args.name);
+          result.message="Saved "+result.name+" as the name for relay "+result.channel+".";
         } else {
           throw new Error("Unknown COSMIC action.");
         }
@@ -389,8 +467,18 @@
     if(type==="state") {
       if(message==="LIVE · STOPPED") {
         state.desired=false;state.connected=false;state.connecting=false;state.sharing=false;
-        state.nativeMode=false;state.bubbleActive=false;localStorage.setItem("COSMIC_LIVE_AUTO","false");
-        setStatus("LIVE VOICE OFF","idle");
+        state.nativeMode=false;state.bubbleActive=false;
+        const native=window.Capacitor?.Plugins?.CosmicVoice;
+        Promise.resolve(native?.getWakeWordStatus?.()).then(result=>{
+          if(result?.enabled){
+            localStorage.setItem("COSMIC_LIVE_AUTO","true");
+            if(wakeButton){wakeButton.textContent="WAKE WORD ON";wakeButton.classList.add("is-enabled");wakeButton.setAttribute("aria-pressed","true");}
+            setStatus("LOCAL WAKE WORD ACTIVE · SAY OK COSMIC","idle");
+          }else{
+            localStorage.setItem("COSMIC_LIVE_AUTO","false");
+            setStatus("LIVE VOICE OFF","idle");
+          }
+        }).catch(()=>setStatus("LIVE VOICE STOPPED · CHECK WAKE WORD STATUS","idle"));
       } else if(/RECONNECTING/i.test(message)) {
         state.connected=false;state.desired=true;setStatus(message,"connecting");
       } else if(/SCREEN SHARING/i.test(message)) {
@@ -552,12 +640,13 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "false");
       stopScreenShare();
       const nativeVoice=window.Capacitor?.Plugins?.CosmicVoice;
-      Promise.resolve(nativeVoice?.disableWakeWord?.()).catch(()=>{}).finally(()=>{
-        try { nativeVoice?.stopLive?.(); } catch (_) {}
-        if(wakeButton){wakeButton.textContent="ENABLE OK COSMIC";wakeButton.classList.remove("is-enabled");wakeButton.setAttribute("aria-pressed","false");}
-      });
+      // Ending a conversation returns to local wake-word standby; it must not disable the assistant.
+      Promise.resolve(nativeVoice?.stopLive?.()).catch(error => console.warn("COSMIC Live stop:", error));
       state.nativeMode = false; state.resumeHandle = "";
-      setStatus("ALL VOICE LISTENING OFF", "idle");
+      Promise.resolve(nativeVoice?.getWakeWordStatus?.()).then(result => {
+        const wakeEnabled = !!result?.enabled;
+        setStatus(wakeEnabled ? "LOCAL WAKE WORD ACTIVE · SAY OK COSMIC" : "LIVE VOICE OFF · WAKE WORD DISABLED", "idle");
+      }).catch(() => setStatus("LIVE VOICE STOPPED · CHECK WAKE WORD STATUS", "idle"));
       return;
     }
     state.desired = false;

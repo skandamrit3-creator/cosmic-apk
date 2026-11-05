@@ -1,0 +1,24 @@
+/* Layered vector MYRAA runtime. */
+.myraa-stage:has(.myraa-avatar-runtime) .myraa-portrait{display:none}
+.myraa-avatar-runtime{position:absolute;z-index:1;inset:3% 8% 5%;display:grid;place-items:center;pointer-events:none}
+.myraa-vector{width:100%;height:100%;max-width:490px;overflow:visible;filter:drop-shadow(0 18px 28px #0008)}
+.myraa-eye .myraa-lid{transform:scaleY(0);transform-origin:center;transition:transform .09s ease}
+.myraa-avatar-runtime.is-blinking .myraa-lid{transform:scaleY(1)}
+.myraa-mouth-shape{transform-box:fill-box;transform-origin:center;transform:scaleY(var(--myraa-mouth-scale,.22));transition:transform .045s linear}
+.myraa-avatar-runtime.is-speaking .myraa-mouth-shape{filter:drop-shadow(0 0 4px #f3a5bd88)}
+.myraa-avatar-runtime[data-viseme="closed"] .myraa-mouth-shape,.myraa-avatar-runtime[data-viseme="p"] .myraa-mouth-shape,.myraa-avatar-runtime[data-viseme="b"] .myraa-mouth-shape,.myraa-avatar-runtime[data-viseme="m"] .myraa-mouth-shape{transform:scaleY(.12)}
+.myraa-avatar-runtime[data-viseme="wide"] .myraa-mouth-shape,.myraa-avatar-runtime[data-viseme="aa"] .myraa-mouth-shape{transform:scaleY(1.35)}
+.myraa-avatar-runtime[data-viseme="round"] .myraa-mouth-shape,.myraa-avatar-runtime[data-viseme="oo"] .myraa-mouth-shape{transform:scaleX(.68) scaleY(.8)}
+.myraa-avatar-runtime.is-listening .myraa-vector{filter:drop-shadow(0 0 23px #54dbea66)}
+.myraa-stage.is-speaking .myraa-mouth{display:none}
+@media(max-width:600px){.myraa-avatar-runtime{inset:5% 10% 7%}.myraa-vector{max-width:360px}}
+@media(prefers-reduced-motion:reduce){.myraa-lid,.myraa-mouth-shape{transition:none!important}}
+
+/* Expression presets act on the live vector rig, not only the hidden fallback portrait. */
+.myraa-avatar-runtime[data-expression="happy"] .myraa-mouth-shape{transform:scaleY(.48) scaleX(1.12);border-radius:50%}
+.myraa-avatar-runtime[data-expression="happy"] .myraa-eye .myraa-lid{transform:scaleY(.08)}
+.myraa-avatar-runtime[data-expression="thinking"] .myraa-eye.left{transform:translateY(-3px) rotate(-3deg);transform-origin:center}
+.myraa-avatar-runtime[data-expression="thinking"] .myraa-eye.right{transform:translateY(2px) rotate(4deg);transform-origin:center}
+.myraa-avatar-runtime[data-expression="thinking"] .myraa-mouth-shape{transform:scaleY(.18) scaleX(.72)}
+.myraa-avatar-runtime[data-expression="happy"] .myraa-vector{filter:drop-shadow(0 0 22px #f3c77b44)}
+.myraa-avatar-runtime[data-expression="thinking"] .myraa-vector{filter:drop-shadow(0 0 18px #8b9fff44)}

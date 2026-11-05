@@ -138,12 +138,16 @@ public class CosmicWakeWordService extends Service {
     private void onWakePhrase() {
         if (!running.compareAndSet(true, false)) return;
         releaseAudio();
-        emitState("WAKE PHRASE DETECTED · STARTING GEMINI LIVE");
+        emitState("WAKE PHRASE DETECTED · STARTING COSMIC");
+        Intent assistant = new Intent(CosmicVoiceInteractionService.ACTION_WAKE_DETECTED);
+        assistant.setPackage(getPackageName());
+        sendBroadcast(assistant);
         Intent live = new Intent(this, CosmicLiveService.class);
         live.setAction(CosmicLiveService.ACTION_START);
         android.content.SharedPreferences prefs = getSharedPreferences("cosmic_live", MODE_PRIVATE);
         live.putExtra("live_model", prefs.getString("live_model", "gemini-3.8-live"));
         live.putExtra("live_voice", prefs.getString("live_voice", "Kore"));
+        live.putExtra("live_persona", prefs.getString("live_persona", ""));
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(live);
             else startService(live);

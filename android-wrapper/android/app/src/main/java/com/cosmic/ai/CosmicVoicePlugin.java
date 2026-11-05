@@ -11,6 +11,7 @@ import android.os.Looper;
 import android.app.DownloadManager;
 import android.media.projection.MediaProjectionManager;
 import android.content.Intent;
+import android.app.role.RoleManager;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
@@ -55,6 +56,43 @@ public class CosmicVoicePlugin extends Plugin {
         ContextCompat.registerReceiver(getContext(), liveReceiver,
                 new IntentFilter(CosmicLiveService.ACTION_EVENT),
                 ContextCompat.RECEIVER_NOT_EXPORTED);
+    }
+
+    @PluginMethod
+    public void requestDefaultAssistant(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.reject("Android's default assistant role requires Android 10 or newer.");
+            return;
+        }
+        RoleManager roles = getContext().getSystemService(RoleManager.class);
+        if (roles == null || !roles.isRoleAvailable(RoleManager.ROLE_ASSISTANT)) {
+            call.reject("This Android device does not expose the assistant role.");
+            return;
+        }
+        if (roles.isRoleHeld(RoleManager.ROLE_ASSISTANT)) {
+            call.resolve(new JSObject().put("success", true).put("selected", true));
+            return;
+        }
+        try {
+            startActivityForResult(call, roles.createRequestRoleIntent(RoleManager.ROLE_ASSISTANT),
+                    "defaultAssistantRoleResult");
+        } catch (Exception error) {
+            call.reject("Could not open Android default-assistant selection: " + error.getMessage());
+        }
+    }
+
+    @ActivityCallback
+    private void defaultAssistantRoleResult(PluginCall call, ActivityResult result) {
+        if (call == null) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            call.reject("Android assistant role is unavailable.");
+            return;
+        }
+        RoleManager roles = getContext().getSystemService(RoleManager.class);
+        boolean selected = roles != null && roles.isRoleHeld(RoleManager.ROLE_ASSISTANT);
+        call.resolve(new JSObject().put("success", selected).put("selected", selected)
+                .put("message", selected ? "COSMIC is now the default Android assistant." :
+                        "COSMIC was not selected as the default assistant."));
     }
 
     @PluginMethod
@@ -143,7 +181,6 @@ public class CosmicVoicePlugin extends Plugin {
             stopWake.setAction(CosmicWakeWordService.ACTION_STOP);
             try { getContext().startService(stopWake); } catch (Exception ignored) {}
             boolean wakeEnabled = getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).getBoolean("wake_word_enabled", false);
-            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit().putBoolean("voice_auto_resume", !wakeEnabled).apply();
             String model = call.getString("model", "gemini-3.8-live");
             if (!"gemini-3.8-live".equals(model) &&
                     !"gemini-3.8-live-extended-thinking".equals(model)) {
@@ -156,6 +193,12 @@ public class CosmicVoicePlugin extends Plugin {
             if (!Arrays.asList("Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr").contains(voice)) {
                 voice = "Kore";
             }
+            getContext().getSharedPreferences("cosmic_live", Context.MODE_PRIVATE).edit()
+                    .putBoolean("voice_auto_resume", !wakeEnabled)
+                    .putString("live_model", model)
+                    .putString("live_voice", voice)
+                    .putString("live_persona", persona == null ? "" : persona)
+                    .apply();
             boolean alreadyRunning = CosmicLiveService.isRunning();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
             intent.setAction(CosmicLiveService.ACTION_START);

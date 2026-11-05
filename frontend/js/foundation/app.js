@@ -1,22 +1,26 @@
 import {state,update,subscribe} from "./state.js";
+// Load native voice on app launch so local wake-word standby is initialized immediately.
+import "../gemini-live.js";
 import {baseUrl,checkHealth} from "./api.js";
 import {refreshReactor} from "./reactor.js";
 import {initChat,loadModels} from "./chat.js";
 import {initAvatar} from "./avatar.js";
 import {initCharacters} from "./characters.js";
+import {initHomeAutomation} from "../home-automation.js";
 const $=id=>document.getElementById(id);
 let liveLoading=null,modelHome=null,historyHome=null;
 const mobileQuery=window.matchMedia("(max-width: 900px)");
 function showMode(mode){
- if(!["reactor","chat","avatar","characters"].includes(mode))return;
+ if(!["reactor","chat","avatar","characters","home"].includes(mode))return;
  update({mode});
  $("reactorView").hidden=mode!=="reactor";$("chatView").hidden=mode!=="chat";
- $("cosmicAvatarMode").hidden=mode!=="avatar";$("cosmicCharactersMode").hidden=mode!=="characters";
+ $("cosmicAvatarMode").hidden=mode!=="avatar";$("cosmicCharactersMode").hidden=mode!=="characters";$("homeAutomationView").hidden=mode!=="home";
  document.querySelectorAll("[data-mode]").forEach(b=>{const active=b.dataset.mode===mode;b.classList.toggle("active",active);b.setAttribute("aria-current",active?"page":"false");});
  if(mode==="reactor")refreshReactor().catch(()=>{});
  if(mode==="chat")$("chatInput").focus({preventScroll:true});
  if(mode==="avatar"&&$("cosmicAvatarMode").dataset.ready!=="1")initAvatar();
  if(mode==="characters")initCharacters();
+ if(mode==="home")initHomeAutomation();
 }
 function paintConnection(s){const pill=$("connectionPill");pill.dataset.state=s.connection;const label=pill.querySelector("b");label.textContent=s.connection==="connected"?"CONNECTED":s.connection==="offline"?"OFFLINE":"CONNECTING";$("chatConnectionText").textContent=s.connection==="connected"?"Backend online":"Backend unavailable";}
 function setTheme(theme){if(!["nebula","aurora","midnight","solar"].includes(theme))theme="nebula";document.documentElement.dataset.theme=theme;localStorage.setItem("COSMIC_THEME",theme);document.querySelectorAll("[data-theme-choice]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themeChoice===theme)));}
@@ -31,5 +35,5 @@ async function saveCloudflareKeys(){const account=$("cloudflareAccountId").value
 async function saveProviderKeys(){const fields={gemini:"geminiApiKey",openai:"openaiApiKey",groq:"groqApiKey",mistral:"mistralApiKey",openrouter:"openrouterApiKey"};const keys={};for(const [provider,id] of Object.entries(fields)){const value=$(id)?.value.trim();if(value)keys[provider]=value;}if(!Object.keys(keys).length){$("settingsFeedback").textContent="Enter at least one provider API key.";return;}const button=$("saveProviderKeys");button.disabled=true;try{const r=await fetch(baseUrl()+"/api/ai/provider-keys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keys})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"Provider key save failed.");for(const id of Object.values(fields))if($(id))$(id).value="";$("settingsFeedback").textContent="Provider keys saved securely on this device. Refreshing model availability…";await loadModels();await refreshCloudflareStatus();$("settingsFeedback").textContent="Provider keys saved. Configured models are now available in the model selector.";}catch(e){$("settingsFeedback").textContent="Provider key save failed: "+e.message;}finally{button.disabled=false;}}
 async function testProviderKey(){const provider=$("testProviderSelect").value,button=$("testProviderKey");button.disabled=true;button.textContent="TESTING…";try{const r=await fetch(baseUrl()+"/api/ai/test-provider",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({provider,model:"auto"})});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"Provider test failed.");$("settingsFeedback").textContent=provider.toUpperCase()+" is responding · "+(d.model||"model verified");}catch(e){$("settingsFeedback").textContent=provider.toUpperCase()+" test failed · "+e.message;}finally{button.disabled=false;button.textContent="TEST KEY";}}
 async function toggleVoice(){const button=$("voiceToggle"),wasLoaded=!!window.COSMIC_LIVE;button.disabled=true;try{if(!wasLoaded){if(!liveLoading)liveLoading=import("../gemini-live.js");await liveLoading;}if(wasLoaded&&window.COSMIC_LIVE.listening)window.COSMIC_LIVE.stop();else if(!window.COSMIC_LIVE.listening)await window.COSMIC_LIVE.start(false);button.textContent=window.COSMIC_LIVE.listening?"◉":"◌";}catch(e){$("chatStatus").textContent="Live voice unavailable · "+e.message;}finally{button.disabled=false;}}
-function init(){initChat();initSettings();initDrawer();setTheme(localStorage.getItem("COSMIC_THEME")||"nebula");subscribe(paintConnection);document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>showMode(b.dataset.mode)));$("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("chatForm").requestSubmit();}});$("voiceToggle").addEventListener("click",toggleVoice);showMode("reactor");refreshReactor().catch(()=>{});setInterval(()=>{if(state.mode==="reactor")refreshReactor().catch(()=>{});else checkHealth().catch(()=>{});},10000);document.addEventListener("cosmic:live-state",e=>{const live=e.detail?.state==="live";$("voiceToggle").textContent=live?"◉":"◌";$("voiceToggle").classList.toggle("is-live",live);$("chatStatus").textContent=e.detail?.text||"Voice · "+(e.detail?.state||"ready");});}
+function init(){initChat();initSettings();initDrawer();setTheme(localStorage.getItem("COSMIC_THEME")||"nebula");subscribe(paintConnection);document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>showMode(b.dataset.mode)));$("chatInput").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();$("chatForm").requestSubmit();}});$("voiceToggle").addEventListener("click",toggleVoice);showMode("characters");setInterval(()=>{if(state.mode==="reactor")refreshReactor().catch(()=>{});else checkHealth().catch(()=>{});},10000);document.addEventListener("cosmic:live-state",e=>{const live=e.detail?.state==="live";$("voiceToggle").textContent=live?"◉":"◌";$("voiceToggle").classList.toggle("is-live",live);$("chatStatus").textContent=e.detail?.text||"Voice · "+(e.detail?.state||"ready");});}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});else init();

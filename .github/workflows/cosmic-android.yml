@@ -4,10 +4,23 @@ on:
   push:
     branches:
       - feature/complete-cosmic-systems
+      - feature/cosmic-unified-voice-assistant
     paths:
       - "android-wrapper/**"
       - "frontend/**"
       - "backend/**"
+      - "hardware/**"
+      - "docs/**"
+      - ".github/workflows/cosmic-android.yml"
+  pull_request:
+    branches:
+      - feature/complete-cosmic-systems
+    paths:
+      - "android-wrapper/**"
+      - "frontend/**"
+      - "backend/**"
+      - "hardware/**"
+      - "docs/**"
       - ".github/workflows/cosmic-android.yml"
   workflow_dispatch:
 
@@ -17,9 +30,6 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-
     steps:
       - name: Checkout COSMIC
         uses: actions/checkout@v4
@@ -40,20 +50,21 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Configure preinstalled Android SDK
+      - name: Install Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+      - name: Install Android SDK packages
+        shell: bash
         run: |
-          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "ERROR: Android sdkmanager was not found."
-            exit 1
+          set -euo pipefail
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
           fi
-          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
-          yes | "$SDKMANAGER" --licenses
-          "$SDKMANAGER" --install \
-            "platform-tools" \
-            "platforms;android-36" \
-            "build-tools;36.0.0"
+          test -n "$SDKMANAGER" && test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Validate Python backend
         run: python -m compileall -q backend
@@ -130,7 +141,7 @@ jobs:
                   log.seek(0)
                   print(log.read())
                   raise SystemExit("COSMIC backend did not start.")
-              for route in ["/", "/css/cosmic-premium.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/ai/provider-keys", "/api/avatar/3d/status"]:
+              for route in ["/", "/css/cosmic-foundation.css", "/js/avatar-studio.js", "/js/upgrade-ui.js", "/api/ai/models", "/api/ai/provider-keys", "/api/avatar/3d/status"]:
                   with urllib.request.urlopen(base + route, timeout=10) as response:
                       if response.status != 200:
                           raise SystemExit(route + " returned HTTP " + str(response.status))
@@ -180,6 +191,7 @@ jobs:
         run: npx cap sync android
 
       - name: Restore permanent COSMIC signing keystore
+        if: github.ref == 'refs/heads/feature/complete-cosmic-systems'
         working-directory: android-wrapper/android
         env:
           COSMIC_KEYSTORE_BASE64: ${{ secrets.COSMIC_KEYSTORE_BASE64 }}
@@ -190,7 +202,7 @@ jobs:
           test -s app/cosmic-release.p12
           chmod 600 app/cosmic-release.p12
 
-      - name: Build signed COSMIC release APK
+      - name: Build Android APK
         working-directory: android-wrapper/android
         env:
           COSMIC_KEYSTORE_PATH: ${{ github.workspace }}/android-wrapper/android/app/cosmic-release.p12
@@ -198,61 +210,69 @@ jobs:
           COSMIC_KEY_ALIAS: ${{ secrets.COSMIC_KEY_ALIAS }}
           COSMIC_KEY_PASSWORD: ${{ secrets.COSMIC_KEY_PASSWORD }}
         run: |
-          test -n "$COSMIC_KEYSTORE_PASSWORD" || { echo "Missing COSMIC_KEYSTORE_PASSWORD repository secret"; exit 1; }
-          test -n "$COSMIC_KEY_ALIAS" || { echo "Missing COSMIC_KEY_ALIAS repository secret"; exit 1; }
-          test -n "$COSMIC_KEY_PASSWORD" || { echo "Missing COSMIC_KEY_PASSWORD repository secret"; exit 1; }
           chmod +x gradlew
-          ./gradlew assembleRelease --stacktrace
+          if [ "$GITHUB_REF" = "refs/heads/feature/complete-cosmic-systems" ]; then
+            test -s "$COSMIC_KEYSTORE_PATH" || { echo "Missing permanent COSMIC signing keystore"; exit 1; }
+            test -n "$COSMIC_KEYSTORE_PASSWORD" || { echo "Missing COSMIC_KEYSTORE_PASSWORD repository secret"; exit 1; }
+            test -n "$COSMIC_KEY_ALIAS" || { echo "Missing COSMIC_KEY_ALIAS repository secret"; exit 1; }
+            test -n "$COSMIC_KEY_PASSWORD" || { echo "Missing COSMIC_KEY_PASSWORD repository secret"; exit 1; }
+            ./gradlew assembleRelease --stacktrace
+          else
+            ./gradlew assembleDebug --stacktrace
+          fi
 
       - name: Prepare release APK and update metadata
         env:
-          VERSION_CODE: '13'
-          VERSION_NAME: '2.9.0'
+          VERSION_CODE: '14'
+          VERSION_NAME: '2.9.4'
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: v2.9.0
+          RELEASE_TAG: v2.9.4
         run: |
           mkdir -p release
-          cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.0.apk
-          APK_SHA256="$(sha256sum release/COSMIC-2.9.0.apk | awk '{print $1}')"
-          export APK_SHA256
-          python - <<'PY'
-          import json, os
-          version_code = int(os.environ["VERSION_CODE"])
-          version_name = os.environ["VERSION_NAME"]
-          repository = os.environ["REPOSITORY"]
-          tag = os.environ["RELEASE_TAG"]
-          data = {
-              "app": "COSMIC",
-              "package": "com.cosmic.ai",
-              "versionCode": version_code,
-              "versionName": version_name,
-              "minSdk": 24,
-              "apk": f"https://github.com/{repository}/releases/download/{tag}/COSMIC-{version_name}.apk",
-              "sha256": os.environ["APK_SHA256"]
-          }
-          with open("release/latest.json", "w") as f:
-              json.dump(data, f, indent=2)
-          PY
+          if [ "$GITHUB_REF" != "refs/heads/feature/complete-cosmic-systems" ]; then
+            cp android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk release/COSMIC-2.9.4-debug.apk
+          else
+            cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.4.apk
+            APK_SHA256="$(sha256sum release/COSMIC-2.9.4.apk | awk '{print $1}')"
+            export APK_SHA256
+            python - <<'PY'
+            import json, os
+            version_code = int(os.environ["VERSION_CODE"])
+            version_name = os.environ["VERSION_NAME"]
+            repository = os.environ["REPOSITORY"]
+            tag = os.environ["RELEASE_TAG"]
+            data = {
+                "app": "COSMIC",
+                "package": "com.cosmic.ai",
+                "versionCode": version_code,
+                "versionName": version_name,
+                "minSdk": 24,
+                "apk": f"https://github.com/{repository}/releases/download/{tag}/COSMIC-{version_name}.apk",
+                "sha256": os.environ["APK_SHA256"]
+            }
+            with open("release/latest.json", "w") as f:
+                json.dump(data, f, indent=2)
+            PY
+          fi
         shell: bash
 
-      - name: Upload signed APK build artifact
+      - name: Upload Android build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: COSMIC-Android-Signed-APK
+          name: COSMIC-Android-APK
           path: |
-            release/COSMIC-2.9.0.apk
-            release/latest.json
+            release/*
           if-no-files-found: error
           retention-days: 30
 
       - name: Publish GitHub Release
-        if: github.ref == 'refs/heads/feature/complete-cosmic-systems'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/feature/complete-cosmic-systems'
         uses: softprops/action-gh-release@v2
         with:
-          name: COSMIC 2.9.0
-          tag_name: v2.9.0
+          name: COSMIC 2.9.4
+          tag_name: v2.9.4
           target_commitish: feature/complete-cosmic-systems
           generate_release_notes: true
           files: |
-            release/COSMIC-2.9.0.apk
+            release/COSMIC-2.9.4.apk
             release/latest.json

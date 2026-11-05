@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feature/complete-cosmic-systems
+      - feature/cosmic-unified-voice-assistant
+  pull_request:
+    branches:
+      - feature/complete-cosmic-systems
   workflow_dispatch:
 
 permissions:
@@ -42,14 +46,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Install Android SDK command-line tools
+        uses: android-actions/setup-android@v3
+        with:
+          packages: ''
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-          export ANDROID_HOME="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
-          export ANDROID_SDK_ROOT="$ANDROID_HOME"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          if [ ! -x "$SDKMANAGER" ]; then
+            SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          fi
+          test -n "$SDKMANAGER" && test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install Capacitor dependencies
         working-directory: android-wrapper

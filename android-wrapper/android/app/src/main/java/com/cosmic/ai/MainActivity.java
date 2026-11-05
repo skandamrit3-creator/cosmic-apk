@@ -14,6 +14,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(CosmicVoicePlugin.class);
         registerPlugin(CosmicBackendPlugin.class);
+        registerPlugin(CosmicHomeAutomationPlugin.class);
         super.onCreate(savedInstanceState);
         startCosmicBackend();
     }

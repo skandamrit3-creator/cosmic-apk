@@ -286,10 +286,24 @@ public class CosmicLiveService extends Service {
                                     .put("description", "Switch COSMIC interface to Reactor, Chat, Avatar or Characters mode.")
                                     .put("parameters", new JSONObject().put("type", "OBJECT")
                                             .put("properties", new JSONObject().put("mode", new JSONObject().put("type", "STRING")
-                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar").put("characters"))))
+                                                    .put("enum", new JSONArray().put("reactor").put("chat").put("avatar").put("characters").put("home"))))
                                             .put("required", new JSONArray().put("mode"))));
+                            functions.put(new JSONObject().put("name", "set_home_relay")
+                                    .put("description", "Set a COSMIC relay by number 1 through 8 or exact saved custom name. Relay ON requires on-screen confirmation.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject()
+                                                    .put("channel", new JSONObject().put("type", "STRING").put("description", "Relay number or exact saved relay name"))
+                                                    .put("state", new JSONObject().put("type", "STRING").put("enum", new JSONArray().put("ON").put("OFF"))))
+                                            .put("required", new JSONArray().put("channel").put("state"))));
+                            functions.put(new JSONObject().put("name", "name_home_relay")
+                                    .put("description", "Save a spoken custom name for an explicitly identified relay channel.")
+                                    .put("parameters", new JSONObject().put("type", "OBJECT")
+                                            .put("properties", new JSONObject()
+                                                    .put("channel", new JSONObject().put("type", "INTEGER"))
+                                                    .put("name", new JSONObject().put("type", "STRING")))
+                                            .put("required", new JSONArray().put("channel").put("name"))));
                             config.put("tools", new JSONArray().put(new JSONObject().put("functionDeclarations", functions)));
-                            String instruction = "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time.";
+                            String instruction = "You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly, matching the user's language; use fluent Indian English or Hindi when appropriate. Keep spoken replies concise and conversational. You can answer questions and use the provided phone tools to open installed apps, open websites, download files, navigate back and switch COSMIC modes. For home automation, use saved relay names when available; never guess which relay controls a load. The user can rename a relay by voice with name_home_relay and then control it by its saved name. Relay ON requires explicit on-screen confirmation. A controller-reported state is not proof that an appliance physically changed state. When camera frames are actively shared, interpret visible objects and scenes; never claim camera access when it is off. Ask for clarification when an action target is ambiguous. Never claim an action succeeded until its tool response confirms it. The user can interrupt you at any time.";
                             if (!livePersona.isEmpty()) instruction += "\n\nActive COSMIC character persona: " + livePersona;
                             if (!memoryContext.isEmpty()) {
                                 instruction += "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext
