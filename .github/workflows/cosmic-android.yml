@@ -235,24 +235,7 @@ jobs:
             cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.4.apk
             APK_SHA256="$(sha256sum release/COSMIC-2.9.4.apk | awk '{print $1}')"
             export APK_SHA256
-            python - <<'PY'
-            import json, os
-            version_code = int(os.environ["VERSION_CODE"])
-            version_name = os.environ["VERSION_NAME"]
-            repository = os.environ["REPOSITORY"]
-            tag = os.environ["RELEASE_TAG"]
-            data = {
-                "app": "COSMIC",
-                "package": "com.cosmic.ai",
-                "versionCode": version_code,
-                "versionName": version_name,
-                "minSdk": 24,
-                "apk": f"https://github.com/{repository}/releases/download/{tag}/COSMIC-{version_name}.apk",
-                "sha256": os.environ["APK_SHA256"]
-            }
-            with open("release/latest.json", "w") as f:
-                json.dump(data, f, indent=2)
-            PY
+            python -c 'import json, os; version=os.environ["VERSION_NAME"]; data={"app":"COSMIC","package":"com.cosmic.ai","versionCode":int(os.environ["VERSION_CODE"]),"versionName":version,"minSdk":24,"apk":"https://github.com/"+os.environ["REPOSITORY"]+"/releases/download/"+os.environ["RELEASE_TAG"]+"/COSMIC-"+version+".apk","sha256":os.environ["APK_SHA256"]}; open("release/latest.json","w").write(json.dumps(data,indent=2))'
           fi
         shell: bash
 
