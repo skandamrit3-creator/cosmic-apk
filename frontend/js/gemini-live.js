@@ -500,6 +500,11 @@
     state.resumeHandle = "";
     setStatus("GEMINI UNAVAILABLE · STARTING FREE VOICE FALLBACK", "connecting");
     const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+    if (state.socket) {
+      const oldSocket = state.socket;
+      state.socket = null;
+      try { oldSocket.close(1000, "Switching to COSMIC free voice fallback"); } catch (_) {}
+    }
     try {
       try {
         const wake = await plugin?.getWakeWordStatus?.();
@@ -691,7 +696,7 @@
       } else setStatus(message,state.connected?"live":"connecting");
     } else if(type==="error") {
       const screenOnly=/screen share|screen capture|screen sharing|camera|floating bubble/i.test(message);
-      const liveFailure=/gemini|websocket|http \\d+|overload|token|connection|backend/i.test(message);
+      const liveFailure=/gemini|websocket|http|overload|token|connection|backend/i.test(message);
       state.connecting=false;
       if(!screenOnly && liveFailure && state.desired && !state.fallbackMode) {
         state.connected=false;
