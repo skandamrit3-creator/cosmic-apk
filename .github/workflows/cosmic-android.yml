@@ -26,11 +26,32 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Remove old temporary build artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            let page = 1;
+            let removed = 0;
+            while (true) {
+              const response = await github.rest.actions.listArtifactsForRepo({ owner, repo, per_page: 100, page });
+              const artifacts = response.data.artifacts;
+              if (artifacts.length === 0) break;
+              for (const artifact of artifacts) {
+                await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: artifact.id });
+                removed++;
+              }
+              if (artifacts.length < 100) break;
+              page++;
+            }
+            core.info(`Removed ${removed} old temporary workflow artifacts. Published GitHub Releases are not touched.`);
+
       - name: Checkout COSMIC
         uses: actions/checkout@v4
 
