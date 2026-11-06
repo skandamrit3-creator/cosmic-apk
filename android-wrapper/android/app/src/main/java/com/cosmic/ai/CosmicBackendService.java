@@ -18,6 +18,7 @@ import com.chaquo.python.android.AndroidPlatform;
 public class CosmicBackendService extends Service {
     public static final String ACTION_START = "com.cosmic.ai.backend.START";
     public static final String ACTION_STOP = "com.cosmic.ai.backend.STOP";
+    public static final int BACKEND_PORT = 8160;
     private static final String TAG = "COSMICBackend";
     private static final String CHANNEL_ID = "cosmic_backend";
     private static final int NOTIFICATION_ID = 8059;
@@ -51,15 +52,13 @@ public class CosmicBackendService extends Service {
 
     private void startEmbeddedBackend() {
         try {
-            if (!Python.isStarted()) {
-                Python.start(new AndroidPlatform(getApplicationContext()));
-            }
+            if (!Python.isStarted()) Python.start(new AndroidPlatform(getApplicationContext()));
             if (stopping) return;
             PyObject module = Python.getInstance().getModule("cosmic_android_server");
             PyObject result = module.callAttr("start_server", getFilesDir().getAbsolutePath());
             String url = result.get("url").toString();
             Log.i(TAG, "Embedded backend started at " + url);
-            updateNotification("Backend running at 127.0.0.1:8059");
+            updateNotification("Backend running at 127.0.0.1:" + BACKEND_PORT);
         } catch (Throwable error) {
             Log.e(TAG, "Could not start embedded Python backend", error);
             updateNotification("Backend failed to start — open COSMIC to retry");
@@ -68,9 +67,7 @@ public class CosmicBackendService extends Service {
 
     private void stopEmbeddedBackend() {
         try {
-            if (Python.isStarted()) {
-                Python.getInstance().getModule("cosmic_android_server").callAttr("stop_server");
-            }
+            if (Python.isStarted()) Python.getInstance().getModule("cosmic_android_server").callAttr("stop_server");
         } catch (Throwable error) {
             Log.e(TAG, "Error stopping embedded backend", error);
         }
@@ -104,16 +101,12 @@ public class CosmicBackendService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // The backend is intentionally independent of the COSMIC activity task.
         super.onTaskRemoved(rootIntent);
     }
 
     @Override
     public void onDestroy() {
-        if (!stopping) {
-            // Android may recreate a START_STICKY service after process reclamation.
-            stopEmbeddedBackend();
-        }
+        if (!stopping) stopEmbeddedBackend();
         super.onDestroy();
     }
 
