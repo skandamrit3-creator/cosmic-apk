@@ -179,3 +179,52 @@
 .provider-test-row .setting-field{min-width:0}
 .provider-test-row select{height:40px;border:1px solid var(--line);border-radius:9px;background:#101725;color:var(--text);padding:0 9px}
 .provider-test-row button{min-height:40px;white-space:nowrap}
+
+
+/* Responsive shell: keep desktop composition intact; give phones their own navigation rhythm. */
+@media(min-width:681px) and (max-width:1100px){
+ .primary-nav{min-width:0;max-width:56vw;overflow-x:auto;scrollbar-width:none}
+ .primary-nav::-webkit-scrollbar{display:none}
+ .nav-tab{flex:0 0 auto;min-width:78px;padding:0 10px}
+ .brand,.header-actions{min-width:0}
+}
+@media(max-width:680px){
+ .app-header{height:auto!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:38px 40px;align-items:center;gap:7px 10px;padding:7px 12px 8px!important}
+ .brand{grid-column:1;grid-row:1;min-width:0;gap:8px}
+ .brand-orb{width:27px!important;height:27px!important;flex-basis:27px!important}
+ .brand b{font-size:13px!important;letter-spacing:.13em!important}
+ .brand small{display:block!important;font-size:7px;letter-spacing:.1em}
+ .header-actions{grid-column:2;grid-row:1;justify-self:end;display:flex;align-items:center}
+ .connection-pill{display:flex!important;font-size:7px;margin-right:2px}
+ .icon-button{width:32px;height:32px}
+ .primary-nav{grid-column:1/-1;grid-row:2;order:initial;width:100%;min-width:0;display:flex;justify-content:flex-start;gap:5px;padding:3px;border-radius:11px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none}
+ .primary-nav::-webkit-scrollbar{display:none}
+ .nav-tab{flex:1 0 66px;min-width:66px;height:33px;padding:0 7px;font-size:9px;letter-spacing:.015em;white-space:nowrap}
+ .nav-tab span{font-size:12px;margin-right:4px}
+ .workspace{padding:13px 12px calc(14px + env(safe-area-inset-bottom))!important}
+ .mode-view{min-height:calc(100dvh - 116px)}
+ .view-heading h1{font-size:27px}
+ .view-heading p{font-size:11px}
+ .live-tag{font-size:7px;padding:7px 8px}
+ .reactor-layout{gap:10px}
+ .core-panel{min-height:260px}
+ .metrics-panel{padding:13px}
+ .metric-card{padding:11px}
+ .chat-view{height:calc(100dvh - 120px)!important;min-height:0!important}
+ .chat-toolbar{gap:8px}
+ .chat-toolbar h1{font-size:20px}
+ .message-list{padding:12px 1px}
+ .composer textarea{min-height:39px}
+ .myraa-workspace{height:100%}
+ .myraa-heading{gap:8px}
+ .myraa-heading-actions{gap:4px}
+ .myraa-heading-actions button{width:32px;height:32px}
+ .myraa-mode-tag{font-size:7px;padding:6px 7px}
+ .myraa-layout{height:calc(100dvh - 190px)}
+}
+@media(max-width:380px){
+ .brand small{display:none!important}
+ .connection-pill{display:none!important}
+ .nav-tab{flex-basis:64px;min-width:64px}
+ .workspace{padding-left:10px!important;padding-right:10px!important}
+}
