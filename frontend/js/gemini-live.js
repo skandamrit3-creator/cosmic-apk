@@ -665,6 +665,7 @@
   function handleNativeEvent(event) {
     const type=event?.type||"", message=event?.message||"";
     if(type==="state") {
+      if(state.fallbackMode && message==="LIVE · STOPPED") return;
       if(message==="LIVE · STOPPED") {
         state.desired=false;state.connected=false;state.connecting=false;state.sharing=false;
         state.nativeMode=false;state.bubbleActive=false;
@@ -689,11 +690,27 @@
         state.sharing=false;setStatus("GEMINI LIVE · LISTENING","live");
       } else setStatus(message,state.connected?"live":"connecting");
     } else if(type==="error") {
-      const screenOnly=/screen share|screen capture|screen sharing/i.test(message);
+      const screenOnly=/screen share|screen capture|screen sharing|camera|floating bubble/i.test(message);
+      const liveFailure=/gemini|websocket|http \\d+|overload|token|connection|backend/i.test(message);
       state.connecting=false;
+      if(!screenOnly && liveFailure && state.desired && !state.fallbackMode) {
+        state.connected=false;
+        state.nativeMode=false;
+        startFallback(message).catch(error => {
+          state.desired=false;
+          setStatus("GEMINI FAILED · FREE VOICE FALLBACK FAILED · "+(error.message||error),"error");
+        });
+        return;
+      }
       if(!screenOnly){state.connected=false;state.desired=false;state.nativeMode=false;}
-      if(/key is missing|API key|permission denied|permission is required/i.test(message))localStorage.setItem("COSMIC_LIVE_AUTO","false");
       setStatus(message,"error");
+    } else if(type==="fallback_transcript") {
+      if(state.fallbackMode && message) fallbackReply(message, false);
+    } else if(type==="fallback_error") {
+      if(state.fallbackMode) {
+        setStatus("FREE SPEECH INPUT · "+message,"paused");
+        restartFallbackListening();
+      }
     } else if(type==="transcript") transcript(message,"assistant");
     else if(type==="user_transcript") {
       transcript(message,"user");
@@ -762,6 +779,11 @@
 
   function scheduleReconnect(generation) {
     if (state.reconnectTimer || !state.desired || generation !== state.generation) return;
+    state.reconnectAttempts++;
+    if (state.reconnectAttempts >= 2) {
+      startFallback("Gemini Live repeatedly disconnected").catch(error => setStatus("FREE VOICE FALLBACK FAILED · " + error.message, "error"));
+      return;
+    }
     const delay = state.reconnectDelay;
     state.reconnectDelay = Math.min(30000, Math.round(state.reconnectDelay * 1.8));
     setStatus("CONNECTION LOST · RETRYING", "connecting");
@@ -793,9 +815,14 @@
           setStatus(started?.alreadyRunning ? "RECONNECTING TO GEMINI LIVE…" : "WAITING FOR GEMINI LIVE…", "connecting");
         }
       } catch (error) {
-        state.desired = false; state.connecting = false;
-        localStorage.setItem("COSMIC_LIVE_AUTO", "false");
-        setStatus(error.message || "Could not start Gemini Live", "error");
+        state.nativeMode = false;
+        state.connecting = false;
+        try { await startFallback(error.message || "Gemini Live could not start"); }
+        catch (fallbackError) {
+          state.desired = false;
+          localStorage.setItem("COSMIC_LIVE_AUTO", "false");
+          setStatus("GEMINI FAILED · FREE VOICE FALLBACK FAILED · " + fallbackError.message, "error");
+        }
       }
       return;
     }
@@ -810,10 +837,14 @@
       setStatus("CONNECTING GEMINI LIVE…", "connecting");
       await connect(generation);
     } catch (error) {
-      state.desired = false;
-      localStorage.setItem("COSMIC_LIVE_AUTO", "false");
       cleanupAudio();
-      setStatus((isAuto ? "TAP TO START · " : "") + error.message, "error");
+      state.nativeMode = false;
+      try { await startFallback(error.message); }
+      catch (fallbackError) {
+        state.desired = false;
+        localStorage.setItem("COSMIC_LIVE_AUTO", "false");
+        setStatus((isAuto ? "TAP TO START · " : "") + fallbackError.message, "error");
+      }
     } finally {
       state.connecting = false;
     }
@@ -835,6 +866,7 @@
 
   function stop() {
     stopCamera();
+    if (state.fallbackMode) { stopFallback(); return; }
     if (state.nativeMode) {
       state.desired = false; state.connected = false; state.connecting = false;
       localStorage.setItem("COSMIC_LIVE_AUTO", "false");
@@ -866,6 +898,7 @@
   async function sendText(text, alreadyDisplayed) {
     const value = String(text || "").trim();
     if (!value || !state.connected) return false;
+    if (state.fallbackMode) return fallbackReply(value, !!alreadyDisplayed);
     if (!alreadyDisplayed) transcript(value, "user");
     if (state.nativeMode) {
       try { await window.Capacitor.Plugins.CosmicVoice.sendLiveText({text:value}); return true; }
@@ -981,7 +1014,8 @@
     sendText, startScreenShare, stopScreenShare,
     async setPersona(persona){ const value=String(persona||"").trim().slice(0,1200); localStorage.setItem("COSMIC_LIVE_PERSONA",value); if(!state.desired)return true; if(state.nativeMode){ await window.Capacitor?.Plugins?.CosmicVoice?.startLive?.({model:liveModel(),voice:liveVoice(),persona:value}); return true; } state.resumeHandle=""; if(state.socket)state.socket.close(1012,"COSMIC character changed"); return true; },
     get active(){return state.connected;},
-    get listening(){return state.desired;}
+    get listening(){return state.desired;},
+    get provider(){return state.fallbackMode ? "free-fallback" : state.nativeMode ? "gemini-live-native" : "gemini-live-websocket";}
   };
   console.info("COSMIC Gemini Live controller loaded. Microphone remains user-controlled.");
 })();
