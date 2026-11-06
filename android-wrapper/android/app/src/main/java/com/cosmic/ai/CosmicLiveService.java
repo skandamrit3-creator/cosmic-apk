@@ -688,7 +688,7 @@ public class CosmicLiveService extends Service {
 
     private String requestLiveToken() throws Exception {
         Exception lastError = null;
-        for (int attempt = 0; attempt < 6; attempt++) {
+        for (int attempt = 0; attempt < 3; attempt++) {
             HttpURLConnection connection = null;
             try {
                 connection = (HttpURLConnection) new URL(backendUrl + "/api/ai/live-token").openConnection();
@@ -719,7 +719,7 @@ public class CosmicLiveService extends Service {
                 return token;
             } catch (java.net.ConnectException | java.net.SocketTimeoutException error) {
                 lastError = error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } catch (IllegalStateException error) {
                 lastError = error;
                 String detail = String.valueOf(error.getMessage());
@@ -733,7 +733,8 @@ public class CosmicLiveService extends Service {
                 if (connection != null) connection.disconnect();
             }
         }
-        throw new IllegalStateException("COSMIC local AI backend is not ready for Gemini Live.", lastError);
+        throw new IllegalStateException("Gemini Live token failed after 3 quick attempts: " +
+                (lastError == null ? "unknown error" : String.valueOf(lastError.getMessage())), lastError);
     }
 
     private void stopLive() {
