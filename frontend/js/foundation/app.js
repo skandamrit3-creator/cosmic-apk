@@ -13,6 +13,7 @@ const mobileQuery=window.matchMedia("(max-width: 900px)");
 function showMode(mode){
  if(!["reactor","chat","avatar","characters","home"].includes(mode))return;
  update({mode});
+ document.body.classList.toggle("myraa-fullscreen-mode",mode==="characters");
  $("reactorView").hidden=mode!=="reactor";$("chatView").hidden=mode!=="chat";
  $("cosmicAvatarMode").hidden=mode!=="avatar";$("cosmicCharactersMode").hidden=mode!=="characters";$("homeAutomationView").hidden=mode!=="home";
  document.querySelectorAll("[data-mode]").forEach(b=>{const active=b.dataset.mode===mode;b.classList.toggle("active",active);b.setAttribute("aria-current",active?"page":"false");});
