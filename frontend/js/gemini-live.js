@@ -11,7 +11,7 @@
     desired: false, connected: false, connecting: false, sharing: false,
     socket: null, stream: null, context: null, source: null, processor: null,
     silentGain: null, nextPlayTime: 0, playing: new Set(), analyser: null, meterFrame: 0, meterData: null, resumeHandle: "",
-    reconnectTimer: 0, reconnectDelay: 1200, generation: 0, screenStream: null,
+    reconnectTimer: 0, reconnectDelay: 1200, reconnectAttempts: 0, generation: 0, fallbackMode: false, fallbackBusy: false, fallbackNativeRecognition: false, fallbackRecognition: null, fallbackWakeEnabled: false, fallbackRestartTimer: 0, screenStream: null,
     screenVideo: null, screenTimer: 0, cameraStream: null, cameraVideo: null, cameraTimer: 0, lastTranscript: "", nativeScreen: false, nativeScreenHandle: null, voiceService: false, nativeMode: false, nativeListener: null, bubbleActive: false
   };
   let root, orb, status, shareButton, cameraButton, bubbleButton, wakeButton;
@@ -357,11 +357,23 @@
       socket.onmessage = event => {
         let message;
         try { message = JSON.parse(event.data); } catch (_) { return; }
+        if (message.error) {
+          const detail = message.error;
+          const code = detail.code ? " HTTP " + detail.code : "";
+          const messageText = detail.message || detail.status || JSON.stringify(detail);
+          const error = new Error("Gemini Live API error" + code + ": " + messageText);
+          clearTimeout(timeout);
+          if (!settled) { settled = true; reject(error); }
+          else if (state.desired) startFallback(error.message).catch(fallbackError => setStatus("GEMINI FAILED · FREE VOICE FALLBACK FAILED · " + fallbackError.message, "error"));
+          try { socket.close(1011, "Gemini Live API error"); } catch (_) {}
+          return;
+        }
         if (message.setupComplete) {
           clearTimeout(timeout);
           settled = true;
           state.connected = true;
           state.reconnectDelay = 1200;
+          state.reconnectAttempts = 0;
           setStatus("GEMINI LIVE · LISTENING", "live");
           startAudioPump();
           resolve();
@@ -391,6 +403,194 @@
         if (state.desired && generation === state.generation) scheduleReconnect(generation);
       };
     });
+  }
+
+  function restartFallbackListening() {
+    if (!state.fallbackMode || !state.desired || state.fallbackBusy) return;
+    if (state.fallbackRestartTimer) clearTimeout(state.fallbackRestartTimer);
+    state.fallbackRestartTimer = setTimeout(async () => {
+      state.fallbackRestartTimer = 0;
+      if (!state.fallbackMode || !state.desired || state.fallbackBusy) return;
+      if (state.fallbackNativeRecognition) {
+        try {
+          await window.Capacitor?.Plugins?.CosmicVoice?.startFallbackRecognition?.({language:navigator.language || "en-IN"});
+          state.connected = true;
+          setStatus("FREE VOICE · GROQ / OPENROUTER · LISTENING", "live");
+        } catch (error) {
+          setStatus("FREE SPEECH RECOGNITION ERROR · " + (error.message || error), "error");
+        }
+        return;
+      }
+      try {
+        state.fallbackRecognition?.start();
+        state.connected = true;
+        setStatus("FREE VOICE · GROQ / OPENROUTER · LISTENING", "live");
+      } catch (_) {}
+    }, 450);
+  }
+
+  async function speakFallback(text) {
+    const value = String(text || "").trim();
+    if (!value) return;
+    if (window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function") {
+      await new Promise(resolve => {
+        try {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(value);
+          utterance.lang = navigator.language || "en-IN";
+          utterance.rate = 1.02;
+          utterance.onend = resolve;
+          utterance.onerror = resolve;
+          window.speechSynthesis.speak(utterance);
+        } catch (_) { resolve(); }
+      });
+      return;
+    }
+    const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+    if (typeof plugin?.speak === "function") {
+      await plugin.speak({text:value});
+      await new Promise(resolve => setTimeout(resolve, Math.min(18000, Math.max(1200, value.length * 58))));
+    }
+  }
+
+  async function fallbackReply(text, alreadyDisplayed) {
+    const value = String(text || "").trim();
+    if (!value || !state.fallbackMode || state.fallbackBusy) return false;
+    state.fallbackBusy = true;
+    state.connected = false;
+    try {
+      if (state.fallbackNativeRecognition) {
+        try { await window.Capacitor?.Plugins?.CosmicVoice?.stopFallbackRecognition?.(); } catch (_) {}
+      } else {
+        try { state.fallbackRecognition?.stop(); } catch (_) {}
+      }
+      if (!alreadyDisplayed) transcript(value, "user");
+      setStatus("FREE AI · THINKING", "connecting");
+      const response = await fetch(API() + "/api/chat", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        cache:"no-store",
+        body:JSON.stringify({message:value,session_id:"cosmic-live-fallback",provider:"auto",model:"auto",mode:"auto"})
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || ("HTTP " + response.status));
+      const answer = String(data.message || data.response || data.text || "").trim();
+      if (!answer) throw new Error("The free AI providers returned an empty answer.");
+      transcript(answer, "assistant");
+      setStatus("FREE AI · SPEAKING", "connecting");
+      await speakFallback(answer);
+      return true;
+    } catch (error) {
+      setStatus("FREE VOICE FALLBACK · " + (error.message || String(error)), "error");
+      transcript("I could not reach a configured free AI provider. Add a Groq or OpenRouter free API key in API Setup, then try again.", "assistant");
+      return false;
+    } finally {
+      state.fallbackBusy = false;
+      if (state.fallbackMode && state.desired) restartFallbackListening();
+    }
+  }
+
+  async function startFallback(reason) {
+    if (state.fallbackMode) return;
+    state.fallbackMode = true;
+    state.desired = true;
+    state.nativeMode = false;
+    state.connected = false;
+    state.connecting = true;
+    state.resumeHandle = "";
+    setStatus("GEMINI UNAVAILABLE · STARTING FREE VOICE FALLBACK", "connecting");
+    const plugin = window.Capacitor?.Plugins?.CosmicVoice;
+    try {
+      try {
+        const wake = await plugin?.getWakeWordStatus?.();
+        state.fallbackWakeEnabled = !!wake?.enabled;
+        if (state.fallbackWakeEnabled) await plugin?.disableWakeWord?.();
+      } catch (_) {}
+      try { await plugin?.stopLive?.(); } catch (_) {}
+      cleanupAudio();
+      if (typeof plugin?.startFallbackRecognition === "function") {
+        try {
+          await plugin.startFallbackRecognition({language:navigator.language || "en-IN"});
+          state.fallbackNativeRecognition = true;
+          state.connecting = false;
+          state.connected = true;
+          setStatus("FREE VOICE · GROQ / OPENROUTER · LISTENING", "live");
+          return;
+        } catch (nativeError) {
+          state.fallbackNativeRecognition = false;
+          console.warn("COSMIC native speech recognition unavailable; trying browser recognition:", nativeError);
+        }
+      }
+      const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (typeof Recognition !== "function") throw new Error("This Android WebView has no speech-recognition service. Update Google Speech Services or use a supported browser.");
+      const recognition = new Recognition();
+      recognition.lang = navigator.language || "en-IN";
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onstart = () => {
+        if (state.fallbackMode) {
+          state.connected = true;
+          state.connecting = false;
+          setStatus("FREE VOICE · GROQ / OPENROUTER · LISTENING", "live");
+        }
+      };
+      recognition.onresult = event => {
+        let heard = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) heard += event.results[i][0]?.transcript || "";
+        }
+        if (heard.trim()) fallbackReply(heard.trim(), false);
+      };
+      recognition.onerror = event => {
+        if (!state.fallbackMode) return;
+        if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+          state.fallbackMode = false;
+          state.desired = false;
+          setStatus("FREE VOICE MICROPHONE PERMISSION DENIED", "error");
+          return;
+        }
+        if (event.error !== "no-speech" && event.error !== "aborted") setStatus("FREE SPEECH INPUT · " + event.error, "paused");
+      };
+      recognition.onend = () => restartFallbackListening();
+      state.fallbackRecognition = recognition;
+      recognition.start();
+      state.fallbackNativeRecognition = false;
+      state.connecting = false;
+    } catch (error) {
+      state.fallbackMode = false;
+      state.desired = false;
+      state.connected = false;
+      state.connecting = false;
+      if (state.fallbackWakeEnabled) {
+        try { await plugin?.enableWakeWord?.(); } catch (_) {}
+      }
+      state.fallbackWakeEnabled = false;
+      throw new Error((reason ? "Gemini failed (" + reason + "). " : "") + (error.message || error));
+    }
+  }
+
+  async function stopFallback() {
+    state.fallbackMode = false;
+    state.desired = false;
+    state.connected = false;
+    state.connecting = false;
+    state.fallbackBusy = false;
+    if (state.fallbackRestartTimer) clearTimeout(state.fallbackRestartTimer);
+    state.fallbackRestartTimer = 0;
+    try { await window.Capacitor?.Plugins?.CosmicVoice?.stopFallbackRecognition?.(); } catch (_) {}
+    if (state.fallbackRecognition) {
+      state.fallbackRecognition.onend = null;
+      try { state.fallbackRecognition.stop(); } catch (_) {}
+      state.fallbackRecognition = null;
+    }
+    try { window.speechSynthesis?.cancel(); } catch (_) {}
+    if (state.fallbackWakeEnabled) {
+      try { await window.Capacitor?.Plugins?.CosmicVoice?.enableWakeWord?.(); } catch (_) {}
+    }
+    state.fallbackWakeEnabled = false;
+    state.fallbackNativeRecognition = false;
+    setStatus("VOICE OFF", "idle");
   }
 
   async function handleToolCalls(calls) {
@@ -584,7 +784,7 @@
       localStorage.setItem("COSMIC_LIVE_AUTO", "true");
       setStatus("STARTING ANDROID GEMINI LIVE…", "connecting");
       try {
-        const started = await nativeVoice.startLive({model:liveModel(),voice:liveVoice(),persona:livePersona()});
+        const started = await nativeVoice.startLive({model:liveModel(),voice:liveVoice(),persona:livePersona(),backendUrl:API()});
         state.connecting = false;
         if (started?.connected) {
           state.connected = true;
