@@ -1,0 +1,60 @@
+/* Original MYRAA workspace — designed for COSMIC, not copied from a device mock-up. */
+.characters-view{min-height:0}
+.myraa-workspace{width:100%;max-width:1440px;margin:0 auto}
+.myraa-heading{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 18px}
+.myraa-heading-copy{min-width:0}
+.myraa-heading .eyebrow{font:9px var(--mono);letter-spacing:.18em;color:var(--cyan)}
+.myraa-heading h1{font:600 clamp(25px,3vw,34px) var(--display);letter-spacing:-.045em;margin:4px 0}
+.myraa-heading p{font-size:12px;color:var(--muted);margin:0}
+.myraa-heading-actions{display:flex;align-items:center;gap:7px}
+.myraa-heading-actions button{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line);border-radius:11px;background:#ffffff08;color:#b9cce5}
+.myraa-heading-actions button:hover{border-color:var(--cyan);color:var(--cyan);background:#53e2e810}
+.myraa-heading-actions svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.myraa-mode-tag{padding:7px 10px;border:1px solid #53e2e833;border-radius:30px;color:var(--cyan);font:9px var(--mono);letter-spacing:.08em}
+.myraa-layout{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(330px,.88fr);gap:16px;min-height:min(690px,calc(100dvh - 220px));}
+.myraa-stage{--mouth-open:0;position:relative;isolation:isolate;min-width:0;min-height:570px;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:radial-gradient(ellipse at 50% 34%,#253955 0,#111d31 49%,#090f1b 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 22px 65px #0003}
+.myraa-stage:before{content:"";position:absolute;z-index:-1;width:min(66%,480px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#55c9ff20,transparent 68%);filter:blur(12px)}
+.myraa-stage:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,#070d1c75,transparent 19%,transparent 73%,#070d1ca8)}
+.myraa-portrait{position:relative;z-index:1;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center 45%;padding:36px 22px 42px;filter:drop-shadow(0 18px 34px #0009);transition:filter .25s,transform .25s}
+.myraa-stage.is-speaking .myraa-portrait{filter:drop-shadow(0 0 24px #53d9e866);transform:translateY(-2px)}
+.myraa-stage-topline{position:absolute;z-index:4;top:16px;left:17px;right:17px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.myraa-stage-topline span{padding:7px 10px;border:1px solid #d5e5f02a;border-radius:30px;background:#08111dcc;color:#c5d8ed;font:8px var(--mono);letter-spacing:.1em}
+.myraa-stage-topline #myraaStatus{color:var(--cyan)}
+.myraa-blink-layer{position:absolute;z-index:3;left:34%;top:25.4%;width:32%;height:2.2%;opacity:0;pointer-events:none;border-radius:50%;background:linear-gradient(90deg,transparent,#e8bda9 18%,#e8bda9 82%,transparent);filter:blur(3px);transform:scaleY(.08);transform-origin:center}
+.myraa-blink-layer.is-blinking{opacity:.78;transform:scaleY(1);transition:transform .07s ease}
+.myraa-mouth-layer{position:absolute;z-index:3;left:47.5%;top:32.3%;width:5%;height:1.15%;border-radius:50%;background:#7c3b4b;opacity:0;transform:translateX(-50%) scaleY(.2);transform-origin:center;pointer-events:none}
+.myraa-stage.is-speaking .myraa-mouth-layer{opacity:.62;animation:myraa-lipsync .14s ease-in-out infinite alternate}
+@keyframes myraa-lipsync{from{transform:translateX(-50%) scaleY(.18)}to{transform:translateX(-50%) scaleY(1.35)}}
+.myraa-stage-caption{position:absolute;z-index:4;left:19px;bottom:18px;display:grid;gap:5px;max-width:min(78%,620px)}
+.myraa-stage-caption b{font:600 13px var(--display);letter-spacing:.22em;color:#f0f6ff}
+.myraa-stage-caption small{font:9px var(--mono);color:#a5b7cf;letter-spacing:.08em}
+.myraa-reply-preview{position:absolute;z-index:4;left:50%;bottom:76px;transform:translateX(-50%);width:min(88%,620px);padding:11px 14px;border:1px solid #c5d8ed20;border-radius:13px;background:#08111dcc;color:#e3efff;font-size:12px;line-height:1.5;text-align:center;backdrop-filter:blur(14px);overflow-wrap:anywhere}
+.myraa-speech-bars{position:absolute;z-index:4;right:19px;bottom:20px;display:flex;align-items:center;gap:3px;height:23px}
+.myraa-speech-bars i{width:3px;height:5px;border-radius:5px;background:var(--cyan);opacity:.6}
+.myraa-stage.is-speaking .myraa-speech-bars i{animation:myraa-bars .32s ease-in-out infinite alternate}
+.myraa-speech-bars i:nth-child(2n){animation-delay:.12s}.myraa-speech-bars i:nth-child(3n){animation-delay:.2s}
+@keyframes myraa-bars{to{height:21px;opacity:1}}
+.myraa-chat-panel{display:flex;flex-direction:column;min-width:0;min-height:570px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(155deg,#121d2d,#0b121f);padding:17px;box-shadow:0 22px 65px #0002}
+.myraa-chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.myraa-chat-head>div{display:grid;gap:4px;min-width:0}
+.myraa-chat-head b{font:600 15px var(--display);color:#edf5ff}
+.myraa-chat-head small{font:9px var(--mono);color:var(--muted);letter-spacing:.06em}
+.myraa-chat-head-actions{display:flex;align-items:center;gap:7px}
+.myraa-icon-button{width:39px;height:39px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#ffffff08;color:#b8cde7;font-size:17px}
+.myraa-icon-button.is-live{background:#40c6d31b;border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 18px #4bd6e533}
+.myraa-icon-button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.myraa-conversation{flex:1;min-height:0;overflow:auto;padding:15px 2px;display:flex;flex-direction:column;gap:10px;overscroll-behavior:contain}
+.myraa-conversation:empty:before{content:"Your conversation with MYRAA will appear here.";display:block;margin:auto;color:var(--muted);font-size:12px;text-align:center}
+.myraa-message{max-width:92%;padding:11px 13px;border:1px solid var(--line);border-radius:14px;background:#ffffff08;color:#dce8f7;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.myraa-message.user{align-self:flex-end;background:#367bb12b;border-color:#65a9ff30}
+.myraa-message.assistant{align-self:flex-start}
+.myraa-message small{display:block;color:var(--cyan);font:9px var(--mono);letter-spacing:.1em;margin-bottom:5px}
+.myraa-composer{display:flex;align-items:flex-end;gap:8px;padding:9px;border:1px solid #7ab9e733;border-radius:15px;background:#080f1b}
+.myraa-composer textarea{flex:1;min-width:0;min-height:43px;max-height:130px;resize:none;border:0;outline:0;background:transparent;color:var(--text);font-size:13px;line-height:1.5;padding:9px}
+.myraa-composer textarea::placeholder{color:#7f91a9}
+.myraa-composer button{flex:0 0 40px;width:40px;height:40px;border:0;border-radius:11px;background:linear-gradient(135deg,var(--blue),var(--cyan));color:#06111b;font-size:20px}
+.myraa-note{font-size:9px;line-height:1.5;color:var(--muted);margin:9px 2px 0}
+@media(max-width:900px){.myraa-layout{grid-template-columns:minmax(0,1fr) minmax(290px,.9fr);min-height:calc(100dvh - 205px);gap:12px}.myraa-stage,.myraa-chat-panel{min-height:480px}.myraa-chat-panel{padding:13px}}
+@media(max-width:680px){.myraa-heading{align-items:center;margin-bottom:11px}.myraa-heading p{font-size:10px}.myraa-heading h1{font-size:23px}.myraa-layout{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(220px,34dvh) minmax(270px,1fr);gap:10px;min-height:0;height:calc(100dvh - 185px)}.myraa-stage{min-height:220px;height:100%;border-radius:17px}.myraa-portrait{padding:25px 12px 25px;object-position:center 42%}.myraa-stage-topline{top:9px;left:10px;right:10px}.myraa-stage-topline span{padding:6px 8px;font-size:7px}.myraa-stage-caption{left:12px;bottom:10px}.myraa-stage-caption b{font-size:10px}.myraa-stage-caption small{font-size:7px}.myraa-reply-preview{bottom:47px;padding:7px 10px;font-size:10px;max-height:44px;overflow:auto}.myraa-speech-bars{right:12px;bottom:12px}.myraa-chat-panel{min-height:0;height:100%;padding:10px;border-radius:17px}.myraa-chat-head{padding-bottom:9px}.myraa-chat-head b{font-size:13px}.myraa-chat-head small{font-size:8px}.myraa-icon-button{width:35px;height:35px}.myraa-conversation{padding:9px 1px;gap:7px}.myraa-message{max-width:96%;padding:9px 11px;font-size:12px}.myraa-composer{padding:6px;gap:6px;border-radius:12px}.myraa-composer textarea{min-height:37px;font-size:13px;padding:6px}.myraa-composer button{width:35px;height:35px;flex-basis:35px}.myraa-note{font-size:8px;margin:5px 1px 0}.myraa-heading-actions button{width:33px;height:33px}}
+@media(max-width:380px){.myraa-heading-actions{gap:4px}.myraa-heading-actions button{width:30px;height:30px}.myraa-mode-tag{font-size:7px;padding:6px 7px}.myraa-layout{grid-template-rows:minmax(205px,31dvh) minmax(270px,1fr)}}
+@media(prefers-reduced-motion:reduce){.myraa-portrait,.myraa-stage.is-speaking .myraa-mouth-layer,.myraa-stage.is-speaking .myraa-speech-bars i{animation:none!important;transition:none!important}}
