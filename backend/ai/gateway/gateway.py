@@ -465,21 +465,28 @@ class AIGateway:
                 }
             except Exception as exc:
                 errors.append(candidate + " (" + chosen_model + "): " + str(exc))
-                # If the task-selected Gemini model is unavailable on this key,
-                # retry the fast stable model before falling back to another provider.
-                if (provider == "auto" and candidate == "gemini" and
-                        model == "auto" and chosen_model != "gemini-3.8-flash"):
+                # When Gemini is temporarily overloaded, switch to the
+                # lighter Flash-Lite model before trying another provider.
+                # Only automatic model selection may change models; explicit
+                # user-selected model IDs remain authoritative.
+                if (candidate == "gemini" and model == "auto" and
+                        chosen_model != "gemini-3.5-flash-lite"):
                     try:
-                        fallback_model = "gemini-3.8-flash"
-                        fallback_answer = self._gemini(fallback_model, key, message, history, system_prompt=system_prompt)
+                        fallback_model = "gemini-3.5-flash-lite"
+                        fallback_answer = self._gemini(
+                            fallback_model, key, message, history,
+                            system_prompt=system_prompt
+                        )
                         return {
                             "success": True, "provider": "gemini",
                             "model": fallback_model, "message": fallback_answer,
                             "type": "response", "verified": True,
                         }
                     except Exception as fallback_exc:
-                        errors.append("gemini (" + fallback_model + "): " + str(fallback_exc))
-                # In automatic mode, try the next configured provider.
+                        errors.append(
+                            "gemini (" + fallback_model + "): " + str(fallback_exc)
+                        )
+                # In automatic provider mode, continue to the next configured provider.
                 if provider != "auto":
                     break
 
