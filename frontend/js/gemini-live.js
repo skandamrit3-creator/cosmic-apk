@@ -494,6 +494,9 @@
     if (state.fallbackMode) return;
     state.fallbackMode = true;
     state.desired = true;
+    state.generation++;
+    if (state.reconnectTimer) clearTimeout(state.reconnectTimer);
+    state.reconnectTimer = 0;
     state.nativeMode = false;
     state.connected = false;
     state.connecting = true;
@@ -578,6 +581,7 @@
   async function stopFallback() {
     state.fallbackMode = false;
     state.desired = false;
+    localStorage.setItem("COSMIC_LIVE_AUTO", "false");
     state.connected = false;
     state.connecting = false;
     state.fallbackBusy = false;
