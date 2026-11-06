@@ -25,12 +25,13 @@
       orb.setAttribute("aria-label", state.desired ? "Stop COSMIC Live voice" : "Start COSMIC Live voice");
       orb.title = state.desired ? "Stop live conversation" : "Start live conversation";
     }
-    if (shareButton) { shareButton.disabled = !state.connected && !state.sharing; shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); shareButton.textContent = state.sharing ? "■" : "▣"; }
+    if (shareButton) { shareButton.disabled = state.fallbackMode || (!state.connected && !state.sharing); shareButton.classList.toggle("is-sharing", !!state.sharing); shareButton.setAttribute("aria-label", state.sharing ? "Stop screen sharing" : "Share screen"); shareButton.textContent = state.sharing ? "■" : "▣"; }
     if (bubbleButton) bubbleButton.hidden = !state.nativeMode || state.bubbleActive;
-    if (cameraButton) { cameraButton.disabled=!state.connected&&!state.cameraStream; cameraButton.classList.toggle("is-sharing",!!state.cameraStream); cameraButton.textContent=state.cameraStream?"●":"⌖"; cameraButton.setAttribute("aria-label",state.cameraStream?"Stop camera":"Share camera with COSMIC"); }
+    if (cameraButton) { cameraButton.disabled=state.fallbackMode||(!state.connected&&!state.cameraStream); cameraButton.classList.toggle("is-sharing",!!state.cameraStream); cameraButton.textContent=state.cameraStream?"●":"⌖"; cameraButton.setAttribute("aria-label",state.cameraStream?"Stop camera":"Share camera with COSMIC"); }
   }
 
   async function startCamera() {
+    if(state.fallbackMode){setStatus("CAMERA SHARING REQUIRES GEMINI LIVE","paused");return;}
     if(!state.connected){setStatus("START GEMINI LIVE BEFORE SHARING CAMERA","idle");return;}
     if(!navigator.mediaDevices?.getUserMedia){setStatus("CAMERA ACCESS IS NOT AVAILABLE IN THIS WEBVIEW","error");return;}
     try{
@@ -917,6 +918,7 @@
   }
 
   async function startScreenShare() {
+    if (state.fallbackMode) { setStatus("SCREEN SHARING REQUIRES GEMINI LIVE", "paused"); return; }
     if (!state.connected) { setStatus("START LIVE VOICE BEFORE SHARING", "paused"); return; }
     if (state.nativeMode) {
       const nativeVoice = window.Capacitor?.Plugins?.CosmicVoice;
