@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "sync:android": "npx cap sync android",
+    "build:debug": "npm run sync:android && cd android && ./gradlew assembleDebug",
+    "build:release": "npm run sync:android && cd android && ./gradlew assembleRelease"
   },
   "keywords": [],
   "author": "",
