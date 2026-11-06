@@ -437,7 +437,7 @@ class AIGateway:
                 "needs_setup": True,
                 "error": "No API key is configured for the selected provider(s): "
                     + ", ".join(candidates)
-                    + ". Open COSMIC → API SETUP, add your Gemini API key, and tap SAVE API KEYS. Model names and quota counters are not API credentials.",
+                    + ". Open COSMIC → API SETUP and add a free-tier Gemini, Groq, or OpenRouter API key. For reliable automatic fallback, configure Groq and OpenRouter too. Tap SAVE MODEL PROVIDER KEYS.",
             }
 
         errors = []
