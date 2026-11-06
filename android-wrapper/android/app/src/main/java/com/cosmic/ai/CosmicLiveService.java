@@ -725,10 +725,10 @@ public class CosmicLiveService extends Service {
                 String detail = String.valueOf(error.getMessage());
                 if (detail.contains("HTTP 400") || detail.contains("HTTP 401") ||
                         detail.contains("HTTP 403") || detail.contains("HTTP 404")) throw error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } catch (java.io.IOException error) {
                 lastError = error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } finally {
                 if (connection != null) connection.disconnect();
             }
