@@ -1,0 +1,36 @@
+/* MYRAA 2D full-screen composition based on the supplied mobile reference. */
+body.myraa-fullscreen-mode{overflow:hidden;background:#080410}
+body.myraa-fullscreen-mode .app-header{display:none!important}
+body.myraa-fullscreen-mode .workspace{height:100dvh;min-height:100dvh;padding:0!important;margin:0;overflow:hidden}
+body.myraa-fullscreen-mode .characters-view{display:block!important;width:100%;height:100dvh;min-height:100dvh;margin:0;padding:0;overflow:hidden}
+.myraa-reference-screen{--myraa-cyan:#28d7ef;position:relative;width:100%;height:100dvh;min-height:100dvh;overflow:hidden;background:radial-gradient(ellipse at 52% 35%,#160d27 0,#090411 62%,#05030a 100%);color:#f8f4ff}
+.myraa-reference-header{position:absolute;z-index:12;top:0;left:0;right:0;height:54px;padding:0 4.2%;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(7,3,13,.76),transparent)}
+.myraa-wordmark{font:600 17px/1.0 system-ui,sans-serif;letter-spacing:.42em;color:#e9e3f1;display:flex;align-items:center;gap:14px}
+.myraa-wordmark i{width:9px;height:9px;border-radius:50%;background:var(--myraa-cyan);box-shadow:0 0 15px #22d9f4}
+.myraa-reference-actions{display:flex;align-items:center;gap:clamp(12px,3vw,27px)}
+.myraa-reference-actions button{border:0;background:transparent;color:#b9b3c6;font-size:clamp(17px,4vw,23px);padding:5px;line-height:1;opacity:.9}
+.myraa-reference-actions button:active{color:var(--myraa-cyan)}
+.myraa-reference-stage{position:absolute;inset:0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#180d2b 0,#0b0615 60%,#05030a 100%)}
+.myraa-reference-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 34%;filter:saturate(.94);animation:myraa-idle-breathe 5.5s ease-in-out infinite;transform-origin:50% 56%}
+.myraa-reference-stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(6,3,12,.28),transparent 17%,transparent 67%,rgba(6,3,12,.24) 100%),linear-gradient(90deg,rgba(5,3,10,.14),transparent 20%,transparent 80%,rgba(5,3,10,.14))}
+@keyframes myraa-idle-breathe{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.008) translateY(-2px)}}
+.myraa-blink-layer{position:absolute;z-index:3;left:34%;top:25.4%;width:32%;height:2.2%;opacity:0;pointer-events:none;border-radius:50%;background:linear-gradient(90deg,transparent,#e8bda9 18%,#e8bda9 82%,transparent);filter:blur(3px);transform:scaleY(.08);transform-origin:center}
+.myraa-blink-layer.is-blinking{opacity:.78;transform:scaleY(1);transition:transform .07s ease}
+.myraa-mouth-layer{position:absolute;z-index:3;left:47.5%;top:32.3%;width:5%;height:1.15%;border-radius:50%;background:#7c3b4b;opacity:0;transform:translateX(-50%) scaleY(.2);transform-origin:center;pointer-events:none}
+.myraa-reference-stage.is-speaking .myraa-mouth-layer{opacity:.62;animation:myraa-lipsync .14s ease-in-out infinite alternate}
+@keyframes myraa-lipsync{from{transform:translateX(-50%) scaleY(.18)}to{transform:translateX(-50%) scaleY(1.35)}}
+.myraa-greeting{position:absolute;z-index:5;left:50%;bottom:18.2%;transform:translateX(-50%);width:min(82%,520px);text-align:center;color:#65e7f7;font:600 clamp(15px,4vw,22px)/1.35 ui-monospace,monospace;text-shadow:0 0 13px #28cde9a8;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.myraa-greeting:before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;background:#16b9d5;margin:0 13px 1px 0}
+.myraa-status-dot{position:absolute;z-index:5;left:50%;bottom:15.4%;width:5px;height:5px;border-radius:50%;background:#23cce5;opacity:.45}
+.myraa-reference-composer{position:absolute;z-index:10;left:4%;right:4%;bottom:0;height:25%;display:flex;align-items:center;flex-direction:column;pointer-events:none}
+.myraa-reference-input{pointer-events:auto;position:absolute;top:4%;left:0;right:0;min-height:74px;height:34%;display:flex;align-items:center;gap:8px;padding:8px 10px 8px 22px;border:1px solid rgba(255,255,255,.10);border-radius:25px;background:rgba(37,29,37,.88);box-shadow:0 10px 35px #0007,inset 0 1px #ffffff12;backdrop-filter:blur(18px)}
+.myraa-reference-input textarea{flex:1;min-width:0;max-height:72px;resize:none;border:0;outline:0;background:transparent;color:#f5edf7;font:400 clamp(14px,3.6vw,20px) system-ui,sans-serif;padding:9px 0}
+.myraa-reference-input textarea::placeholder{color:#a69ba8;opacity:1}
+.myraa-reference-input button{flex:0 0 66px;width:66px;height:56px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(13,14,22,.35);color:#a9eaf4;font-size:25px}
+.myraa-reference-mic{pointer-events:auto;position:absolute;top:57%;left:50%;transform:translateX(-50%);width:clamp(76px,18vw,104px);height:clamp(76px,18vw,104px);border:1px solid rgba(41,212,237,.65);border-radius:50%;background:rgba(12,29,43,.72);color:#a9eff8;box-shadow:0 0 22px #24cbe733,inset 0 0 18px #24cbe71a;backdrop-filter:blur(12px);font-size:35px;display:grid;place-items:center}
+.myraa-reference-mic span{display:block;transform:rotate(180deg);font-size:34px}
+.myraa-reference-mic.is-live{background:rgba(19,92,109,.78);box-shadow:0 0 32px #24d9f399,inset 0 0 20px #24d9f344;animation:myraa-mic-pulse 1.5s ease-in-out infinite}
+@keyframes myraa-mic-pulse{50%{box-shadow:0 0 38px #24d9f399,inset 0 0 25px #24d9f355}}
+@media(max-width:600px){.myraa-reference-header{height:48px;padding:0 4.2%}.myraa-wordmark{font-size:15px;letter-spacing:.36em}.myraa-reference-actions{gap:13px}.myraa-reference-art{object-position:center 32%}.myraa-reference-composer{left:4%;right:4%;height:24.5%}.myraa-reference-input{top:2%;height:36%;min-height:66px;border-radius:23px;padding-left:18px}.myraa-reference-input button{flex-basis:58px;width:58px;height:52px}.myraa-reference-mic{top:57%;width:88px;height:88px}.myraa-greeting{bottom:18.5%}.myraa-blink-layer{top:25.2%;height:2%}.myraa-mouth-layer{top:32.4%}}
+@media(min-width:700px){.myraa-reference-art{object-fit:contain}.myraa-reference-input{max-width:900px;left:50%;right:auto;width:min(92%,900px);transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){.myraa-reference-art,.myraa-reference-mic.is-live,.myraa-reference-stage.is-speaking .myraa-mouth-layer{animation:none!important}}
