@@ -18,6 +18,9 @@ import android.os.Bundle;
 import android.os.Build;
 import android.os.Environment;
 import android.speech.tts.TextToSpeech;
+import android.speech.SpeechRecognizer;
+import android.speech.RecognizerIntent;
+import android.speech.RecognitionListener;
 import android.view.accessibility.AccessibilityManager;
 import android.provider.Settings;
 import android.content.Context;
@@ -38,6 +41,7 @@ import java.util.*;
  strings = {Manifest.permission.CAMERA})})
 public class CosmicVoicePlugin extends Plugin {
     private TextToSpeech tts;
+    private SpeechRecognizer fallbackRecognizer;
     private BroadcastReceiver liveReceiver;
     private long lastCpuTotal = -1L;
     private long lastCpuIdle = -1L;
@@ -189,6 +193,14 @@ public class CosmicVoicePlugin extends Plugin {
             }
             String persona = call.getString("persona", "");
             if (persona != null && persona.length() > 1200) persona = persona.substring(0, 1200);
+            String backendUrl = call.getString("backendUrl", "http://127.0.0.1:8059");
+            backendUrl = backendUrl == null ? "" : backendUrl.trim().replaceAll("/+$", "");
+            Uri backendUri = Uri.parse(backendUrl);
+            if (backendUri.getHost() == null ||
+                    !("http".equalsIgnoreCase(backendUri.getScheme()) || "https".equalsIgnoreCase(backendUri.getScheme()))) {
+                call.reject("COSMIC backend URL must be a valid HTTP or HTTPS address.");
+                return;
+            }
             String voice = call.getString("voice", "Kore");
             if (!Arrays.asList("Kore", "Aoede", "Puck", "Charon", "Fenrir", "Leda", "Orus", "Zephyr").contains(voice)) {
                 voice = "Kore";
@@ -198,6 +210,7 @@ public class CosmicVoicePlugin extends Plugin {
                     .putString("live_model", model)
                     .putString("live_voice", voice)
                     .putString("live_persona", persona == null ? "" : persona)
+                    .putString("backend_url", backendUrl)
                     .apply();
             boolean alreadyRunning = CosmicLiveService.isRunning();
             Intent intent = new Intent(getContext(), CosmicLiveService.class);
@@ -205,6 +218,7 @@ public class CosmicVoicePlugin extends Plugin {
             intent.putExtra("live_model", model);
             intent.putExtra("live_voice", voice);
             intent.putExtra("live_persona", persona == null ? "" : persona);
+            intent.putExtra("backend_url", backendUrl);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
             else getContext().startService(intent);
             call.resolve(new JSObject().put("success", true).put("alreadyRunning", alreadyRunning)
@@ -231,6 +245,91 @@ public class CosmicVoicePlugin extends Plugin {
             }, 1200);
         } catch (Exception e) {
             call.reject("Could not stop Gemini Live: " + e.getMessage());
+        }
+    }
+
+
+    @PluginMethod
+    public void startFallbackRecognition(PluginCall call) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "fallbackMicPermission");
+            return;
+        }
+        startFallbackRecognitionInternal(call);
+    }
+
+    @PermissionCallback
+    private void fallbackMicPermission(PluginCall call) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) startFallbackRecognitionInternal(call);
+        else call.reject("Microphone permission is required for free voice recognition.");
+    }
+
+    private void startFallbackRecognitionInternal(PluginCall call) {
+        String language = call.getString("language", "en-IN");
+        getActivity().runOnUiThread(() -> {
+            try {
+                if (!SpeechRecognizer.isRecognitionAvailable(getContext())) {
+                    call.reject("Android speech recognition service is not installed or available.");
+                    return;
+                }
+                stopFallbackRecognitionInternal();
+                boolean onDevice = Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(getContext());
+                fallbackRecognizer = (Build.VERSION.SDK_INT >= 31 && onDevice)
+                        ? SpeechRecognizer.createOnDeviceSpeechRecognizer(getContext())
+                        : SpeechRecognizer.createSpeechRecognizer(getContext());
+                fallbackRecognizer.setRecognitionListener(new RecognitionListener() {
+                    @Override public void onReadyForSpeech(Bundle params) {}
+                    @Override public void onBeginningOfSpeech() {}
+                    @Override public void onRmsChanged(float rmsdB) {}
+                    @Override public void onBufferReceived(byte[] buffer) {}
+                    @Override public void onEndOfSpeech() {}
+                    @Override public void onError(int error) {
+                        notifyListeners("liveEvent", new JSObject().put("type", "fallback_error")
+                                .put("message", "Android speech recognition error " + error));
+                    }
+                    @Override public void onResults(Bundle results) {
+                        ArrayList<String> matches = results == null ? null : results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        String transcript = matches == null || matches.isEmpty() ? "" : matches.get(0);
+                        if (!transcript.trim().isEmpty()) {
+                            notifyListeners("liveEvent", new JSObject().put("type", "fallback_transcript")
+                                    .put("message", transcript.trim()));
+                        }
+                    }
+                    @Override public void onPartialResults(Bundle partialResults) {}
+                    @Override public void onEvent(int eventType, Bundle params) {}
+                });
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, language);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, language);
+                intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+                fallbackRecognizer.startListening(intent);
+                call.resolve(new JSObject().put("success", true).put("on_device", onDevice).put("language", language));
+            } catch (Exception error) {
+                stopFallbackRecognitionInternal();
+                call.reject("Could not start free speech recognition: " + error.getMessage());
+            }
+        });
+    }
+
+    @PluginMethod
+    public void stopFallbackRecognition(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            stopFallbackRecognitionInternal();
+            call.resolve(new JSObject().put("success", true));
+        });
+    }
+
+    private void stopFallbackRecognitionInternal() {
+        try {
+            if (fallbackRecognizer != null) {
+                fallbackRecognizer.cancel();
+                fallbackRecognizer.destroy();
+                fallbackRecognizer = null;
+            }
+        } catch (Exception ignored) {
+            fallbackRecognizer = null;
         }
     }
 
