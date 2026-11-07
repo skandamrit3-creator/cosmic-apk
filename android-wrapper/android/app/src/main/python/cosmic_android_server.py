@@ -7,7 +7,7 @@ from werkzeug.serving import make_server
 _server = None
 _thread = None
 _lock = threading.RLock()
-PORT = 8160
+PORT = 8059
 
 
 def start_server(data_dir):
