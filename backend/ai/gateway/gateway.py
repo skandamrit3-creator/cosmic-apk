@@ -36,7 +36,8 @@ CATALOG = {
         ("open-mistral-nemo", "Mistral Nemo"),
     ],
     "openrouter": [
-        ("openrouter/auto", "OpenRouter Auto"),
+        ("openrouter/free", "OpenRouter · Free model auto-router"),
+        ("openrouter/auto", "OpenRouter Auto · may use paid models"),
         ("meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B Free (if available)"),
         ("deepseek/deepseek-r1:free", "DeepSeek R1 Free (if available)"),
     ],
@@ -66,12 +67,12 @@ CONFIG = {
     "openrouter": {
         "key": "OPENROUTER_API_KEY",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "default": "openrouter/auto",
+        "default": "openrouter/free",
     },
 }
 
 
-AUTO_ORDER = ("gemini", "openai", "groq", "mistral", "openrouter")
+AUTO_ORDER = ("gemini", "groq", "openrouter")
 
 
 def _provider_key_file():
@@ -436,7 +437,7 @@ class AIGateway:
                 "needs_setup": True,
                 "error": "No API key is configured for the selected provider(s): "
                     + ", ".join(candidates)
-                    + ". Open COSMIC → API SETUP, add your Gemini API key, and tap SAVE API KEYS. Model names and quota counters are not API credentials.",
+                    + ". Open COSMIC → API SETUP and add a free-tier Gemini, Groq, or OpenRouter API key. For reliable automatic fallback, configure Groq and OpenRouter too. Tap SAVE MODEL PROVIDER KEYS.",
             }
 
         errors = []

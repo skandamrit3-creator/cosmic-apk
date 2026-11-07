@@ -87,6 +87,7 @@ public class CosmicLiveService extends Service {
     private volatile String liveModel = "gemini-3.8-live";
     private volatile String liveVoice = "Kore";
     private volatile String livePersona = "";
+    private volatile String backendUrl = "http://127.0.0.1:8059";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -151,6 +152,11 @@ public class CosmicLiveService extends Service {
 
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_START.equals(intent.getAction())) {
+            String requestedBackend = intent.getStringExtra("backend_url");
+            if (requestedBackend != null && !requestedBackend.trim().isEmpty()) {
+                backendUrl = requestedBackend.trim().replaceAll("/+$", "");
+                getSharedPreferences("cosmic_live", MODE_PRIVATE).edit().putString("backend_url", backendUrl).apply();
+            }
             String requestedModel = intent.getStringExtra("live_model");
             String requestedVoice = intent.getStringExtra("live_voice");
             boolean changed = false;
@@ -231,6 +237,7 @@ public class CosmicLiveService extends Service {
             liveModel = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_model", liveModel);
             liveVoice = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_voice", liveVoice);
             livePersona = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("live_persona", livePersona);
+            backendUrl = getSharedPreferences("cosmic_live", MODE_PRIVATE).getString("backend_url", backendUrl);
             showFloatingBubble();
             prepareAudio();
             client = new OkHttpClient.Builder()
@@ -377,7 +384,18 @@ public class CosmicLiveService extends Service {
                                 }
                                 if (server.optBoolean("turnComplete", false)) { emit("audio_end", ""); emit("turn_complete", ""); }
                             }
-                            if (root.has("error")) emit("error", root.optJSONObject("error").toString());
+                            if (root.has("error")) {
+                                JSONObject apiError = root.optJSONObject("error");
+                                String code = apiError == null ? "" : apiError.optString("code", "");
+                                String detail = apiError == null ? root.optString("error", "Unknown server error")
+                                        : apiError.optString("message", apiError.toString());
+                                setupFailed.set(true);
+                                ready.set(false);
+                                configured.countDown();
+                                emit("error", "Gemini Live API error" + (code.isEmpty() ? "" : " HTTP " + code) + ": " + detail);
+                                webSocket.close(1011, "Gemini Live API error");
+                                return;
+                            }
                         } catch (Exception e) {
                             Log.w(TAG, "Could not parse Live message", e);
                         }
@@ -386,7 +404,10 @@ public class CosmicLiveService extends Service {
                     @Override public void onFailure(WebSocket webSocket, Throwable t, Response response) {
                         ready.set(false);
                         configured.countDown();
-                        emit("state", "RECONNECTING · " + (t.getMessage() == null ? "connection lost" : t.getMessage()));
+                        String detail = response != null
+                                ? "HTTP " + response.code() + " " + response.message()
+                                : (t.getMessage() == null ? "network connection lost" : t.getMessage());
+                        emit("error", "Gemini Live WebSocket failed: " + detail);
                     }
 
                     @Override public void onClosed(WebSocket webSocket, int code, String reason) {
@@ -643,7 +664,7 @@ public class CosmicLiveService extends Service {
     private String requestMemoryContext() {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL("http://127.0.0.1:8059/api/memory/context").openConnection();
+            connection = (HttpURLConnection) new URL(backendUrl + "/api/memory/context").openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(2500);
             connection.setReadTimeout(2500);
@@ -667,10 +688,10 @@ public class CosmicLiveService extends Service {
 
     private String requestLiveToken() throws Exception {
         Exception lastError = null;
-        for (int attempt = 0; attempt < 6; attempt++) {
+        for (int attempt = 0; attempt < 3; attempt++) {
             HttpURLConnection connection = null;
             try {
-                connection = (HttpURLConnection) new URL("http://127.0.0.1:8059/api/ai/live-token").openConnection();
+                connection = (HttpURLConnection) new URL(backendUrl + "/api/ai/live-token").openConnection();
                 connection.setRequestMethod("POST");
                 connection.setConnectTimeout(7000);
                 connection.setReadTimeout(15000);
@@ -698,21 +719,22 @@ public class CosmicLiveService extends Service {
                 return token;
             } catch (java.net.ConnectException | java.net.SocketTimeoutException error) {
                 lastError = error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } catch (IllegalStateException error) {
                 lastError = error;
                 String detail = String.valueOf(error.getMessage());
                 if (detail.contains("HTTP 400") || detail.contains("HTTP 401") ||
                         detail.contains("HTTP 403") || detail.contains("HTTP 404")) throw error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } catch (java.io.IOException error) {
                 lastError = error;
-                if (attempt < 5) Thread.sleep(Math.min(8000, 1000L * (attempt + 1)));
+                if (attempt < 2) Thread.sleep(500L * (attempt + 1));
             } finally {
                 if (connection != null) connection.disconnect();
             }
         }
-        throw new IllegalStateException("COSMIC local AI backend is not ready for Gemini Live.", lastError);
+        throw new IllegalStateException("Gemini Live token failed after 3 quick attempts: " +
+                (lastError == null ? "unknown error" : String.valueOf(lastError.getMessage())), lastError);
     }
 
     private void stopLive() {
