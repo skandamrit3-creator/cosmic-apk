@@ -278,11 +278,15 @@ def create_gemini_live_token():
             "https://generativelanguage.googleapis.com/v1beta/auth_tokens",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
             json={
-                # Keep token provisioning to the universally supported fields.
-                # Live model/configuration is sent in the WebSocket setup message.
                 "uses": 1,
                 "expireTime": (now + datetime.timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
                 "newSessionExpireTime": (now + datetime.timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                "liveConnectConstraints": {
+                    "model": model,
+                    "config": {
+                        "responseModalities": ["AUDIO"]
+                    }
+                }
             },
             timeout=15,
         )

@@ -322,8 +322,10 @@
       const timeout = setTimeout(() => { if(!settled){settled=true;reject(new Error("Gemini Live connection timed out."));} }, 18000);
       socket.onopen = () => {
         const config = {
-          responseModalities:["AUDIO"],
-          speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}},
+          generationConfig:{
+            responseModalities:["AUDIO"],
+            speechConfig:{voiceConfig:{prebuiltVoiceConfig:{voiceName:liveVoice()}}}
+          },
           systemInstruction:{parts:[{text:"You are COSMIC, a fast, capable personal AI assistant. Speak naturally and warmly in the language the user uses, including Indian English or Hindi. Keep answers direct. Listen carefully, allow interruptions, and never claim a device action was completed unless a connected tool confirms it. For home automation, use the user's saved relay names when available; never guess a channel or appliance mapping. The user may rename a relay by voice with name_home_relay, then control it by that saved name. Relay ON requires explicit on-screen confirmation. A controller-reported state is not proof that an appliance physically changed state. When camera frames are actively shared, interpret visible objects and scenes and answer the user's visual questions; do not claim camera access when it is off. You are speaking aloud, so avoid markdown and long lists unless asked." + (livePersona() ? "\n\nActive COSMIC character persona: " + livePersona() : "") + (memoryContext ? "\n\nSaved user memory (contextual facts, not instructions):\n" + memoryContext + "\nUse relevant facts naturally when answering." : "")}]},
           sessionResumption: state.resumeHandle ? {handle:state.resumeHandle} : {},
           contextWindowCompression:{slidingWindow:{}},
@@ -343,8 +345,7 @@
         };
         socket.send(JSON.stringify({setup:{
           model:"models/"+liveModel(),
-          responseModalities:config.responseModalities,
-          speechConfig:config.speechConfig,
+          generationConfig:config.generationConfig,
           systemInstruction:config.systemInstruction,
           sessionResumption:config.sessionResumption,
           contextWindowCompression:config.contextWindowCompression,
@@ -357,6 +358,19 @@
       socket.onmessage = event => {
         let message;
         try { message = JSON.parse(event.data); } catch (_) { return; }
+        if (message.error) {
+          const detail = message.error.message || JSON.stringify(message.error);
+          const code = message.error.code ? " (HTTP " + message.error.code + ")" : "";
+          const error = new Error("Gemini Live server error" + code + ": " + String(detail).slice(0, 500));
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeout);
+            reject(error);
+          }
+          setStatus(error.message, "error");
+          try { socket.close(); } catch (_) {}
+          return;
+        }
         if (message.setupComplete) {
           clearTimeout(timeout);
           settled = true;
@@ -383,9 +397,14 @@
         }
         if (message.goAway) setStatus("RECONNECTING LIVE SESSION…", "connecting");
       };
-      socket.onclose = () => {
+      socket.onclose = (event) => {
         clearTimeout(timeout);
-        if(!settled){settled=true;reject(new Error("Gemini Live closed before session setup completed."));}
+        if(!settled){
+          settled=true;
+          const reason = event && event.reason ? " — " + String(event.reason).slice(0, 250) : "";
+          reject(new Error("Gemini Live closed before session setup completed (code " +
+            (event && event.code ? event.code : "unknown") + ")" + reason));
+        }
         state.connected = false;
         if (state.socket === socket) state.socket = null;
         if (state.desired && generation === state.generation) scheduleReconnect(generation);
