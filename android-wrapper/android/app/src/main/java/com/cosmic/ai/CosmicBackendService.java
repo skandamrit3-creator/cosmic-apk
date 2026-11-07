@@ -61,7 +61,11 @@ public class CosmicBackendService extends Service {
             updateNotification("Backend running at 127.0.0.1:" + BACKEND_PORT);
         } catch (Throwable error) {
             Log.e(TAG, "Could not start embedded Python backend", error);
-            updateNotification("Backend failed to start — open COSMIC to retry");
+            String detail = error.getMessage();
+            if (detail == null || detail.trim().isEmpty()) detail = error.getClass().getSimpleName();
+            detail = detail.replace('\n', ' ').replace('\r', ' ').trim();
+            if (detail.length() > 110) detail = detail.substring(0, 110) + "…";
+            updateNotification("Backend startup error: " + detail);
         }
     }
 
