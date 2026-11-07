@@ -225,17 +225,17 @@ jobs:
 
       - name: Prepare release APK and update metadata
         env:
-          VERSION_CODE: '16'
-          VERSION_NAME: '2.9.6'
+          VERSION_CODE: '17'
+          VERSION_NAME: '2.9.7'
           REPOSITORY: ${{ github.repository }}
-          RELEASE_TAG: v2.9.6
+          RELEASE_TAG: v2.9.7
         run: |
           mkdir -p release
           if [ "$GITHUB_REF" != "refs/heads/feature/complete-cosmic-systems" ] && [ "$GITHUB_REF" != "refs/heads/feature/myraa-2d-reference-apk" ]; then
-            cp android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk release/COSMIC-2.9.6-debug.apk
+            cp android-wrapper/android/app/build/outputs/apk/debug/app-debug.apk release/COSMIC-2.9.7-debug.apk
           else
-            cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.6.apk
-            APK_SHA256="$(sha256sum release/COSMIC-2.9.6.apk | awk '{print $1}')"
+            cp android-wrapper/android/app/build/outputs/apk/release/app-release.apk release/COSMIC-2.9.7.apk
+            APK_SHA256="$(sha256sum release/COSMIC-2.9.7.apk | awk '{print $1}')"
             export APK_SHA256
             python -c 'import json, os; version=os.environ["VERSION_NAME"]; data={"app":"COSMIC","package":"com.cosmic.ai","versionCode":int(os.environ["VERSION_CODE"]),"versionName":version,"minSdk":24,"apk":"https://github.com/"+os.environ["REPOSITORY"]+"/releases/download/"+os.environ["RELEASE_TAG"]+"/COSMIC-"+version+".apk","sha256":os.environ["APK_SHA256"]}; open("release/latest.json","w").write(json.dumps(data,indent=2))'
           fi
@@ -255,12 +255,12 @@ jobs:
         if: github.event_name == 'push' && (github.ref == 'refs/heads/feature/complete-cosmic-systems' || github.ref == 'refs/heads/feature/myraa-2d-reference-apk')
         uses: softprops/action-gh-release@v2
         with:
-          name: COSMIC 2.9.6
-          tag_name: v2.9.6
+          name: COSMIC 2.9.7
+          tag_name: v2.9.7
           target_commitish: feature/myraa-2d-reference-apk
           generate_release_notes: true
           files: |
-            release/COSMIC-2.9.6.apk
+            release/COSMIC-2.9.7.apk
             release/latest.json
 
       - name: Remove previous COSMIC 2.9.5 release after new APK publication
@@ -270,17 +270,17 @@ jobs:
           script: |
             const { owner, repo } = context.repo;
             try {
-              const previous = await github.rest.repos.getReleaseByTag({ owner, repo, tag: "v2.9.5" });
+              const previous = await github.rest.repos.getReleaseByTag({ owner, repo, tag: "v2.9.6" });
               await github.rest.repos.deleteRelease({ owner, repo, release_id: previous.data.id });
-              core.info("Deleted superseded COSMIC 2.9.4 release after COSMIC 2.9.6 was published.");
+              core.info("Deleted superseded COSMIC 2.9.6 release after COSMIC 2.9.7 was published.");
             } catch (error) {
-              if (error.status === 404) core.info("No previous v2.9.5 release found; nothing to remove.");
+              if (error.status === 404) core.info("No previous v2.9.6 release found; nothing to remove.");
               else throw error;
             }
             try {
-              await github.rest.git.deleteRef({ owner, repo, ref: "tags/v2.9.5" });
-              core.info("Deleted superseded v2.9.5 tag.");
+              await github.rest.git.deleteRef({ owner, repo, ref: "tags/v2.9.6" });
+              core.info("Deleted superseded v2.9.6 tag.");
             } catch (error) {
-              if (error.status === 404) core.info("No v2.9.5 tag found.");
+              if (error.status === 404) core.info("No v2.9.6 tag found.");
               else throw error;
             }
