@@ -193,7 +193,7 @@ public class CosmicVoicePlugin extends Plugin {
             }
             String persona = call.getString("persona", "");
             if (persona != null && persona.length() > 1200) persona = persona.substring(0, 1200);
-            String backendUrl = call.getString("backendUrl", "http://127.0.0.1:8059");
+            String backendUrl = call.getString("backendUrl", "http://127.0.0.1:8160");
             backendUrl = backendUrl == null ? "" : backendUrl.trim().replaceAll("/+$", "");
             Uri backendUri = Uri.parse(backendUrl);
             if (backendUri.getHost() == null ||
