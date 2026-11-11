@@ -5,7 +5,7 @@ const saved=load();
 export const state={
  mode:"reactor",sessionId:saved.sessionId||newSession(),messages:Array.isArray(saved.messages)?saved.messages:[],
  provider:saved.provider||"auto",model:saved.model||"auto",routing:saved.routing||"auto",
- backendUrl:(saved.backendUrl||"").replace(/^http:\/\/127\.0\.0\.1:8059\/?$/,"http://127.0.0.1:8160"),connection:"checking",latency:null,telemetry:null,busy:false
+ backendUrl:(saved.backendUrl||"").replace(/^http:\/\/127\.0\.0\.1:8160\/?$/,"http://127.0.0.1:8059"),connection:"checking",latency:null,telemetry:null,busy:false
 };
 const listeners=new Set();
 export function update(patch){Object.assign(state,patch);try{localStorage.setItem(STORAGE_KEY,JSON.stringify({sessionId:state.sessionId,messages:state.messages,provider:state.provider,model:state.model,routing:state.routing,backendUrl:state.backendUrl}));}catch(_){};listeners.forEach(fn=>fn(state));}
