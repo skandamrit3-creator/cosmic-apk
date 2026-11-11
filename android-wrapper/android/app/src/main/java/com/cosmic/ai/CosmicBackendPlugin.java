@@ -15,7 +15,7 @@ public class CosmicBackendPlugin extends Plugin {
             intent.setAction(CosmicBackendService.ACTION_START);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) getContext().startForegroundService(intent);
             else getContext().startService(intent);
-            call.resolve(new JSObject().put("success", true).put("url", "http://127.0.0.1:8059"));
+            call.resolve(new JSObject().put("success", true).put("url", "http://127.0.0.1:8160"));
         } catch (Exception error) {
             call.reject("Could not start COSMIC backend service: " + error.getMessage());
         }
