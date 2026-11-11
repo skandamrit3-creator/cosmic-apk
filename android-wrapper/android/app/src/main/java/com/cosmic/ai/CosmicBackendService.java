@@ -18,7 +18,7 @@ import com.chaquo.python.android.AndroidPlatform;
 public class CosmicBackendService extends Service {
     public static final String ACTION_START = "com.cosmic.ai.backend.START";
     public static final String ACTION_STOP = "com.cosmic.ai.backend.STOP";
-    public static final int BACKEND_PORT = 8059;
+    public static final int BACKEND_PORT = 8160;
     private static final String TAG = "COSMICBackend";
     private static final String CHANNEL_ID = "cosmic_backend";
     private static final int NOTIFICATION_ID = 8059;
