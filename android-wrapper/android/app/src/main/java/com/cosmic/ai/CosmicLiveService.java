@@ -144,6 +144,10 @@ public class CosmicLiveService extends Service {
         // Restore the saved backend address before a background voice auto-resume.
         android.content.SharedPreferences saved = getSharedPreferences("cosmic_live", MODE_PRIVATE);
         String savedBackend = saved.getString("backend_url", "http://127.0.0.1:8160");
+        if ("http://127.0.0.1:8059".equals(savedBackend)) {
+            savedBackend = "http://127.0.0.1:8160";
+            saved.edit().putString("backend_url", savedBackend).apply();
+        }
         if (savedBackend != null && (savedBackend.startsWith("http://") || savedBackend.startsWith("https://"))) {
             backendUrl = savedBackend.trim().replaceAll("/+$", "");
         }
