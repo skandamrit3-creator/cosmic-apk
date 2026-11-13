@@ -87,7 +87,7 @@ public class CosmicLiveService extends Service {
     private volatile String liveModel = "gemini-3.8-live";
     private volatile String liveVoice = "Kore";
     private volatile String livePersona = "";
-    private volatile String backendUrl = "http://127.0.0.1:8059";
+    private volatile String backendUrl = "http://127.0.0.1:8160";
     private MediaProjection projection;
     private VirtualDisplay virtualDisplay;
     private ImageReader imageReader;
@@ -141,6 +141,16 @@ public class CosmicLiveService extends Service {
     @Override public void onCreate() {
         super.onCreate();
         instance = this;
+        // Restore the saved backend address before a background voice auto-resume.
+        android.content.SharedPreferences saved = getSharedPreferences("cosmic_live", MODE_PRIVATE);
+        String savedBackend = saved.getString("backend_url", "http://127.0.0.1:8160");
+        if ("http://127.0.0.1:8059".equals(savedBackend)) {
+            savedBackend = "http://127.0.0.1:8160";
+            saved.edit().putString("backend_url", savedBackend).apply();
+        }
+        if (savedBackend != null && (savedBackend.startsWith("http://") || savedBackend.startsWith("https://"))) {
+            backendUrl = savedBackend.trim().replaceAll("/+$", "");
+        }
         createChannel();
         Notification notification = notification("Starting Gemini Live…");
         if (Build.VERSION.SDK_INT >= 34) {

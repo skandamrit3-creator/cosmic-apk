@@ -56,12 +56,20 @@ public class CosmicBackendService extends Service {
             if (stopping) return;
             PyObject module = Python.getInstance().getModule("cosmic_android_server");
             PyObject result = module.callAttr("start_server", getFilesDir().getAbsolutePath());
-            String url = result.get("url").toString();
+            PyObject urlObject = result.callAttr("get", "url");
+            if (urlObject == null || urlObject.isNone()) {
+                throw new IllegalStateException("Embedded backend returned no startup URL");
+            }
+            String url = urlObject.toString();
             Log.i(TAG, "Embedded backend started at " + url);
             updateNotification("Backend running at 127.0.0.1:" + BACKEND_PORT);
         } catch (Throwable error) {
             Log.e(TAG, "Could not start embedded Python backend", error);
-            updateNotification("Backend failed to start — open COSMIC to retry");
+            String detail = error.getMessage();
+            if (detail == null || detail.trim().isEmpty()) detail = error.getClass().getSimpleName();
+            detail = detail.replace('\n', ' ').replace('\r', ' ').trim();
+            if (detail.length() > 110) detail = detail.substring(0, 110) + "…";
+            updateNotification("Backend startup error: " + detail);
         }
     }
 
