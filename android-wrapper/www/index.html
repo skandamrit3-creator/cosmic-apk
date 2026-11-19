@@ -406,8 +406,8 @@ renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();dra
 /* COSMIC verified backend bridge — no demo success responses */
 (function(){
  const cfg=window.COSMIC_CONFIG||(window.COSMIC_CONFIG={});
- const normalizeBase=()=>String(cfg.apiBase||'').trim().replace(/\\/+$/,'').replace(/\\/api$/,'');
- const apiUrl=(path)=>normalizeBase()+'/api/'+String(path).replace(/^\\/+/, '');
+ const normalizeBase=()=>{let v=String(cfg.apiBase||'').trim();while(v.endsWith('/'))v=v.slice(0,-1);if(v.endsWith('/api'))v=v.slice(0,-4);return v;};
+ const apiUrl=(path)=>{let p=String(path);while(p.startsWith('/'))p=p.slice(1);return normalizeBase()+'/api/'+p;};
  const authHeaders=()=>({ 'Content-Type':'application/json', ...(cfg.apiKey?{Authorization:'Bearer '+cfg.apiKey}:{}) });
  window.COSMIC_API=window.COSMIC_API||{};
  window.COSMIC_API.apiUrl=apiUrl;
