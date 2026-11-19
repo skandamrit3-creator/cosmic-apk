@@ -57,7 +57,7 @@ public class CosmicBackendService extends Service {
             PyObject module = Python.getInstance().getModule("cosmic_android_server");
             PyObject result = module.callAttr("start_server", getFilesDir().getAbsolutePath());
             PyObject urlObject = result.callAttr("get", "url");
-            if (urlObject == null || urlObject.isNone()) {
+            if (urlObject == null || "None".equals(urlObject.toString())) {
                 throw new IllegalStateException("Embedded backend returned no startup URL");
             }
             String url = urlObject.toString();

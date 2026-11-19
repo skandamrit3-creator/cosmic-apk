@@ -1,0 +1,66 @@
+
+/* COSMIC COMPLETE MOBILE EXPERIENCE */
+:root{
+ --cosmic-bg:#080b16;--cosmic-panel:rgba(17,23,43,.88);
+ --cosmic-line:rgba(150,170,255,.17);--cosmic-text:#f4f6ff;
+ --cosmic-muted:#929bb8;--cosmic-accent:#7b8cff;
+ --cosmic-glow:rgba(105,126,255,.24);
+}
+html,body{min-height:100%;background:var(--cosmic-bg);color:var(--cosmic-text)}
+body{overflow-x:hidden}
+button,input,textarea,select{font:inherit}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#app,.app,.cosmic-app,.main-content{min-width:0;max-width:100%}
+button:focus-visible,input:focus-visible,textarea:focus-visible{
+ outline:2px solid var(--cosmic-accent);outline-offset:3px
+}
+button:disabled{opacity:.55;cursor:not-allowed}
+#chatForm,.composer{
+ display:flex;align-items:flex-end;gap:10px;
+ padding:12px;border:1px solid var(--cosmic-line);
+ border-radius:22px;background:var(--cosmic-panel);
+ box-shadow:0 12px 40px rgba(0,0,0,.2)
+}
+#chatInput,.composer textarea{
+ flex:1;min-width:0;max-height:150px;resize:none;
+ color:var(--cosmic-text);background:transparent;border:0;outline:0;
+ padding:10px;font-size:16px;line-height:1.5
+}
+#voiceToggle,.voice-button{
+ width:48px;height:48px;min-width:48px;border-radius:50%;
+ border:1px solid var(--cosmic-line);color:white;
+ background:linear-gradient(145deg,#657bff,#8b55e9);
+ box-shadow:0 0 24px var(--cosmic-glow);
+ display:grid;place-items:center;font-size:21px;
+ transition:transform .18s,box-shadow .18s
+}
+#voiceToggle:active,.voice-button:active{transform:scale(.94)}
+#voiceToggle.is-live,.voice-button.is-live{
+ background:linear-gradient(145deg,#f04478,#a94cff);
+ box-shadow:0 0 30px rgba(240,68,120,.4);
+ animation:cosmic-pulse 1.7s infinite
+}
+@keyframes cosmic-pulse{
+ 0%,100%{box-shadow:0 0 12px rgba(240,68,120,.25)}
+ 50%{box-shadow:0 0 30px rgba(240,68,120,.65)}
+}
+#cosmicLiveDock{
+ z-index:9999;max-width:calc(100vw - 24px);
+}
+#cosmicLiveDock button{touch-action:manipulation}
+#chatStatus{color:var(--cosmic-muted);font-size:12px}
+@media(max-width:700px){
+ body{font-size:14px}
+ #app,.app,.cosmic-app{width:100%;max-width:100%;overflow-x:hidden}
+ .main-content{padding-left:12px!important;padding-right:12px!important}
+ .sidebar,.side-panel{max-width:85vw}
+ #chatForm,.composer{position:sticky;bottom:8px;z-index:100;
+  margin:8px 0;padding:8px;border-radius:19px}
+ #chatInput,.composer textarea{font-size:16px;min-height:42px}
+ #voiceToggle,.voice-button{width:46px;height:46px;min-width:46px}
+ .mode-nav,.navigation,.top-nav{max-width:100%;overflow-x:auto}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*::before,*::after{animation-duration:.01ms!important;
+ transition-duration:.01ms!important;scroll-behavior:auto!important}
+}

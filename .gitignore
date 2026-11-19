@@ -16,3 +16,8 @@ data/local/*
 *.db
 *.sqlite
 *.sqlite3
+
+runtime/
+cosmic-backend.log
+.env
+.env.*

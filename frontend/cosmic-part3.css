@@ -1,0 +1,96 @@
+:root {
+  color-scheme: dark;
+  --cosmic-bg: #080b16;
+  --cosmic-panel: rgba(20,27,48,.78);
+  --cosmic-border: rgba(130,155,255,.18);
+  --cosmic-accent: #7c8cff;
+  --cosmic-glow: rgba(87,116,255,.24);
+}
+html { background:var(--cosmic-bg); scroll-behavior:smooth; }
+body {
+  background:
+    radial-gradient(ellipse at 15% 0%,rgba(76,91,190,.18),transparent 42%),
+    radial-gradient(ellipse at 90% 90%,rgba(0,190,220,.09),transparent 38%),
+    var(--cosmic-bg);
+  color:#edf1ff;
+  -webkit-tap-highlight-color:transparent;
+}
+button, input, textarea, select { font:inherit; }
+button {
+  transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease;
+}
+button:active { transform:scale(.97); }
+:where(.card,.panel,.chat-container,.chat-panel,.reactor-panel,.settings-panel,
+[class*="card"],[class*="panel"]) {
+  border-color:var(--cosmic-border);
+}
+:where(.card,.panel,[class*="card"],[class*="panel"]) {
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+:where(textarea,input,select) {
+  background:rgba(13,19,37,.88);
+  color:#f3f5ff;
+  border:1px solid var(--cosmic-border);
+  border-radius:14px;
+  outline:none;
+}
+:where(textarea,input,select):focus {
+  border-color:var(--cosmic-accent);
+  box-shadow:0 0 0 3px var(--cosmic-glow);
+}
+:where(button,.button,[role="button"]) {
+  cursor:pointer;
+}
+:where(.active,[aria-current="page"],[aria-selected="true"]) {
+  border-color:var(--cosmic-accent);
+}
+#myraa-screen,.myraa-screen,.myraa-fullscreen,
+[data-mode="avatar"] {
+  min-height:100dvh;
+}
+#myraa-screen,.myraa-screen,.myraa-fullscreen {
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 42%,rgba(93,110,255,.2),transparent 48%),
+    #080b16;
+}
+#myraa-mic,.myraa-mic {
+  min-width:66px;
+  min-height:66px;
+  border-radius:50%;
+  border:1px solid rgba(150,170,255,.5);
+  background:linear-gradient(145deg,#667cff,#3447c5);
+  box-shadow:0 0 35px rgba(91,112,255,.35);
+}
+#myraa-mic:active,.myraa-mic:active {
+  box-shadow:0 0 48px rgba(91,112,255,.6);
+}
+@keyframes cosmic-pulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(112,133,255,.24); }
+  50% { box-shadow:0 0 0 13px rgba(112,133,255,0); }
+}
+#myraa-mic.listening,.myraa-mic.listening,
+.listening #myraa-mic { animation:cosmic-pulse 1.7s infinite; }
+:where(.avatar,.myraa-avatar,[class*="avatar"]) img {
+  max-width:100%;
+  object-fit:contain;
+}
+@media(max-width:700px) {
+  body { font-size:14px; }
+  :where(main,.main-content,.app-content) {
+    width:100%;
+    max-width:100%;
+  }
+  :where(.sidebar,.desktop-sidebar) { max-width:82vw; }
+  :where(textarea) { font-size:16px; }
+  :where(button) { touch-action:manipulation; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    animation-duration:.01ms!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+}

@@ -1,0 +1,11 @@
+Publish the current allow-listed frontend feature pack.
+
+Refresh after MYRAA mode and reboot-resume updates.
+
+Include opt-in speech, image and avatar provider test controls.
+
+Refresh immersive MYRAA stage, responsive conversation dock, procedural expressions, and mode-specific graphite-violet themes.
+
+Refresh MYRAA Gemini speech output and selected-provider/model routing in Avatar mode.
+Refresh notification STOP LISTENING semantics in native Android services; native changes still require an APK update.
+MYRAA reference match update: layered blonde face-framing hair, violet-blue eyes, white lapels, black harness, gold tie and red split cape.

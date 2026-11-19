@@ -696,6 +696,18 @@
     if(type==="state") {
       if(state.fallbackMode && message==="LIVE · STOPPED") return;
       if(message==="LIVE · STOPPED") {
+        // Unexpected native shutdown: keep the assistant active and switch to fallback.
+        if (state.desired && !state.fallbackMode) {
+          state.connected = false;
+          state.connecting = false;
+          state.sharing = false;
+          state.nativeMode = false;
+          startFallback("Android Gemini Live stopped unexpectedly").catch(error => {
+            state.desired = false;
+            setStatus("VOICE FALLBACK FAILED · " + (error.message || error), "error");
+          });
+          return;
+        }
         state.desired=false;state.connected=false;state.connecting=false;state.sharing=false;
         state.nativeMode=false;state.bubbleActive=false;
         const native=window.Capacitor?.Plugins?.CosmicVoice;

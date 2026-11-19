@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090d16">
+<title>COSMIC — Personal AI</title>
+<link rel="stylesheet" href="/frontend/css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="logo">C</div>
+    <div>
+      <h2>COSMIC</h2>
+      <small>PERSONAL INTELLIGENCE</small>
+    </div>
+  </div>
+
+  <button class="new-chat" id="newChat">＋ New conversation</button>
+
+  <p class="section-label">WORKSPACE</p>
+
+  <nav>
+    <button class="nav active" data-page="chat">◫ <span>Chat</span></button>
+    <button class="nav" data-page="activity">◷ <span>Activity</span></button>
+    <button class="nav" data-page="models">⌘ <span>AI Models</span></button>
+    <button class="nav" data-page="settings">⚙ <span>Settings</span></button>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div class="backend-status">
+      <span id="statusDot"></span>
+      <span id="backendStatus">Connecting...</span>
+    </div>
+    <small>COSMIC 3.0</small>
+  </div>
+</aside>
+
+<main class="main">
+
+<header class="topbar">
+  <button id="menuButton" class="menu-button">☰</button>
+  <div>
+    <small id="pageSubtitle">PERSONAL AI WORKSPACE</small>
+    <h1 id="pageHeading">Chat</h1>
+  </div>
+  <div class="top-right">
+    <span class="online-label" id="onlineLabel">Connecting</span>
+    <div class="profile">C</div>
+  </div>
+</header>
+
+<section class="page active" id="page-chat">
+
+  <div class="chat-area" id="chatArea">
+
+    <div class="welcome" id="welcome">
+      <div class="orb"><span></span></div>
+      <small>YOUR PERSONAL INTELLIGENCE</small>
+      <h2>Think beyond<br><span>the ordinary.</span></h2>
+      <p>
+        One workspace for thinking, learning, researching
+        and building. Start a conversation with COSMIC.
+      </p>
+
+      <div class="suggestions">
+        <button data-prompt="Explain quantum physics step by step.">
+          <b>Learn</b>
+          <small>Understand difficult concepts</small>
+        </button>
+        <button data-prompt="Help me develop a software project.">
+          <b>Build</b>
+          <small>Turn ideas into working projects</small>
+        </button>
+        <button data-prompt="Research artificial intelligence and its future.">
+          <b>Research</b>
+          <small>Explore new ideas</small>
+        </button>
+      </div>
+    </div>
+
+    <div id="messages" class="messages"></div>
+
+  </div>
+
+  <div class="composer-area">
+    <form id="chatForm">
+      <textarea id="messageInput"
+        placeholder="Message COSMIC..."
+        rows="1"></textarea>
+
+      <div class="composer-bottom">
+        <div class="composer-left">
+          <select id="provider">
+            <option value="auto">AUTO ROUTING</option>
+            <option value="gemini">GEMINI</option>
+            <option value="groq">GROQ</option>
+            <option value="mistral">MISTRAL</option>
+            <option value="openrouter">OPENROUTER</option>
+          </select>
+          <button type="button" id="voiceButton" title="Voice input">🎙</button>
+        </div>
+        <button type="submit" id="sendButton">↑</button>
+      </div>
+    </form>
+    <p class="disclaimer">AI responses may contain errors. Verify important information.</p>
+  </div>
+
+</section>
+
+<section class="page" id="page-activity">
+  <div class="content">
+    <small>YOUR WORK</small>
+    <h2>Activity</h2>
+    <p>Your current conversation activity.</p>
+    <div id="activityList" class="info-card">
+      No activity yet.
+    </div>
+  </div>
+</section>
+
+<section class="page" id="page-models">
+  <div class="content">
+    <small>INTELLIGENCE ENGINE</small>
+    <h2>AI Models</h2>
+    <p>Select a provider for your conversations.</p>
+
+    <div class="info-card">
+      <label>Preferred provider</label>
+      <select id="modelPreference">
+        <option value="auto">Automatic routing</option>
+        <option value="gemini">Gemini</option>
+        <option value="groq">Groq</option>
+        <option value="mistral">Mistral</option>
+        <option value="openrouter">OpenRouter</option>
+      </select>
+      <p>Provider availability depends on backend configuration.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="page-settings">
+  <div class="content">
+    <small>APPLICATION</small>
+    <h2>Settings</h2>
+
+    <div class="info-card">
+      <h3>Backend connection</h3>
+      <p id="settingsBackend">Checking connection...</p>
+      <button id="checkBackend">Check connection</button>
+    </div>
+
+    <div class="info-card">
+      <h3>Application</h3>
+      <p>COSMIC Personal AI Workspace</p>
+      <p>Version 3.0 — Rebuild</p>
+    </div>
+  </div>
+</section>
+
+</main>
+</div>
+
+<div id="toast" class="toast"></div>
+<script src="/frontend/js/app.js"></script>
+</body>
+</html>
