@@ -57,6 +57,44 @@ canvas{width:100%;border-radius:14px;background:#070417}
 .tabbtn{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.07);color:#ddd6fe;font-size:13px}.tabbtn.active{background:linear-gradient(135deg,#2563eb,var(--acc));color:#fff}
 .log{font-family:monospace;font-size:12px;background:#070417;padding:10px;border-radius:12px;max-height:220px;overflow:auto;white-space:pre-wrap;line-height:1.5}
 .kbd{background:#1e1b3a;padding:2px 7px;border-radius:6px;font-size:11px;border:1px solid #444}
+
+/* COSMIC mobile adaptation: retain desktop layout, reflow controls for phones */
+@media(max-width:700px){
+ html,body{width:100%;min-width:0;overflow-x:hidden}
+ .topbar{height:56px;padding:0 10px;gap:8px}
+ .logo{gap:7px}.logo-icon{width:34px;height:34px;font-size:18px}
+ .logo h1{font-size:16px;letter-spacing:1px}.logo small{font-size:7px;letter-spacing:1px}
+ .searchbox{display:none!important}
+ .topbar #backendPill{display:none}
+ #clock,#date{display:none}
+ .topbar>div:last-child{margin-left:auto;gap:5px!important}
+ .topbar .btn-ghost{padding:8px 9px;font-size:12px}
+ .layout{display:block;padding-top:56px;min-height:100vh}
+ .sidebar{position:fixed;top:auto;bottom:0;left:0;right:0;width:100%;height:64px;min-height:64px;
+   padding:5px 4px calc(5px + env(safe-area-inset-bottom));margin:0;border-right:0;
+   border-top:1px solid var(--line);display:flex;flex-direction:row;gap:2px;overflow-x:auto;
+   overflow-y:hidden;z-index:150;scrollbar-width:none}
+ .sidebar::-webkit-scrollbar{display:none}
+ .nav-btn{flex:0 0 58px;min-width:58px;height:50px;padding:5px 2px;font-size:8px;gap:2px}
+ .nav-btn span{font-size:18px}
+ .main{margin-left:0;width:100%;max-width:none;padding:10px 10px calc(82px + env(safe-area-inset-bottom));gap:10px}
+ .card{padding:12px;border-radius:16px}
+ .hero{min-height:270px}
+ .g2,.g3,.g4{grid-template-columns:minmax(0,1fr);gap:10px}
+ .stat{padding:10px}.stat b{font-size:19px}
+ .msg-box{max-width:calc(100% - 42px);font-size:14px}
+ #chatInput{min-width:0}
+ #view-chat .card{min-width:0}
+ .modal{padding:8px;align-items:flex-end}
+ .modal-box{max-height:88dvh;border-radius:18px 18px 12px 12px;padding:14px}
+ input,select,textarea{font-size:16px}
+ canvas{max-width:100%;height:auto}
+ .musicbar{bottom:72px;max-width:calc(100vw - 20px);font-size:12px}
+}
+@media(min-width:701px) and (max-width:1050px){
+ .main{padding:12px}.sidebar{width:66px}.main{margin-left:66px}
+}
+
 </style></head><body data-theme="cosmic">
 <div class="topbar">
 <div class="logo"><div class="logo-icon">⚛️</div><div><h1>COSMIC <span style="color:var(--acc2)">V2</span></h1><small>AI • BEYOND LIMITS • ADVANCED</small></div></div>
@@ -204,9 +242,9 @@ canvas{width:100%;border-radius:14px;background:#070417}
 <!-- SETTINGS -->
 <div id="view-settings" class="view"><div class="g2">
 <div class="card"><h2>⚙️ Backend Connection</h2><p class="small"><b>Connect ANY backend:</b> Node / Python / Firebase / Gemini API. If empty = Demo Mode (offline).</p>
-<label>API Base URL</label><input id="apiBase" placeholder="https://your-server.com/api  or  http://localhost:5000">
+<label>API Base URL</label><input id="apiBase" placeholder="https://your-cosmic-api.onrender.com  (server root URL)">
 <label>WebSocket URL</label><input id="wsUrl" placeholder="ws://localhost:5000/ws">
-<label>API Key / Gemini Key</label><input id="apiKey" placeholder="Paste key">
+<label>COSMIC Account Token (set automatically after sign-in)</label><input id="apiKey" placeholder="Sign in below to obtain account token">
 <label>Model</label><select id="modelSel2"><option>gemini</option><option>gpt</option><option>local</option><option>cosmic-1</option></select>
 <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" onclick="saveBackend()">💾 Save</button><button class="btn-ghost" onclick="testBackend()">🧪 Test</button><button class="btn-ghost" onclick="exportConfig()">📋 Copy Config</button><button class="btn-ghost" onclick="resetBackend()">Reset</button></div>
 <div id="backendResult" class="log" style="margin-top:10px">Status: Demo Mode — works offline.</div>
@@ -363,4 +401,101 @@ setInterval(()=>{let cpu=Math.floor(12+Math.random()*28);cpuData.push(cpu);if(cp
 let ctx3=document.getElementById('canvas3d').getContext('2d');let ang=0;
 function draw3d(){let w=900,h=340;ctx3.clearRect(0,0,w,h);ctx3.fillStyle='#070417';ctx3.fillRect(0,0,w,h);let starsN=parseInt(document.getElementById('stars').value||120);for(let i=0;i<starsN;i++){ctx3.fillStyle='rgba(255,255,255,'+(0.3+Math.random()*0.7)+')';ctx3.fillRect((i*97)%w,(i*53)%h,2,2);}ang+=parseInt(document.getElementById('rotSpeed').value||5)*0.005;let zoom=parseInt(document.getElementById('zoom').value||100)/100;let pn=parseInt(document.getElementById('planetN').value||5);for(let r=40;r<40+pn*26;r+=26){ctx3.beginPath();ctx3.strokeStyle='rgba(139,92,246,.5)';ctx3.ellipse(450,170,r*zoom,r*0.35*zoom,0,0,Math.PI*2);ctx3.stroke();}ctx3.beginPath();ctx3.fillStyle='#f59e0b';ctx3.arc(450,170,26*zoom,0,Math.PI*2);ctx3.fill();let cols=['#22d3ee','#ec4899','#a3e635','#f97316','#e879f9','#60a5fa','#34d399','#fbbf24'];for(let i=0;i<pn;i++){let a=ang+i*1.2;ctx3.beginPath();ctx3.fillStyle=cols[i%cols.length];ctx3.arc(450+Math.cos(a)*(50+i*24)*zoom,170+Math.sin(a)*(18+i*9)*zoom,8,0,Math.PI*2);ctx3.fill();}requestAnimationFrame(draw3d);} draw3d();
 renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();drawCpu();drawEnergy();syncChat();
-</script></body></html>
+</script>
+<script>
+/* COSMIC verified backend bridge — no demo success responses */
+(function(){
+ const cfg=window.COSMIC_CONFIG||(window.COSMIC_CONFIG={});
+ const normalizeBase=()=>{let v=String(cfg.apiBase||'').trim();while(v.endsWith('/'))v=v.slice(0,-1);if(v.endsWith('/api'))v=v.slice(0,-4);return v;};
+ const apiUrl=(path)=>{let p=String(path);while(p.startsWith('/'))p=p.slice(1);return normalizeBase()+'/api/'+p;};
+ const authHeaders=()=>({ 'Content-Type':'application/json', ...(cfg.apiKey?{Authorization:'Bearer '+cfg.apiKey}:{}) });
+ window.COSMIC_API=window.COSMIC_API||{};
+ window.COSMIC_API.apiUrl=apiUrl;
+ window.COSMIC_API.sendChat=async function(message){
+   if(!normalizeBase()) throw new Error('Backend URL is not configured. Open Settings → Backend Connection.');
+   if(!cfg.apiKey) throw new Error('Sign in to your COSMIC account before chatting.');
+   const response=await fetch(apiUrl('chat'),{method:'POST',headers:authHeaders(),
+     body:JSON.stringify({message:String(message),provider:'auto',model:'auto',mode:'auto',session_id:'default'})});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok||data.success===false) throw new Error(data.error||('COSMIC API returned HTTP '+response.status));
+   const answer=data.message||data.reply||data.response;
+   if(typeof answer!=='string'||!answer.trim()) throw new Error('Backend returned no assistant message.');
+   return answer;
+ };
+ window.getBotReply=async function(message){
+   try{return await window.COSMIC_API.sendChat(message);}
+   catch(error){return '⚠️ COSMIC backend error: '+(error&&error.message?error.message:String(error));}
+ };
+ window.saveBackend=function(){
+   const base=document.getElementById('apiBase').value.trim();
+   if(!base){document.getElementById('backendResult').innerText='Enter your deployed COSMIC backend URL first.';return;}
+   cfg.apiBase=base; // apiUrl() normalizes an optional trailing /api
+   cfg.wsUrl=document.getElementById('wsUrl').value.trim();
+   cfg.model='auto';cfg.useBackend=true;
+   localStorage.setItem('cosmic_config',JSON.stringify(cfg));
+   document.getElementById('apiBase').value=cfg.apiBase;
+   document.getElementById('backendResult').innerText='URL saved. Checking the real API…';
+   window.testBackend();
+ };
+ window.testBackend=async function(){
+   const base=normalizeBase();
+   const result=document.getElementById('backendResult'),pill=document.getElementById('backendPill');
+   if(!base){result.innerText='Not connected: backend URL is empty.';pill.innerText='● Backend not configured';pill.className='pill redp';return;}
+   result.innerText='Checking '+base+'/api/health …';
+   try{
+     const r=await fetch(base+'/api/health',{headers:{Accept:'application/json'}});
+     const d=await r.json();
+     if(!r.ok||d.success!==true)throw new Error(d.error||('HTTP '+r.status));
+     result.innerText='API reachable: '+(d.service||'COSMIC')+' v'+(d.version||'unknown')+'. Sign in to verify your account and enable chat.';
+     pill.innerText='● API reachable';pill.className='pill bluep';
+     cfg.apiBase=base;cfg.useBackend=true;localStorage.setItem('cosmic_config',JSON.stringify(cfg));
+   }catch(e){
+     result.innerText='Connection failed: '+e.message;
+     pill.innerText='● Backend offline';pill.className='pill redp';
+   }
+ };
+ window.cosmicAccountAuth=async function(mode){
+   const base=normalizeBase(),email=document.getElementById('cosmicAuthEmail').value.trim();
+   const password=document.getElementById('cosmicAuthPassword').value;
+   const name=document.getElementById('cosmicAuthName').value.trim();
+   const status=document.getElementById('cosmicAuthStatus');
+   if(!base){status.innerText='Save the backend URL first.';return;}
+   if(!email||!password){status.innerText='Enter email and password.';return;}
+   status.innerText=mode==='register'?'Creating account…':'Signing in…';
+   try{
+     const payload={email,password};if(mode==='register')payload.display_name=name;
+     const r=await fetch(apiUrl('account/'+mode),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+     const d=await r.json().catch(()=>({}));
+     if(!r.ok||!d.success||!d.token)throw new Error(d.error||('HTTP '+r.status));
+     cfg.apiKey=d.token;cfg.useBackend=true;cfg.apiBase=base;
+     localStorage.setItem('cosmic_config',JSON.stringify(cfg));
+     const key=document.getElementById('apiKey');if(key)key.value=d.token;
+     status.innerText='Signed in as '+(d.account?.email||email)+'. Chat authentication is active on this device.';
+     document.getElementById('cosmicAuthModal').classList.remove('open');
+     document.getElementById('backendResult').innerText='Account authenticated: '+(d.account?.email||email);
+     document.getElementById('backendPill').innerText='● Account connected';
+     document.getElementById('backendPill').className='pill green';
+   }catch(e){status.innerText='Authentication failed: '+e.message;}
+ };
+ function addAccountPanel(){
+   const settings=document.getElementById('view-settings');
+   if(!settings||document.getElementById('cosmicAuthModal'))return;
+   const card=settings.querySelector('.card');
+   if(card){
+     const panel=document.createElement('div');panel.style.cssText='margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.04)';
+     panel.innerHTML='<h3>🔐 COSMIC Account</h3><p class="small">Sign in once on each device. Your account token is stored locally; provider keys remain on the server.</p><button class="btn" type="button" onclick="document.getElementById(\'cosmicAuthModal\').classList.add(\'open\')">Sign in / Create account</button>';
+     card.appendChild(panel);
+   }
+   const modal=document.createElement('div');modal.className='modal';modal.id='cosmicAuthModal';
+   modal.innerHTML='<div class="modal-box"><h2>🔐 COSMIC Account</h2><label>Display name (new accounts)</label><input id="cosmicAuthName" autocomplete="name" placeholder="Your name"><label>Email</label><input id="cosmicAuthEmail" type="email" autocomplete="email" placeholder="you@example.com"><label>Password (10 characters minimum)</label><input id="cosmicAuthPassword" type="password" autocomplete="current-password" placeholder="Account password"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button class="btn" onclick="cosmicAccountAuth(\'login\')">Sign in</button><button class="btn-ghost" onclick="cosmicAccountAuth(\'register\')">Create account</button><button class="btn-ghost" onclick="document.getElementById(\'cosmicAuthModal\').classList.remove(\'open\')">Close</button></div><p class="small" id="cosmicAuthStatus" style="margin-top:12px">Use the same account on Chrome and every COSMIC device.</p></div>';
+   document.body.appendChild(modal);
+ }
+ document.addEventListener('DOMContentLoaded',addAccountPanel);
+ addAccountPanel();
+ if(cfg.apiBase){const f=document.getElementById('apiBase');if(f)f.value=cfg.apiBase;}
+ if(cfg.apiKey){const k=document.getElementById('apiKey');if(k)k.value=cfg.apiKey;}
+ if(cfg.apiBase){setTimeout(()=>window.testBackend(),250);}
+})();
+</script>
+
+</body></html>
