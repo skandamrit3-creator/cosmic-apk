@@ -429,7 +429,7 @@ renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();dra
  window.saveBackend=function(){
    const base=document.getElementById('apiBase').value.trim();
    if(!base){document.getElementById('backendResult').innerText='Enter your deployed COSMIC backend URL first.';return;}
-   cfg.apiBase=base.replace(/\\/+$/,'').replace(/\\/api$/,'');
+   cfg.apiBase=base; // apiUrl() normalizes an optional trailing /api
    cfg.wsUrl=document.getElementById('wsUrl').value.trim();
    cfg.model='auto';cfg.useBackend=true;
    localStorage.setItem('cosmic_config',JSON.stringify(cfg));
@@ -438,7 +438,7 @@ renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();dra
    window.testBackend();
  };
  window.testBackend=async function(){
-   const base=document.getElementById('apiBase').value.trim().replace(/\\/+$/,'').replace(/\\/api$/,'');
+   const base=normalizeBase();
    const result=document.getElementById('backendResult'),pill=document.getElementById('backendPill');
    if(!base){result.innerText='Not connected: backend URL is empty.';pill.innerText='● Backend not configured';pill.className='pill redp';return;}
    result.innerText='Checking '+base+'/api/health …';
