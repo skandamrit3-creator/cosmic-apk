@@ -1,0 +1,151 @@
+/* COSMIC full-screen MYRAA experience — mobile-first visual layer. */
+@media (max-width: 1200px) {
+  body:has(#cosmicCharactersMode:not([hidden])) { overflow: hidden; }
+}
+body:has(#cosmicCharactersMode:not([hidden])) .app-header { display: none !important; }
+body:has(#cosmicCharactersMode:not([hidden])) .workspace {
+  width: 100%; max-width: none; height: 100dvh; min-height: 100dvh;
+  margin: 0; padding: 0; overflow: hidden;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .cosmic-shell { min-height: 100dvh; height: 100dvh; }
+body:has(#cosmicCharactersMode:not([hidden])) #cosmicCharactersMode {
+  position: fixed; inset: 0; z-index: 30; width: 100%; height: 100dvh;
+  min-height: 100dvh; margin: 0; overflow: hidden; isolation: isolate;
+  background:
+    radial-gradient(ellipse at 50% 34%, rgba(32,104,191,.30), transparent 48%),
+    radial-gradient(ellipse at 16% 82%, rgba(92,35,180,.22), transparent 42%),
+    linear-gradient(180deg,#030713 0%,#07152c 55%,#050916 100%);
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-workspace {
+  position: relative; width: 100%; max-width: none; height: 100%; margin: 0;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading {
+  position: absolute; z-index: 8; top: calc(env(safe-area-inset-top) + 13px);
+  left: 18px; right: 18px; margin: 0; pointer-events: none;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading-copy .eyebrow,
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading-copy p,
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-mode-tag,
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading-actions { display: none !important; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading h1 {
+  margin: 0; color: #f4f8ff; font: 700 17px var(--display);
+  letter-spacing: .22em; text-shadow: 0 0 22px #58baff88;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-layout {
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%;
+  min-height: 0; margin: 0;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0;
+  overflow: hidden; border: 0; border-radius: 0; box-shadow: none;
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(40,119,205,.22), transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(89,44,174,.22), transparent 48%),
+    linear-gradient(180deg,#030713 0%,#09182d 62%,#050916 100%);
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage:after {
+  z-index: 2; background:
+    linear-gradient(180deg,rgba(2,7,18,.42),transparent 18%,transparent 57%,rgba(2,7,18,.18) 72%,rgba(2,7,18,.84) 100%),
+    linear-gradient(90deg,rgba(2,7,18,.18),transparent 25%,transparent 75%,rgba(2,7,18,.18));
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-portrait {
+  position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%;
+  max-width: none; max-height: none; padding: 0;
+  object-fit: contain; object-position: center bottom;
+  filter: drop-shadow(0 18px 44px #000b);
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage-topline {
+  top: calc(env(safe-area-inset-top) + 15px); left: auto; right: 18px; z-index: 5;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage-topline span:first-child { display: none; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage-topline span {
+  padding: 7px 11px; border-color: #72c9ff55; border-radius: 30px;
+  background: rgba(5,15,34,.62); backdrop-filter: blur(16px);
+  color: #bfe9ff; font-size: 8px; letter-spacing: .12em;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage-caption { display: none; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-reply-preview {
+  z-index: 6; bottom: calc(100px + env(safe-area-inset-bottom));
+  width: min(84%,620px); padding: 10px 15px; border-color: #83caff45;
+  border-radius: 15px; background: rgba(5,13,30,.68);
+  box-shadow: 0 8px 35px #0005, 0 0 26px #318dff22;
+  backdrop-filter: blur(18px); font-size: 12px;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-panel {
+  position: fixed; z-index: 10; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: min(94%,760px); min-width: 0;
+  min-height: 0; height: auto; padding: 0; border: 0; border-radius: 0;
+  background: transparent; box-shadow: none; overflow: visible; pointer-events: none;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-head {
+  position: fixed; left: max(3%, calc(50% - 352px)); bottom: calc(17px + env(safe-area-inset-bottom));
+  z-index: 12; width: 44px; height: 44px; padding: 0; border: 0;
+  pointer-events: auto;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-head > div,
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-note { display: none !important; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-head-actions { display: block; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-icon-button {
+  width: 44px; height: 44px; border: 1px solid #70d9ff88; border-radius: 50%;
+  color: #e9fbff; background: linear-gradient(145deg,#164f9cdd,#40218ddd);
+  box-shadow: 0 0 18px #35baff66, inset 0 0 16px #9e8bff33;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-icon-button.is-live {
+  background: linear-gradient(145deg,#087f9c,#5927a6);
+  box-shadow: 0 0 28px #43eaffaa;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-conversation {
+  position: fixed; left: 50%; bottom: calc(72px + env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: min(90%,720px); max-height: 20dvh;
+  min-height: 0; padding: 0 4px; overflow: auto; pointer-events: auto;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-conversation:empty { display: none; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-message {
+  max-width: 88%; padding: 9px 13px; border-radius: 14px;
+  background: rgba(5,14,32,.78); border-color: #78caff44;
+  backdrop-filter: blur(16px); font-size: 12px;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-message.user {
+  background: rgba(24,76,145,.72); border-color: #65baff66;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer {
+  width: 100%; min-height: 58px; padding: 7px 8px 7px 57px;
+  gap: 8px; border: 1px solid #75caff66; border-radius: 18px;
+  background: rgba(4,12,29,.82); box-shadow: 0 8px 35px #0008,0 0 25px #237dff26;
+  backdrop-filter: blur(22px); pointer-events: auto;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer textarea {
+  min-height: 42px; max-height: 90px; padding: 10px 6px;
+  color: #f1f7ff; font-size: 13px; resize: none;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer textarea::placeholder { color: #9db4d0; }
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer button {
+  flex: 0 0 42px; width: 42px; height: 42px; border-radius: 14px;
+  background: linear-gradient(135deg,#58c9ff,#a18aff); color: #071326;
+  box-shadow: 0 0 18px #50baff55;
+}
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-blink-layer,
+body:has(#cosmicCharactersMode:not([hidden])) .myraa-mouth-layer { z-index: 4; }
+@media (max-width: 600px) {
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading { left: 15px; right: 15px; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-heading h1 { font-size: 15px; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-stage-topline { right: 14px; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-reply-preview {
+    bottom: calc(91px + env(safe-area-inset-bottom)); width: 88%;
+    font-size: 11px; padding: 9px 12px;
+  }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-panel { width: 94%; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-chat-head {
+    left: 4%; bottom: calc(19px + env(safe-area-inset-bottom));
+    width: 42px; height: 42px;
+  }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-icon-button { width: 42px; height: 42px; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-conversation {
+    width: 92%; bottom: calc(75px + env(safe-area-inset-bottom)); max-height: 17dvh;
+  }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer { min-height: 56px; padding-left: 53px; }
+  body:has(#cosmicCharactersMode:not([hidden])) .myraa-composer textarea { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body:has(#cosmicCharactersMode:not([hidden])) * { scroll-behavior: auto !important; }
+}
