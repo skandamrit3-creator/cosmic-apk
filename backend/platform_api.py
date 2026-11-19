@@ -9,6 +9,7 @@ import secrets
 import sqlite3
 import time
 import uuid
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import requests
@@ -102,7 +103,8 @@ def _device_from_request(db):
     if not device_id or not supplied:
         return None
     row = db.execute("SELECT * FROM devices WHERE id=? AND revoked=0", (device_id,)).fetchone()
-    if not row or not _check_secret(supplied, row["secret_hash"]):
+    expected = hmac.new(_secret(), supplied.encode(), hashlib.sha256).hexdigest()
+    if not row or not hmac.compare_digest(expected, row["secret_hash"]):
         return None
     return row
 
@@ -274,7 +276,8 @@ def register_device():
     with get_connection() as db:
         db.execute("""INSERT INTO devices(id,user_id,name,kind,secret_hash,metadata_json,last_seen,created_at)
           VALUES(?,?,?,?,?,?,?,?)""",
-                   (device_id, g.cosmic_user_id, name, kind, _hash_secret(secret),
+                   (device_id, g.cosmic_user_id, name, kind,
+                    hmac.new(_secret(), secret.encode(), hashlib.sha256).hexdigest(),
                     json.dumps(data.get("metadata") if isinstance(data.get("metadata"), dict) else {}),
                     now, now))
         _audit(db, g.cosmic_user_id, "device.register", {"device_id": device_id, "kind": kind})
@@ -408,8 +411,9 @@ def assistant_live_token():
     try:
         response = requests.post("https://generativelanguage.googleapis.com/v1alpha/authTokens",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
-            json={"uses": 1, "expireTime": "30s",
-                  "newSessionExpireTime": "60s",
+            json={"uses": 1,
+                  "expireTime": (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                  "newSessionExpireTime": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
                   "bidiGenerateContentSetup": {"model": "models/" + model,
                     "generationConfig": {"responseModalities": ["AUDIO"]},
                     "systemInstruction": {"parts": [{"text":
