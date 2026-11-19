@@ -6,6 +6,7 @@ from backend.database.connection import init_db, get_connection
 from backend.core.kernel.kernel import process_message
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
 from backend.integrations.tripo import TripoService, TripoError
+from backend.platform_api import require_account
 import os, platform, time
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
@@ -38,7 +39,7 @@ def frontend_asset(asset):
         return send_from_directory(FRONTEND_DIR, asset)
     return jsonify({"success": False, "error": "Not found"}), 404
 
-CORS(app)
+CORS(app, origins=[x.strip() for x in os.getenv("COSMIC_CORS_ORIGINS", "capacitor://localhost,http://localhost,https://localhost,http://127.0.0.1:8059").split(",") if x.strip()])
 init_db()
 from backend.platform_api import register_platform_routes
 from backend.realtime import socketio
@@ -88,6 +89,7 @@ def memory_count():
 
 # 4. Conversation creation
 @app.post("/api/conversations")
+@require_account
 def create_conversation():
     data = request.get_json(silent=True) or {}
     message = str(data.get("message", "")).strip()
@@ -99,6 +101,7 @@ def create_conversation():
 
 # 5. Memory search
 @app.get("/api/memory/search")
+@require_account
 def search_memory():
     q = request.args.get("q", "").strip()
     if not q:
@@ -124,6 +127,7 @@ def search_memory():
 
 # 6. Paginated memory
 @app.get("/api/memory/page")
+@require_account
 def memory_page():
     try:
         page = max(1, int(request.args.get("page", 1)))
@@ -153,6 +157,7 @@ def memory_page():
 
 # 7. Read individual memory — NO DELETE
 @app.get("/api/memory/<int:memory_id>")
+@require_account
 def get_memory(memory_id):
     with get_connection() as db:
         row = db.execute(
@@ -218,6 +223,7 @@ def ai_provider_status():
     return jsonify({"success": True, "providers": AIGateway().provider_status()})
 
 @app.post("/api/chat")
+@require_account
 def chat():
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
@@ -269,6 +275,7 @@ def chat():
     return jsonify(result)
 
 @app.get("/api/history")
+@require_account
 def history():
     session_id = str(request.args.get("session_id", "default"))
     try:
@@ -293,6 +300,7 @@ def history():
 
 
 @app.get("/api/chats")
+@require_account
 def chats():
     search = str(request.args.get("search", "")).strip()
 
@@ -342,6 +350,7 @@ def chats():
 
 
 @app.get("/api/memories")
+@require_account
 def memories():
     with get_connection() as db:
         rows = db.execute("""
@@ -372,6 +381,7 @@ def cosmic_upgrade_history():
     return jsonify(upgrade_manager.history())
 
 @app.post("/api/upgrades/preview")
+@require_account
 def cosmic_upgrade_preview():
     data = request.get_json(silent=True) or {}
     try:
@@ -381,6 +391,7 @@ def cosmic_upgrade_preview():
         return jsonify({"success": False, "error": str(e)}), 400
 
 @app.post("/api/upgrades/apply")
+@require_account
 def cosmic_upgrade_apply():
     data = request.get_json(silent=True) or {}
     try:
@@ -393,6 +404,7 @@ def cosmic_upgrade_apply():
         return jsonify({"success": False, "error": str(e)}), 400
 
 @app.post("/api/upgrades/rollback")
+@require_account
 def cosmic_upgrade_rollback():
     data = request.get_json(silent=True) or {}
     try:
@@ -418,6 +430,7 @@ def avatar_3d_status():
 
 
 @app.post("/api/avatar/3d/preset")
+@require_account
 def avatar_3d_preset():
     data = request.get_json(silent=True) or {}
     try:
@@ -428,6 +441,7 @@ def avatar_3d_preset():
 
 
 @app.post("/api/avatar/3d/generate")
+@require_account
 def avatar_3d_generate():
     if request.form.get("consent") != "true":
         return jsonify({"success": False, "error": "Explicit photo-upload consent is required."}), 400
@@ -448,6 +462,7 @@ def avatar_3d_task(task_id):
 
 
 @app.post("/api/avatar/3d/rig-check")
+@require_account
 def avatar_3d_rig_check():
     data = request.get_json(silent=True) or {}
     try:
@@ -458,6 +473,7 @@ def avatar_3d_rig_check():
 
 
 @app.post("/api/avatar/3d/rig")
+@require_account
 def avatar_3d_rig():
     data = request.get_json(silent=True) or {}
     try:
