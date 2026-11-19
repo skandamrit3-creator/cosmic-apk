@@ -5,8 +5,7 @@ from flask_socketio import SocketIO, join_room
 
 from backend.platform_api import _verify_token
 
-socketio = SocketIO(cors_allowed_origins=os.getenv("COSMIC_SOCKET_ORIGINS", "").split(",")
-                    if os.getenv("COSMIC_SOCKET_ORIGINS") else None,
+socketio = SocketIO(cors_allowed_origins=os.getenv("COSMIC_SOCKET_ORIGINS", "capacitor://localhost,http://localhost,https://localhost,http://127.0.0.1:8059").split(","),
                     async_mode="threading", ping_interval=20, ping_timeout=30)
 
 

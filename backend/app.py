@@ -81,6 +81,7 @@ def status():
 
 # 3. Memory count — READ ONLY
 @app.get("/api/memory/count")
+@require_account
 def memory_count():
     with get_connection() as db:
         count = db.execute("SELECT COUNT(*) FROM conversations").fetchone()[0]
@@ -369,14 +370,17 @@ def memories():
 from backend.core.upgrades import manager as upgrade_manager
 
 @app.get("/api/upgrades/status")
+@require_account
 def cosmic_upgrade_status():
     return jsonify(upgrade_manager.status())
 
 @app.get("/api/upgrades/project")
+@require_account
 def cosmic_upgrade_project():
     return jsonify(upgrade_manager.inspect_project())
 
 @app.get("/api/upgrades/history")
+@require_account
 def cosmic_upgrade_history():
     return jsonify(upgrade_manager.history())
 
