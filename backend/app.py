@@ -40,6 +40,10 @@ def frontend_asset(asset):
 
 CORS(app)
 init_db()
+from backend.platform_api import register_platform_routes
+from backend.realtime import socketio
+register_platform_routes(app)
+socketio.init_app(app)
 START_TIME = time.time()
 
 
@@ -473,4 +477,4 @@ def error_handler(error):
 
 
 if __name__ == "__main__":
-    app.run(host=HOST, port=PORT, debug=False)
+    socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
