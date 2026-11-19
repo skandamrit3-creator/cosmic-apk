@@ -494,7 +494,7 @@ renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();dra
  addAccountPanel();
  if(cfg.apiBase){const f=document.getElementById('apiBase');if(f)f.value=cfg.apiBase;}
  if(cfg.apiKey){const k=document.getElementById('apiKey');if(k)k.value=cfg.apiKey;}
- if(cfg.apiBase){setTimeout(()=>window.testBackend(),250);}
+ if(cfg.apiBase){setTimeout(()=>window.testBackend(),250);}else{const p=document.getElementById('backendPill');if(p){p.innerText='● Backend not configured';p.className='pill redp';}}
 })();
 </script>
 
