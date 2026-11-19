@@ -16,9 +16,14 @@ def client():
         yield client
 
 
+LAST_EMAIL = None
+
+
 def account(client):
+    global LAST_EMAIL
+    LAST_EMAIL = "tester-" + uuid.uuid4().hex + "@example.test"
     response = client.post("/api/account/register", json={
-        "email": "tester-" + uuid.uuid4().hex + "@example.test", "password": "correct-horse-battery",
+        "email": LAST_EMAIL, "password": "correct-horse-battery",
         "display_name": "Tester"})
     assert response.status_code == 201
     return response.json["token"]
@@ -36,7 +41,7 @@ def test_account_register_login_and_settings(client):
     assert saved.status_code == 200
     assert client.get("/api/account/settings", headers=auth(token)).json["settings"]["voice"]["wake_word"] == "COSMIC"
     login = client.post("/api/account/login", json={
-        "email": "tester@example.test", "password": "correct-horse-battery"})
+        "email": LAST_EMAIL, "password": "correct-horse-battery"})
     assert login.status_code == 200
 
 
