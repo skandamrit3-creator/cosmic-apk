@@ -74,6 +74,11 @@ jobs:
 
       - name: Install backend test dependencies
         run: pip install -r requirements.txt
+        
+      - name: Run backend API tests
+        run: |
+          pip install pytest
+          pytest -q
 
       - name: Validate Python backend
         run: python -m compileall -q backend
