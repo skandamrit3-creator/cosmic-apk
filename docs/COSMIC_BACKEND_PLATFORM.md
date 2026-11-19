@@ -1,6 +1,6 @@
 # COSMIC backend platform APIs
 
-All account routes use bearer tokens issued by /api/account/register or /api/account/login. Configure a random COSMIC_AUTH_SECRET of at least 32 characters before enabling account endpoints. Passwords and device secrets are PBKDF2-SHA256 hashed; raw device secrets are returned once at registration.
+All account routes use bearer tokens issued by /api/account/register or /api/account/login. Configure a random COSMIC_AUTH_SECRET of at least 32 characters before enabling account endpoints. Account passwords are PBKDF2-SHA256 hashed; device secrets are stored as server-keyed HMAC-SHA256 digests; raw device secrets are returned once at registration.
 
 ## Accounts and Android permission reporting
 
