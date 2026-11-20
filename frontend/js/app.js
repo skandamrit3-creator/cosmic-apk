@@ -392,6 +392,69 @@
 
     setInterval(updateClock, 1000);
 
+    // COSMIC account registration and sign-in panel.
+    (function installAccountPanel() {
+        if (document.getElementById("cosmicAccountPanel")) return;
+        const style = document.createElement("style");
+        style.textContent = `
+          #cosmicAccountLauncher{position:fixed;right:16px;bottom:88px;z-index:9998;border:1px solid #6487a8;background:#10263b;color:#fff;border-radius:24px;padding:10px 15px;font:600 13px system-ui;box-shadow:0 6px 24px #0006}
+          #cosmicAccountPanel{position:fixed;right:12px;bottom:132px;z-index:9999;width:min(340px,calc(100vw - 24px));padding:18px;border:1px solid #52718c;border-radius:16px;background:#101e2d;color:#edf6ff;box-shadow:0 12px 40px #0009;font:14px system-ui;display:none}
+          #cosmicAccountPanel input{box-sizing:border-box;width:100%;margin:7px 0;padding:12px;border:1px solid #526b82;border-radius:9px;background:#071522;color:#fff;font:14px system-ui}
+          #cosmicAccountPanel button{border:0;border-radius:9px;padding:10px 12px;margin:5px 4px 0 0;background:#24618b;color:white;font-weight:600}
+          #cosmicAccountPanel button.secondary{background:#34485a}#cosmicAccountStatus{font-size:12px;line-height:1.4;margin:10px 0;color:#bcd4e8}
+        `;
+        document.head.append(style);
+        const launcher=document.createElement("button");
+        launcher.id="cosmicAccountLauncher";launcher.type="button";launcher.textContent="👤 COSMIC Account";
+        const panel=document.createElement("section");
+        panel.id="cosmicAccountPanel";
+        panel.innerHTML=`
+          <div style="display:flex;justify-content:space-between;align-items:center"><strong style="font-size:16px">COSMIC Account</strong><button class="secondary" id="cosmicAccountClose" type="button">✕</button></div>
+          <div id="cosmicAccountStatus">Create an account once, then sign in on other devices to restore access.</div>
+          <label for="cosmicAccountEmail">Email address</label><input id="cosmicAccountEmail" type="email" autocomplete="email" placeholder="you@example.com">
+          <label for="cosmicAccountPassword">Password (10–256 characters)</label><input id="cosmicAccountPassword" type="password" autocomplete="current-password" minlength="10" placeholder="At least 10 characters">
+          <label for="cosmicAccountName">Display name (registration only)</label><input id="cosmicAccountName" type="text" autocomplete="name" placeholder="Your name">
+          <div><button id="cosmicAccountRegister" type="button">Create account</button><button id="cosmicAccountLogin" type="button">Sign in</button><button id="cosmicAccountLogout" class="secondary" type="button">Sign out</button></div>`;
+        document.body.append(launcher,panel);
+        const $id=id=>document.getElementById(id);
+        const status=$id("cosmicAccountStatus");
+        const base=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\\/+$/,"");
+        const token=()=>window.COSMIC_ACCOUNT_TOKEN||localStorage.getItem("COSMIC_ACCOUNT_TOKEN")||"";
+        const show=()=>{panel.style.display="block";launcher.style.display="none";};
+        const hide=()=>{panel.style.display="none";launcher.style.display="block";};
+        const refresh=async()=>{
+          const t=token();
+          if(!t){status.textContent="Not signed in. Create an account or sign in.";launcher.textContent="👤 Sign in / Register";return;}
+          window.COSMIC_ACCOUNT_TOKEN=t;
+          try{const r=await fetch(base()+"/api/account/me",{headers:{Authorization:"Bearer "+t},cache:"no-store"});const d=await r.json();if(!r.ok||!d.success)throw new Error(d.error||"Session expired");status.textContent="Signed in as "+d.account.email+". Chat is authorized.";launcher.textContent="👤 "+d.account.email; }
+          catch(e){status.textContent="Sign in required: "+e.message;launcher.textContent="👤 Sign in / Register";}
+        };
+        async function submit(mode){
+          const email=$id("cosmicAccountEmail").value.trim();
+          const password=$id("cosmicAccountPassword").value;
+          const display_name=$id("cosmicAccountName").value.trim();
+          if(!email||password.length<10){status.textContent="Enter a valid email and a password of at least 10 characters.";return;}
+          status.textContent=mode==="register"?"Creating your account…":"Signing in…";
+          try{
+            const r=await fetch(base()+"/api/account/"+(mode==="register"?"register":"login"),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password,display_name})});
+            const d=await r.json();
+            if(!r.ok||!d.success)throw new Error(d.error||("HTTP "+r.status));
+            if(!d.token)throw new Error("Server did not return an account token.");
+            localStorage.setItem("COSMIC_ACCOUNT_TOKEN",d.token);
+            localStorage.setItem("COSMIC_ACCOUNT_EMAIL",d.account?.email||email);
+            window.COSMIC_ACCOUNT_TOKEN=d.token;
+            status.textContent=(mode==="register"?"Account created. ":"Signed in. ")+(d.account?.email||email)+". You can now chat with COSMIC.";
+            launcher.textContent="👤 "+(d.account?.email||email);
+          }catch(e){status.textContent="Account error: "+e.message;}
+        }
+        launcher.addEventListener("click",show);
+        $id("cosmicAccountClose").addEventListener("click",hide);
+        $id("cosmicAccountRegister").addEventListener("click",()=>submit("register"));
+        $id("cosmicAccountLogin").addEventListener("click",()=>submit("login"));
+        $id("cosmicAccountLogout").addEventListener("click",()=>{localStorage.removeItem("COSMIC_ACCOUNT_TOKEN");localStorage.removeItem("COSMIC_ACCOUNT_EMAIL");window.COSMIC_ACCOUNT_TOKEN="";status.textContent="Signed out.";launcher.textContent="👤 Sign in / Register";});
+        refresh();
+    })();
+
     window.COSMIC = {
         state,
         executeCommand
