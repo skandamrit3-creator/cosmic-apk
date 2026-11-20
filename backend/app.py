@@ -540,3 +540,29 @@ def error_handler(error):
 
 if __name__ == "__main__":
     socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
+
+@app.post("/api/live/token")
+@require_account
+def cosmic_live_token():
+    """Provision a short-lived Gemini Live token; never expose the account's long-lived key."""
+    data = request.get_json(silent=True) or {}
+    model = str(data.get("model", "gemini-2.5-flash-native-audio-preview-12-2025"))
+    allowed = {"gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.8-live"}
+    if model not in allowed:
+        return jsonify(success=False, error="Unsupported Live model."), 400
+    try:
+        from backend.platform_api import _account_provider_keys
+        key = _account_provider_keys(g.cosmic_user_id).get("gemini") or os.getenv("GEMINI_API_KEY", "")
+        if not key:
+            return jsonify(success=False, error="Save a Gemini API key first."), 503
+        import requests
+        payload = {"uses": 1, "liveConnectConstraints": {"model": "models/" + model, "config": {"responseModalities": ["AUDIO"], "sessionResumption": {}}}}
+        resp = requests.post("https://generativelanguage.googleapis.com/v1beta/auth_tokens", headers={"x-goog-api-key": key, "Content-Type": "application/json"}, json=payload, timeout=20)
+        if not resp.ok:
+            return jsonify(success=False, error="Live token provisioning failed (HTTP " + str(resp.status_code) + ")."), 502
+        token = resp.json().get("name")
+        if not token:
+            return jsonify(success=False, error="Live token provider returned no token."), 502
+        return jsonify(success=True, token=token, model=model, expires=resp.json().get("expireTime"))
+    except Exception as exc:
+        return jsonify(success=False, error="Live token request failed: " + str(exc)[:160]), 502
