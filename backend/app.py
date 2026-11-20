@@ -1,5 +1,5 @@
 from pathlib import Path
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, Response, jsonify, request, send_from_directory
 from dotenv import load_dotenv
 from flask_cors import CORS
 from backend.database.connection import init_db, get_connection
@@ -20,7 +20,15 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 @app.get("/")
 def frontend_index():
-    return send_from_directory(FRONTEND_DIR, "index.html")
+    # Inject account provider-key controls into the actual V2 page served at the root.
+    html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
+    script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
+    if "provider-keys-settings.js" not in html:
+        marker = "</body>"
+        html = html.replace(marker, script + marker, 1) if marker in html else html + script
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.get("/frontend/<path:filename>")
 def frontend_files(filename):
