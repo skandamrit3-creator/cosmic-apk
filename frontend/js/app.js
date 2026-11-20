@@ -418,7 +418,7 @@
         document.body.append(launcher,panel);
         const $id=id=>document.getElementById(id);
         const status=$id("cosmicAccountStatus");
-        const base=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\\/+$/,"");
+        const base=()=>String(window.COSMIC_API_BASE||window.location.origin).replace(/\/+$/,"");
         const token=()=>window.COSMIC_ACCOUNT_TOKEN||localStorage.getItem("COSMIC_ACCOUNT_TOKEN")||"";
         const show=()=>{panel.style.display="block";launcher.style.display="none";};
         const hide=()=>{panel.style.display="none";launcher.style.display="block";};
