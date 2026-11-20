@@ -78,7 +78,7 @@ class AIGateway:
         """Report key presence separately from a real provider API probe."""
         result = []
         for provider, cfg in CONFIG.items():
-            key = os.getenv(cfg["key"], "").strip()
+            key = str(user_keys.get(candidate) or os.getenv(cfg["key"], "")).strip()
             item = {"provider": provider, "configured": bool(key),
                     "status": "not_configured" if not key else "not_tested",
                     "tested": False}
@@ -182,8 +182,9 @@ class AIGateway:
             raise RuntimeError(provider.title() + " returned an empty response")
         return text
 
-    def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
+    def chat(self, message, history=None, provider="auto", model="auto", mode="auto", user_keys=None):
         history = history or []
+        user_keys = user_keys or {}
         provider = str(provider or "auto").lower()
         model = str(model or "auto")
 
