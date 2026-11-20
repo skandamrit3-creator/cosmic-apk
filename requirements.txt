@@ -3,3 +3,4 @@ flask-cors==6.0.5
 python-dotenv==1.2.3
 requests==2.34.2
 Flask-SocketIO==5.5.1
+cryptography==46.0.3
