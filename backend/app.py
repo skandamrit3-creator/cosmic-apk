@@ -257,7 +257,8 @@ def chat():
 
     from backend.ai.gateway.gateway import AIGateway
     result = AIGateway().chat(
-        message.strip(), history_items, provider=provider, model=model, mode=mode
+        message.strip(), history_items, provider=provider, model=model, mode=mode,
+        user_keys=__import__("backend.platform_api", fromlist=["_account_provider_keys"])._account_provider_keys(g.cosmic_user_id)
     )
 
     if result.get("success"):
