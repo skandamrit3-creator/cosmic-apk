@@ -23,6 +23,9 @@ def frontend_index():
     # Inject account provider-key controls into the actual V2 page served at the root.
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
+    extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
+    if "cosmic-enhancements.js" not in html:
+        html = html.replace("</body>", extra + "</body>", 1)
     if "provider-keys-settings.js" not in html:
         marker = "</body>"
         html = html.replace(marker, script + marker, 1) if marker in html else html + script
