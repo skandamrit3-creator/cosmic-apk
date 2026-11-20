@@ -517,7 +517,7 @@ def cosmic_vision_identify():
         if not key:
             return jsonify(success=False, error="Save a Gemini API key in COSMIC settings first."), 503
         import requests
-        payload = {"contents": [{"parts": [{"text": "Identify the main visible object(s) in this image. Give concise labels, distinguishing details, and uncertainty; do not guess identity of people."}, {"inline_data": {"mime_type": mime, "data": image_data}}]}]}
+        payload = {"contents": [{"parts": [{"text": "Identify the main visible object(s) in this image. Give concise labels, distinguishing details, and uncertainty; do not guess identity of people."}, {"inlineData": {"mimeType": mime, "data": image_data}}]}]}
         response = requests.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", params={"key": key}, json=payload, timeout=35)
         if not response.ok:
             return jsonify(success=False, error="Vision provider returned HTTP " + str(response.status_code)), 502
