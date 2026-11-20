@@ -182,8 +182,9 @@ class AIGateway:
             raise RuntimeError(provider.title() + " returned an empty response")
         return text
 
-    def chat(self, message, history=None, provider="auto", model="auto", mode="auto"):
+    def chat(self, message, history=None, provider="auto", model="auto", mode="auto", user_keys=None):
         history = history or []
+        user_keys = user_keys or {}
         provider = str(provider or "auto").lower()
         model = str(model or "auto")
 
@@ -208,7 +209,7 @@ class AIGateway:
         errors = []
         for candidate in candidates:
             cfg = CONFIG[candidate]
-            key = os.getenv(cfg["key"], "").strip()
+            key = str(user_keys.get(candidate) or os.getenv(cfg["key"], "")).strip()
             if not key:
                 errors.append(candidate + ": API key not configured")
                 continue

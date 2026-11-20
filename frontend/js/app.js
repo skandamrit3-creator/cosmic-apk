@@ -51,6 +51,64 @@
         return "";
     }
 
+
+    function installProviderKeyPanel() {
+        if (document.querySelector("#cosmicProviderKeyPanel")) return;
+        const panel = document.createElement("section");
+        panel.id = "cosmicProviderKeyPanel";
+        panel.style.cssText = "position:fixed;z-index:10050;right:14px;bottom:76px;width:min(390px,calc(100vw - 28px));max-height:75vh;overflow:auto;padding:18px;border:1px solid rgba(90,180,255,.35);border-radius:16px;background:#101a2a;color:#eef6ff;box-shadow:0 16px 48px #0009;display:none;font:14px system-ui";
+        panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><strong>COSMIC · Provider API Keys</strong><button type="button" id="cosmicKeyClose" style="background:transparent;color:inherit;border:0;font-size:22px">×</button></div><p style="opacity:.8;font-size:12px">Save a provider key to your signed-in account. It is encrypted on the server and never returned in full.</p><label for="cosmicKeyProvider">Provider</label><select id="cosmicKeyProvider" style="display:block;width:100%;padding:11px;margin:6px 0 12px;background:#17283d;color:white;border:1px solid #47627e;border-radius:8px"><option value="gemini">Google Gemini</option><option value="groq">Groq</option><option value="mistral">Mistral</option><option value="openrouter">OpenRouter</option></select><label for="cosmicProviderKey">API key</label><input id="cosmicProviderKey" type="password" autocomplete="off" placeholder="Paste provider API key" style="display:block;box-sizing:border-box;width:100%;padding:12px;margin:6px 0 12px;background:#17283d;color:white;border:1px solid #47627e;border-radius:8px"><div style="display:flex;gap:8px"><button type="button" id="cosmicKeySave" style="flex:1;padding:11px;border:0;border-radius:8px;background:#2378bb;color:white">Save securely</button><button type="button" id="cosmicKeyDelete" style="padding:11px;border:1px solid #8b5360;border-radius:8px;background:transparent;color:#ffb9c5">Delete</button></div><p id="cosmicKeyStatus" role="status" style="font-size:12px;min-height:18px"></p><div id="cosmicKeySaved" style="font-size:12px;opacity:.85"></div>';
+        document.body.appendChild(panel);
+        const status = panel.querySelector("#cosmicKeyStatus");
+        const provider = panel.querySelector("#cosmicKeyProvider");
+        const request = async (method, url, body) => {
+            const bearer = findBearerToken();
+            if (!bearer) throw new Error("Sign in to your COSMIC account first.");
+            const response = await fetch((window.COSMIC_API_BASE || window.location.origin) + url, {
+                method, headers: {"Content-Type":"application/json","Authorization":"Bearer "+bearer},
+                ...(body ? {body:JSON.stringify(body)} : {})
+            });
+            const data = await response.json();
+            if (!response.ok || data.success === false) throw new Error(data.error || "Request failed");
+            return data;
+        };
+        const refresh = async () => {
+            try {
+                const data = await request("GET","/api/account/provider-keys");
+                const saved = data.providers || {};
+                panel.querySelector("#cosmicKeySaved").textContent = Object.keys(saved).length
+                    ? "Saved: " + Object.entries(saved).map(([name,item])=>name+" "+item.masked).join(" · ")
+                    : "No provider keys saved to this account yet.";
+            } catch (error) { panel.querySelector("#cosmicKeySaved").textContent = error.message; }
+        };
+        panel.querySelector("#cosmicKeyClose").onclick = () => panel.style.display = "none";
+        panel.querySelector("#cosmicKeySave").onclick = async () => {
+            const key = panel.querySelector("#cosmicProviderKey").value.trim();
+            if (!key) { status.textContent = "Paste an API key first."; return; }
+            status.textContent = "Saving encrypted key…";
+            try {
+                await request("PUT","/api/account/provider-keys",{provider:provider.value,api_key:key});
+                panel.querySelector("#cosmicProviderKey").value = "";
+                status.textContent = "Saved to your account. COSMIC can now use this provider.";
+                await refresh();
+            } catch(error) { status.textContent = "Save failed: " + error.message; }
+        };
+        panel.querySelector("#cosmicKeyDelete").onclick = async () => {
+            status.textContent = "Deleting…";
+            try {
+                await request("DELETE","/api/account/provider-keys?provider="+encodeURIComponent(provider.value));
+                status.textContent = "Provider key deleted from this account.";
+                await refresh();
+            } catch(error) { status.textContent = "Delete failed: " + error.message; }
+        };
+        const open = document.createElement("button");
+        open.id = "cosmicProviderKeysOpen"; open.type = "button"; open.textContent = "API KEYS";
+        open.style.cssText = "position:fixed;z-index:10040;right:14px;bottom:18px;padding:10px 14px;border:1px solid #4d9ad0;border-radius:24px;background:#153450;color:#fff;font-weight:700";
+        open.onclick = () => { panel.style.display = "block"; refresh(); };
+        document.body.appendChild(open);
+    }
+    installProviderKeyPanel();
+
     function updateClock() {
         const clock = $("#clock");
         if (!clock) return;

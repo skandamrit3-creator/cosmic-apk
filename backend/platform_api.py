@@ -120,6 +120,11 @@ def init_platform_db():
           user_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
           settings_json TEXT NOT NULL DEFAULT '{}', updated_at INTEGER NOT NULL
         );
+        CREATE TABLE IF NOT EXISTS account_provider_keys (
+          user_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+          provider TEXT NOT NULL, secret_ciphertext TEXT NOT NULL,
+          updated_at INTEGER NOT NULL, PRIMARY KEY(user_id,provider)
+        );
         CREATE TABLE IF NOT EXISTS permission_reports (
           user_id TEXT PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
           permissions_json TEXT NOT NULL, updated_at INTEGER NOT NULL
@@ -152,6 +157,24 @@ def init_platform_db():
         """)
         db.commit()
 
+
+
+def _vault_cipher():
+    from cryptography.fernet import Fernet
+    key = os.getenv("COSMIC_VAULT_KEY", "").strip()
+    if not key:
+        raise RuntimeError("Account API-key vault is not configured on the server")
+    try:
+        return Fernet(key.encode("ascii"))
+    except Exception as exc:
+        raise RuntimeError("Account API-key vault configuration is invalid") from exc
+
+
+def _account_provider_keys(user_id):
+    cipher = _vault_cipher()
+    with get_connection() as db:
+        rows = db.execute("SELECT provider,secret_ciphertext FROM account_provider_keys WHERE user_id=?", (user_id,)).fetchall()
+    return {row["provider"]: cipher.decrypt(row["secret_ciphertext"].encode()).decode() for row in rows}
 
 def _audit(db, user_id, event, detail=None):
     db.execute("INSERT INTO security_events(user_id,event,detail_json,created_at) VALUES(?,?,?,?)",
@@ -235,6 +258,51 @@ def account_settings():
                    (g.cosmic_user_id, json.dumps(data), now))
         db.commit()
     return jsonify(success=True, settings=data)
+
+
+
+@bp.route("/account/provider-keys", methods=["GET", "PUT", "DELETE"])
+@require_account
+def account_provider_keys():
+    allowed = {"gemini", "groq", "mistral", "openrouter"}
+    try:
+        cipher = _vault_cipher()
+    except RuntimeError as exc:
+        return jsonify(success=False, error=str(exc)), 503
+    if request.method == "GET":
+        with get_connection() as db:
+            rows = db.execute("SELECT provider,secret_ciphertext,updated_at FROM account_provider_keys WHERE user_id=?", (g.cosmic_user_id,)).fetchall()
+        providers = {}
+        for row in rows:
+            try:
+                secret = cipher.decrypt(row["secret_ciphertext"].encode()).decode()
+                providers[row["provider"]] = {"configured": True, "masked": "••••••" + secret[-4:], "updated_at": row["updated_at"]}
+            except Exception:
+                continue
+        return jsonify(success=True, providers=providers)
+    if request.method == "DELETE":
+        provider = str(request.args.get("provider", "")).lower()
+        if provider not in allowed:
+            return jsonify(success=False, error="Unsupported provider"), 400
+        with get_connection() as db:
+            db.execute("DELETE FROM account_provider_keys WHERE user_id=? AND provider=?", (g.cosmic_user_id, provider))
+            db.commit()
+        return jsonify(success=True, deleted=provider)
+    data = _json()
+    provider = str(data.get("provider", "")).lower()
+    secret = data.get("api_key")
+    if provider not in allowed or not isinstance(secret, str) or not 8 <= len(secret.strip()) <= 4096:
+        return jsonify(success=False, error="Choose a supported provider and enter a valid API key"), 400
+    encrypted = cipher.encrypt(secret.strip().encode()).decode()
+    now = int(time.time())
+    with get_connection() as db:
+        db.execute("""INSERT INTO account_provider_keys(user_id,provider,secret_ciphertext,updated_at)
+          VALUES(?,?,?,?) ON CONFLICT(user_id,provider) DO UPDATE SET
+          secret_ciphertext=excluded.secret_ciphertext,updated_at=excluded.updated_at""",
+          (g.cosmic_user_id, provider, encrypted, now))
+        _audit(db, g.cosmic_user_id, "account.provider_key.saved", {"provider": provider})
+        db.commit()
+    return jsonify(success=True, provider=provider, saved=True, updated_at=now)
 
 
 @bp.put("/account/permissions")
