@@ -21,6 +21,9 @@ CATALOG = {
         ("mistral-small-latest", "Mistral Small"),
         ("open-mistral-nemo", "Mistral Nemo"),
     ],
+    "cloudflare": [
+        ("@cf/meta/llama-3.3-70b-instruct", "Cloudflare Workers AI Llama"),
+    ],
     "openrouter": [
         ("openrouter/auto", "OpenRouter Auto"),
         ("meta-llama/llama-3.3-70b-instruct:free", "Llama 3.3 70B Free (if available)"),
@@ -44,6 +47,11 @@ CONFIG = {
         "url": "https://api.mistral.ai/v1/chat/completions",
         "default": "mistral-small-latest",
     },
+    "cloudflare": {
+        "key": "CLOUDFLARE_API_TOKEN",
+        "url": "",
+        "default": "@cf/meta/llama-3.3-70b-instruct",
+    },
     "openrouter": {
         "key": "OPENROUTER_API_KEY",
         "url": "https://openrouter.ai/api/v1/chat/completions",
@@ -51,7 +59,7 @@ CONFIG = {
     },
 }
 
-AUTO_ORDER = ("groq", "gemini", "mistral", "openrouter")
+AUTO_ORDER = ("groq", "gemini", "cloudflare", "mistral", "openrouter")
 
 
 def model_catalog():
@@ -84,7 +92,7 @@ class AIGateway:
                     "tested": False}
             if key:
                 try:
-                    if cfg.get("kind") == "gemini":
+                    if provider == "cloudflare":\n                        account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()\n                        url = "https://api.cloudflare.com/client/v4/accounts/" + account + "/ai/v1/models"\n                        response = requests.get(url, headers={"Authorization": "Bearer " + key}, timeout=8)\n                    elif cfg.get("kind") == "gemini":
                         url = "https://generativelanguage.googleapis.com/v1beta/models"
                         response = requests.get(url, params={"key": key}, timeout=8)
                     else:
