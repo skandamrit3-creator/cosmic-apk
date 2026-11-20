@@ -92,7 +92,15 @@ class AIGateway:
                     "tested": False}
             if key:
                 try:
-                    if provider == "cloudflare":\n                        account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()\n                        url = "https://api.cloudflare.com/client/v4/accounts/" + account + "/ai/v1/models"\n                        response = requests.get(url, headers={"Authorization": "Bearer " + key}, timeout=8)\n                    elif cfg.get("kind") == "gemini":
+                    if provider == "cloudflare":
+                        account = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+                        if not account:
+                            item["status"] = "missing_account_id"
+                            item["detail"] = "CLOUDFLARE_ACCOUNT_ID is not configured."
+                            result.append(item)
+                            continue
+                        url = "https://api.cloudflare.com/client/v4/accounts/" + account + "/ai/v1/models"
+                        response = requests.get(url, headers={"Authorization": "Bearer " + key}, timeout=8)\n                    elif cfg.get("kind") == "gemini":
                         url = "https://generativelanguage.googleapis.com/v1beta/models"
                         response = requests.get(url, params={"key": key}, timeout=8)
                     else:
@@ -159,8 +167,14 @@ class AIGateway:
                     "content": content,
                 })
         messages.append({"role": "user", "content": message})
+        request_url = cfg["url"]
+        if provider == "cloudflare":
+            account_id = os.getenv("CLOUDFLARE_ACCOUNT_ID", "").strip()
+            if not account_id:
+                raise RuntimeError("CLOUDFLARE_ACCOUNT_ID is not configured on the backend.")
+            request_url = "https://api.cloudflare.com/client/v4/accounts/" + account_id + "/ai/v1/chat/completions"
         r = requests.post(
-            cfg["url"],
+            request_url,
             headers={
                 "Authorization": "Bearer " + key,
                 "Content-Type": "application/json",
