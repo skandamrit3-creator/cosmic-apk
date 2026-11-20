@@ -100,7 +100,8 @@ class AIGateway:
                             result.append(item)
                             continue
                         url = "https://api.cloudflare.com/client/v4/accounts/" + account + "/ai/v1/models"
-                        response = requests.get(url, headers={"Authorization": "Bearer " + key}, timeout=8)\n                    elif cfg.get("kind") == "gemini":
+                        response = requests.get(url, headers={"Authorization": "Bearer " + key}, timeout=8)
+                    elif cfg.get("kind") == "gemini":
                         url = "https://generativelanguage.googleapis.com/v1beta/models"
                         response = requests.get(url, params={"key": key}, timeout=8)
                     else:
