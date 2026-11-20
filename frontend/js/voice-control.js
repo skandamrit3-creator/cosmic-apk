@@ -85,7 +85,23 @@ if(button){
  languageSelect();
 }
 document.addEventListener("cosmic:reply",event=>{
- const text=event.detail?.text;if(text&&api()?.speak)api().speak({text}).catch(()=>{});
+ const text=String(event.detail?.text||"").trim();
+ if(!text)return;
+ const native=api();
+ if(native?.speak){
+  native.speak({text,language:languageSelect()?.value||"en-IN"}).catch(error=>{
+   console.warn("COSMIC native speech failed; trying browser speech",error);
+   if("speechSynthesis" in window){window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text);utterance.lang=languageSelect()?.value||"en-IN";window.speechSynthesis.speak(utterance);}
+  });
+  return;
+ }
+ if("speechSynthesis" in window){
+  window.speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(text);
+  utterance.lang=languageSelect()?.value||"en-IN";
+  utterance.rate=1;
+  window.speechSynthesis.speak(utterance);
+ }
 });
 window.COSMIC_VOICE={start,stop,get listening(){return listening;}};
 console.log("COSMIC multilingual voice loop ready (foreground, user-started).");

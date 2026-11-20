@@ -234,13 +234,9 @@
                 );
             }
 
-            addMessage(
-                "assistant-message",
-                data.message ||
-                data.response ||
-                data.text ||
-                "COSMIC returned no response."
-            );
+            const replyText = data.message || data.response || data.text || "COSMIC returned no response.";
+            addMessage("assistant-message", replyText);
+            document.dispatchEvent(new CustomEvent("cosmic:reply", {detail: {text: replyText}}));
 
             const connection = $("#connection");
 
