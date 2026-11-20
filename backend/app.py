@@ -499,6 +499,36 @@ def avatar_3d_rig():
         return jsonify({"success": False, "error": str(exc)}), exc.status
 
 
+
+
+@app.post("/api/vision/identify")
+@require_account
+def cosmic_vision_identify():
+    data = request.get_json(silent=True) or {}
+    image_data = str(data.get("image", ""))
+    mime = str(data.get("mime_type", "image/jpeg"))
+    if not image_data or len(image_data) > 12_000_000:
+        return jsonify(success=False, error="A valid, size-limited base64 image is required."), 400
+    if mime not in ("image/jpeg", "image/png", "image/webp"):
+        return jsonify(success=False, error="Unsupported image type."), 400
+    try:
+        from backend.platform_api import _account_provider_keys
+        key = _account_provider_keys(g.cosmic_user_id).get("gemini") or os.getenv("GEMINI_API_KEY", "")
+        if not key:
+            return jsonify(success=False, error="Save a Gemini API key in COSMIC settings first."), 503
+        import requests
+        payload = {"contents": [{"parts": [{"text": "Identify the main visible object(s) in this image. Give concise labels, distinguishing details, and uncertainty; do not guess identity of people."}, {"inline_data": {"mime_type": mime, "data": image_data}}]}]}
+        response = requests.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", params={"key": key}, json=payload, timeout=35)
+        if not response.ok:
+            return jsonify(success=False, error="Vision provider returned HTTP " + str(response.status_code)), 502
+        result = response.json()
+        answer = "".join(p.get("text", "") for p in result.get("candidates", [{}])[0].get("content", {}).get("parts", []))
+        if not answer.strip():
+            return jsonify(success=False, error="Vision provider returned no description."), 502
+        return jsonify(success=True, provider="gemini", message=answer.strip())
+    except Exception as exc:
+        return jsonify(success=False, error="Vision request failed: " + str(exc)[:180]), 502
+
 @app.errorhandler(Exception)
 def error_handler(error):
     return jsonify({
