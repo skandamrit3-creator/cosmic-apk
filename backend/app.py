@@ -1,5 +1,5 @@
 from pathlib import Path
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import Flask, Response, g, jsonify, request, send_from_directory
 from dotenv import load_dotenv
 from flask_cors import CORS
 from backend.database.connection import init_db, get_connection
