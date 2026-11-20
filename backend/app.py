@@ -24,8 +24,11 @@ def frontend_index():
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
     extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
+    live_script = '<script src="/js/cosmic-live.js?v=1" defer></script>'
     if "cosmic-enhancements.js" not in html:
         html = html.replace("</body>", extra + "</body>", 1)
+    if "cosmic-live.js" not in html:
+        html = html.replace("</body>", live_script + "</body>", 1)
     if "provider-keys-settings.js" not in html:
         marker = "</body>"
         html = html.replace(marker, script + marker, 1) if marker in html else html + script
