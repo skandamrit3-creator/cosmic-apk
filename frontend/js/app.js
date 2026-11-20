@@ -25,7 +25,7 @@
         const visit = (value, depth = 0) => {
             if (depth > 3 || value == null) return "";
             if (typeof value === "string") {
-                if (/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(value.trim())) return value.trim();
+                if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value.trim())) return value.trim();
                 try { return visit(JSON.parse(value), depth + 1); } catch (_) { return ""; }
             }
             if (typeof value === "object") {
@@ -199,11 +199,12 @@
         const start = performance.now();
 
         try {
+            const bearerToken = findBearerToken();
             const response = await fetch((window.COSMIC_API_BASE || window.location.origin) + "/api/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(findBearerToken() ? {"Authorization": "Bearer " + findBearerToken()} : {})
+                    ...(bearerToken ? {"Authorization": "Bearer " + bearerToken} : {})
                 },
                 body: JSON.stringify({
                     message: text,
