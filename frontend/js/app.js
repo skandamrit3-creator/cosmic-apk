@@ -16,6 +16,41 @@
     const sendButton = $("#sendButton");
     const stream = $("#responseStream");
 
+    // Account tokens are restored by the account panel after sign-in. Read the
+    // token without assuming one particular storage key used by older builds.
+    function findBearerToken() {
+        if (typeof window.COSMIC_ACCOUNT_TOKEN === "string" && window.COSMIC_ACCOUNT_TOKEN.includes(".")) {
+            return window.COSMIC_ACCOUNT_TOKEN;
+        }
+        const visit = (value, depth = 0) => {
+            if (depth > 3 || value == null) return "";
+            if (typeof value === "string") {
+                if (/^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/.test(value.trim())) return value.trim();
+                try { return visit(JSON.parse(value), depth + 1); } catch (_) { return ""; }
+            }
+            if (typeof value === "object") {
+                for (const [key, item] of Object.entries(value)) {
+                    if (/^(token|access_token|account_token|cosmic_token)$/i.test(key)) {
+                        const found = visit(item, depth + 1);
+                        if (found) return found;
+                    }
+                }
+                for (const item of Object.values(value)) {
+                    const found = visit(item, depth + 1);
+                    if (found) return found;
+                }
+            }
+            return "";
+        };
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const found = visit(localStorage.getItem(localStorage.key(i)));
+                if (found) return found;
+            }
+        } catch (_) {}
+        return "";
+    }
+
     function updateClock() {
         const clock = $("#clock");
         if (!clock) return;
@@ -167,14 +202,16 @@
             const response = await fetch((window.COSMIC_API_BASE || window.location.origin) + "/api/chat", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    ...(findBearerToken() ? {"Authorization": "Bearer " + findBearerToken()} : {})
                 },
                 body: JSON.stringify({
                     message: text,
                     task: state.task,
                     mode: state.mode,
                     provider: state.provider,
-                    model: state.model
+                    model: state.model,
+                    session_id: localStorage.getItem("cosmic_session_id") || "default"
                 })
             });
 
