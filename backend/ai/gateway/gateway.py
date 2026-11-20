@@ -78,7 +78,7 @@ class AIGateway:
         """Report key presence separately from a real provider API probe."""
         result = []
         for provider, cfg in CONFIG.items():
-            key = str(user_keys.get(candidate) or os.getenv(cfg["key"], "")).strip()
+            key = os.getenv(cfg["key"], "").strip()
             item = {"provider": provider, "configured": bool(key),
                     "status": "not_configured" if not key else "not_tested",
                     "tested": False}
