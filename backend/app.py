@@ -28,6 +28,7 @@ def frontend_index():
     device_script = '<script src="/js/cosmic-device-vision.js?v=1" defer></script>'
     avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=1" defer></script>'
     myraa_script = '<script src="/js/cosmic-myraa-vva.js?v=1" defer></script>'
+    expressions_script = '<script src="/js/cosmic-myraa-expressions.js?v=1" defer></script>'
     if "cosmic-enhancements.js" not in html:
         html = html.replace("</body>", extra + "</body>", 1)
     if "cosmic-live.js" not in html:
@@ -38,6 +39,8 @@ def frontend_index():
         html = html.replace("</body>", avatar2d_script + "</body>", 1)
     if "cosmic-myraa-vva.js" not in html:
         html = html.replace("</body>", myraa_script + "</body>", 1)
+    if "cosmic-myraa-expressions.js" not in html:
+        html = html.replace("</body>", expressions_script + "</body>", 1)
     if "provider-keys-settings.js" not in html:
         marker = "</body>"
         html = html.replace(marker, script + marker, 1) if marker in html else html + script
