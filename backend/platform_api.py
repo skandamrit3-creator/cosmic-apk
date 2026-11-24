@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import requests
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 
 from backend.database.connection import get_connection
 
@@ -471,33 +471,95 @@ def command_status(device_id, command_id):
 @bp.post("/assistant/live-token")
 @require_account
 def assistant_live_token():
-    """Mint a short-lived Gemini Live token; the permanent API key stays server-side."""
+    """Mint a single-use Gemini Live token; the permanent API key remains server-side."""
     key = os.getenv("GEMINI_API_KEY", "").strip()
-    model = os.getenv("GEMINI_LIVE_MODEL", "gemini-3.8-live").strip()
+    model = os.getenv("GEMINI_LIVE_MODEL", "gemini-3.1-flash-live-preview").strip()
+    voice = os.getenv("GEMINI_LIVE_VOICE", "Aoede").strip() or "Aoede"
     if not key:
-        return jsonify(success=False, error="Gemini provider is not configured on the server"), 503
+        return jsonify(success=False, error="Gemini Live is not configured on the server (GEMINI_API_KEY is missing)."), 503
+
+    data = _json()
+    system_instruction = data.get("system_instruction")
+    if not isinstance(system_instruction, str) or not system_instruction.strip():
+        system_instruction = (
+            "You are MYRAA, a natural, helpful personal voice assistant. "
+            "Respond conversationally and concisely in the user's language. "
+            "Do not claim an action succeeded unless its result has been verified."
+        )
+    system_instruction = system_instruction.strip()[:16000]
+    setup = {
+        "model": "models/" + model,
+        "generationConfig": {
+            "responseModalities": ["AUDIO"],
+            "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": voice}}},
+        },
+        "inputAudioTranscription": {},
+        "outputAudioTranscription": {},
+        "systemInstruction": {"parts": [{"text": system_instruction}]},
+        "sessionResumption": {},
+    }
+    tools = data.get("tools")
+    if isinstance(tools, list) and len(tools) <= 8 and len(json.dumps(tools)) <= 30000:
+        setup["tools"] = tools
+
+    resume_handle = data.get("session_resumption_handle")
+    if isinstance(resume_handle, str) and 8 <= len(resume_handle) <= 4096:
+        setup["sessionResumption"] = {"handle": resume_handle}
+
     try:
-        response = requests.post("https://generativelanguage.googleapis.com/v1alpha/authTokens",
+        response = requests.post(
+            "https://generativelanguage.googleapis.com/v1alpha/authTokens",
             headers={"x-goog-api-key": key, "Content-Type": "application/json"},
-            json={"uses": 1,
-                  "expireTime": (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
-                  "newSessionExpireTime": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
-                  "bidiGenerateContentSetup": {"model": "models/" + model,
-                    "generationConfig": {"responseModalities": ["AUDIO"]},
-                    "systemInstruction": {"parts": [{"text":
-                      "You are COSMIC, a concise, low-latency personal voice assistant. "
-                      "Respond naturally and never claim a device action succeeded until acknowledged."}]}}},
-            timeout=12)
+            json={
+                "uses": 1,
+                "expireTime": (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat().replace("+00:00", "Z"),
+                "newSessionExpireTime": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat().replace("+00:00", "Z"),
+                "bidiGenerateContentSetup": setup,
+            },
+            timeout=12,
+        )
         response.raise_for_status()
         token_data = response.json()
         token = token_data.get("name") or token_data.get("token")
         if not token:
-            return jsonify(success=False, error="Gemini did not return a temporary Live token"), 502
-        return jsonify(success=True, token=token, model=model,
-                       expires_at=token_data.get("expireTime"),
-                       new_session_expires_at=token_data.get("newSessionExpireTime"))
+            return jsonify(success=False, error="Gemini did not return a temporary Live token."), 502
+        return jsonify(
+            success=True, token=token, model=model, voice=voice, setup=setup,
+            expires_at=token_data.get("expireTime"),
+            new_session_expires_at=token_data.get("newSessionExpireTime"),
+        )
     except requests.RequestException:
-        return jsonify(success=False, error="Gemini Live token service is unavailable"), 502
+        return jsonify(success=False, error="Gemini Live token service is unavailable."), 502
+
+
+@bp.post("/assistant/tts")
+@require_account
+def assistant_tts():
+    """Neural-voice fallback using ElevenLabs; credentials never reach the browser."""
+    data = _json()
+    text_value = data.get("text")
+    if not isinstance(text_value, str) or not text_value.strip() or len(text_value) > 4000:
+        return jsonify(success=False, error="Text must contain 1–4000 characters."), 400
+    api_key = os.getenv("ELEVENLABS_API_KEY", "").strip()
+    voice_id = os.getenv("ELEVENLABS_VOICE_ID", "").strip()
+    if not api_key or not voice_id:
+        return jsonify(success=False, error="Neural fallback voice is not configured (set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID)."), 503
+    try:
+        audio_response = requests.post(
+            "https://api.elevenlabs.io/v1/text-to-speech/" + voice_id + "/stream",
+            params={"output_format": "mp3_44100_128"},
+            headers={"xi-api-key": api_key, "Accept": "audio/mpeg", "Content-Type": "application/json"},
+            json={
+                "text": text_value.strip(),
+                "model_id": os.getenv("ELEVENLABS_MODEL_ID", "eleven_multilingual_v2"),
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75, "style": 0.2, "use_speaker_boost": True},
+            },
+            timeout=30,
+        )
+        audio_response.raise_for_status()
+        return Response(audio_response.content, mimetype="audio/mpeg", headers={"Cache-Control": "no-store"})
+    except requests.RequestException:
+        return jsonify(success=False, error="Neural fallback voice provider is unavailable."), 502
 
 
 @bp.post("/assistant/command")
