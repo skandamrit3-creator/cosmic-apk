@@ -1,18 +1,21 @@
-(()=>{"use strict";if(window.COSMIC_VVA_BOOT)return;window.COSMIC_VVA_BOOT=true;
-const css=`
-#cosmic-vva-launch{position:fixed;z-index:99998;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));border:1px solid #8b5cf6;background:linear-gradient(135deg,#25204a,#111827);color:#fff;border-radius:999px;padding:13px 18px;font:600 14px system-ui;max-width:calc(100vw - 36px);box-shadow:0 8px 32px #0008;cursor:pointer}
-#cosmic-vva-shell{position:fixed;inset:0;z-index:99999;background:#05050b;display:none;flex-direction:column;overscroll-behavior:contain}
-#cosmic-vva-shell.open{display:flex}
-#cosmic-vva-bar{height:54px;min-height:54px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:white;background:#111827;border-bottom:1px solid #333;box-sizing:border-box}
-#cosmic-vva-frame{border:0;width:100%;height:100%;flex:1;background:#030306;min-height:0}
-#cosmic-vva-close{border:0;border-radius:12px;padding:8px 14px;background:#31264f;color:white;font-size:15px}
-`;
-const style=document.createElement("style");style.textContent=css;document.head.appendChild(style);
-const launch=document.createElement("button");launch.id="cosmic-vva-launch";launch.textContent="✦ MYRAA · VVA";launch.setAttribute("aria-label","Open MYRAA virtual voice assistant");document.body.appendChild(launch);
-const shell=document.createElement("div");shell.id="cosmic-vva-shell";shell.innerHTML='<div id="cosmic-vva-bar"><span>✦ COSMIC · MYRAA VVA</span><button id="cosmic-vva-close" type="button">Close</button></div><iframe id="cosmic-vva-frame" title="MYRAA virtual voice assistant" allow="microphone; camera; autoplay; fullscreen; display-capture" src="/frontend/MYRAA_Ultra_Fast.html"></iframe>';document.body.appendChild(shell);
-const open=()=>{shell.classList.add("open");launch.style.display="none";document.body.style.overflow="hidden";shell.querySelector("#cosmic-vva-frame").focus()};
-const close=()=>{shell.classList.remove("open");launch.style.display="";document.body.style.overflow="";};
-launch.addEventListener("click",open);shell.querySelector("#cosmic-vva-close").addEventListener("click",close);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&shell.classList.contains("open"))close()});
-window.COSMIC_VVA={open,close,version:"1.1.0",source:"frontend/MYRAA_Ultra_Fast.html"};
+/* COSMIC VVA bridge. Parent/child message transport for authenticated COSMIC APIs. */
+(()=>{"use strict";
+ if(window.COSMIC_VVA_BOOT)return;window.COSMIC_VVA_BOOT=true;
+ const iframe=()=>document.getElementById("cosmic-vva-frame");
+ const shell=()=>document.getElementById("cosmic-vva-shell")||document.getElementById("cosmic-vva-overlay");
+ const session="myraa-vva";
+ async function api(path,opts={}){const r=await fetch("/api"+path,{credentials:"include",headers:{"Content-Type":"application/json"},...opts});const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.error||"COSMIC backend request failed");return d;}
+ const chat=(message,options={})=>api("/chat",{method:"POST",body:JSON.stringify({message:String(message||""),session_id:options.sessionId||session,provider:options.provider||"auto",model:options.model||"auto",mode:options.mode||"auto"})});
+ const history=(limit=100)=>api("/history?session_id="+encodeURIComponent(session)+"&limit="+Math.min(200,Math.max(1,Number(limit)||100)));
+ const liveToken=(model)=>api("/live/token",{method:"POST",body:JSON.stringify({model:model||undefined})});
+ const pending=new Map();let seq=0;
+ function requestFromFrame(action,payload={}){const f=iframe();if(!f?.contentWindow)return Promise.reject(Error("MYRAA frame unavailable"));const id="vva-"+(++seq);return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{pending.delete(id);reject(Error("COSMIC bridge timeout"));},30000);pending.set(id,{resolve,reject,timer});f.contentWindow.postMessage({namespace:"COSMIC_VVA_BRIDGE",requestId:id,action,...payload},location.origin);});}
+ window.addEventListener("message",async e=>{const f=iframe();if(!f||e.source!==f.contentWindow||e.origin!==location.origin)return;const d=e.data;if(!d||d.namespace!=="COSMIC_VVA_BRIDGE_RESULT"||!pending.has(d.requestId))return;const p=pending.get(d.requestId);pending.delete(d.requestId);clearTimeout(p.timer);d.success?p.resolve(d.result):p.reject(Error(d.error||"Bridge error"));});
+ const ready=()=>{const f=iframe();f?.contentWindow?.postMessage({namespace:"COSMIC_VVA_BRIDGE_READY"},location.origin);};
+ if(iframe())iframe().addEventListener("load",ready);
+ // Avoid duplicate launcher overlays if the main HTML already contains its own launcher.
+ const launch=document.getElementById("cosmic-vva-launcher")||document.getElementById("cosmic-vva-launch");
+ const overlay=shell();if(launch&&overlay){launch.addEventListener("click",()=>{overlay.classList.add("open");overlay.setAttribute("aria-hidden","false");ready();});}
+ const close=document.getElementById("cosmic-vva-close");if(close&&overlay)close.addEventListener("click",()=>{overlay.classList.remove("open");overlay.setAttribute("aria-hidden","true");});
+ window.COSMIC_VVA=Object.freeze({chat,history,liveToken,requestFromFrame,version:"2.0.0",sessionId:session});
 })();
