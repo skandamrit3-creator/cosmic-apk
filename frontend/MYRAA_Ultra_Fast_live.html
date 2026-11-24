@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#020205">
+  <title>MYRAA Live</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#020205;color:#eaf0ff;font:15px system-ui,sans-serif}
+    #loader{position:fixed;inset:0;display:grid;place-content:center;text-align:center;gap:12px;padding:24px}
+    #loader small{color:#9ca8c8}
+    #error{display:none;max-width:620px;line-height:1.55;color:#ffd7d7;background:#321b27;border:1px solid #8b4057;border-radius:14px;padding:18px}
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <strong>Preparing MYRAA Live…</strong>
+    <small>Preserving the existing character and loading the voice transport.</small>
+    <div id="error" role="alert"></div>
+  </div>
+  <script>
+  (async function () {
+    const loader = document.getElementById("loader");
+    const errorBox = document.getElementById("error");
+    function fail(message) {
+      errorBox.textContent = message;
+      errorBox.style.display = "block";
+      loader.querySelector("small").textContent = "The original MYRAA page was not modified.";
+    }
+    try {
+      const response = await fetch("./MYRAA_Ultra_Fast.html", { cache: "no-store" });
+      if (!response.ok) throw new Error("Could not load the existing MYRAA page (HTTP " + response.status + ").");
+      let html = await response.text();
+
+      const start = html.indexOf("startGemini:async");
+      const end = html.indexOf("consolidateMemories:async", start);
+      if (start < 0 || end < 0) throw new Error("The MYRAA native voice bridge has changed; the live patch was not applied.");
+
+      html = html.slice(0, start) + String.raw\`startGemini:async({systemInstruction,tools}={})=>{liveStarted=true;return window.MYRAA_LIVE_TRANSPORT.start({systemInstruction,tools,emit})},
+ stopGemini:async()=>{liveStarted=false;return window.MYRAA_LIVE_TRANSPORT.stop()},
+ sendGeminiText:async({text}={})=>window.MYRAA_LIVE_TRANSPORT.sendText({text,emit}),
+ sendGeminiAudio:async({base64}={})=>window.MYRAA_LIVE_TRANSPORT.sendAudio({base64}),
+ sendGeminiVideo:async({base64}={})=>window.MYRAA_LIVE_TRANSPORT.sendVideo({base64}),
+ sendToolResponse:async(payload={})=>window.MYRAA_LIVE_TRANSPORT.sendToolResponse(payload),
+ \` + html.slice(end);
+
+      const replacements = [
+        [
+          'const t=e?this.initializeMicrophone():Promise.resolve(),a=sn.startGemini({systemInstruction:bx(),tools:Sx});await Promise.all([t,a])',
+          'const a=sn.startGemini({systemInstruction:bx(),tools:Sx});await a;if(e&&!window.MYRAA_LIVE_TRANSPORT?.isFallback())await this.initializeMicrophone()'
+        ],
+        [
+          'case"status":if(e.status==="connected"){this.clearConnectionTimer(),this.setState("listening");for(const t of this.pendingText.splice(0))sn.sendGeminiText({text:t})}break;case"audio":e.audio&&this.playAudio(e.audio);break;case"interrupted":',
+          'case"status":if(e.status==="connected"){this.clearConnectionTimer(),this.setState("listening");for(const t of this.pendingText.splice(0))sn.sendGeminiText({text:t})}else if(e.status==="fallback"||e.status==="fallback_text_only"){this.clearConnectionTimer(),this.setState("fallback")}else if(e.status==="reconnecting"){this.setState("connecting")}else if(e.status==="disconnected"){this.setState("disconnected")}break;case"audio":e.audio&&this.playAudio(e.audio);break;case"fallbackAudio":if(e.url){this.stopSpeaking();this.setState("speaking");const a=new Audio(e.url);this.fallbackAudio=a;a.onended=()=>{URL.revokeObjectURL(e.url);this.fallbackAudio=null;this.setState("listening")};a.onerror=()=>{URL.revokeObjectURL(e.url);this.fallbackAudio=null;this.setState("fallback")};a.play().catch(()=>this.setState("fallback"))}break;case"interrupted":'
+        ],
+        [
+          'stopSpeaking(){for(const e of this.activeSources)try{e.stop()}catch{}this.activeSources.clear(),this.nextStartTime=0}',
+          'stopSpeaking(){if(this.fallbackAudio){try{this.fallbackAudio.pause();URL.revokeObjectURL(this.fallbackAudio.src)}catch{}this.fallbackAudio=null}for(const e of this.activeSources)try{e.stop()}catch{}this.activeSources.clear(),this.nextStartTime=0}'
+        ],
+        [
+          '},18e3);try{this.listener=await sn.addListener',
+          '},45000);try{this.listener=await sn.addListener'
+        ]
+      ];
+      for (const [before, after] of replacements) {
+        if (!html.includes(before)) throw new Error("A required MYRAA integration point was not found. No patched page was loaded.");
+        html = html.replace(before, after);
+      }
+
+      const micMarker = 'createScriptProcessor(2048,1,1)';
+      if (html.includes(micMarker)) html = html.replace(micMarker, 'createScriptProcessor(1024,1,1)');
+
+      if (!html.includes("</head>")) throw new Error("The MYRAA document head could not be located.");
+      html = html.replace("</head>", '<script src="./js/myraa-live-transport.js"></script></head>');
+
+      document.open();
+      document.write(html);
+      document.close();
+    } catch (error) {
+      fail(String(error && error.message || error));
+    }
+  })();
+  </script>
+</body>
+</html>
