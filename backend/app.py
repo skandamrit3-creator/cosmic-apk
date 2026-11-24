@@ -558,7 +558,7 @@ if __name__ == "__main__":
 def cosmic_live_token():
     """Provision a short-lived Gemini Live token; never expose the account's long-lived key."""
     data = request.get_json(silent=True) or {}
-    model = str(data.get("model", "gemini-2.5-flash-native-audio-preview-12-2025"))
+    model = str(data.get("model", os.getenv("COSMIC_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025"))).strip()
     allowed = {"gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.8-live"}
     if model not in allowed:
         return jsonify(success=False, error="Unsupported Live model."), 400
@@ -568,13 +568,13 @@ def cosmic_live_token():
         if not key:
             return jsonify(success=False, error="Save a Gemini API key first."), 503
         import requests
-        payload = {"uses": 1, "liveConnectConstraints": {"model": "models/" + model, "config": {"responseModalities": ["AUDIO"], "sessionResumption": {}}}}
+        payload = {"uses": 1, "liveConnectConstraints": {"model": "models/" + model, "config": {"responseModalities": ["AUDIO"], "sessionResumption": {}, "inputAudioTranscription": {}, "outputAudioTranscription": {}, "speechConfig": {"voiceConfig": {"prebuiltVoiceConfig": {"voiceName": os.getenv("COSMIC_LIVE_VOICE", "Aoede")}}}}}}
         resp = requests.post("https://generativelanguage.googleapis.com/v1beta/auth_tokens", headers={"x-goog-api-key": key, "Content-Type": "application/json"}, json=payload, timeout=20)
         if not resp.ok:
             return jsonify(success=False, error="Live token provisioning failed (HTTP " + str(resp.status_code) + ")."), 502
         token = resp.json().get("name")
         if not token:
             return jsonify(success=False, error="Live token provider returned no token."), 502
-        return jsonify(success=True, token=token, model=model, expires=resp.json().get("expireTime"))
+        return jsonify(success=True, token=token, model=model, expires=resp.json().get("expireTime"), sessionConfig={"responseModalities": ["AUDIO"], "voice": os.getenv("COSMIC_LIVE_VOICE", "Aoede"), "inputAudioTranscription": True, "outputAudioTranscription": True})
     except Exception as exc:
         return jsonify(success=False, error="Live token request failed: " + str(exc)[:160]), 502
