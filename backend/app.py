@@ -38,6 +38,9 @@ def frontend_index():
     if "provider-keys-settings.js" not in html:
         marker = "</body>"
         html = html.replace(marker, script + marker, 1) if marker in html else html + script
+    vva_script = '<script src="/js/cosmic-vva.js?v=1" defer></script>'
+    if "cosmic-vva.js" not in html:
+        html = html.replace("</body>", vva_script + "</body>", 1)
     response = Response(html, mimetype="text/html")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
