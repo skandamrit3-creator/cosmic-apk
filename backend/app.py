@@ -564,8 +564,6 @@ def error_handler(error):
     }), 500
 
 
-if __name__ == "__main__":
-    socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
 
 @app.post("/api/assistant/live-token")
 @app.post("/api/live/token")
@@ -594,6 +592,9 @@ def cosmic_live_token():
     except Exception as exc:
         return jsonify(success=False, error="Live token request failed: " + str(exc)[:160]), 502
 
+
+if __name__ == "__main__":
+    socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
 
 if __name__ == "__main__":
     socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
