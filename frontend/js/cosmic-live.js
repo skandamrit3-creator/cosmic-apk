@@ -24,8 +24,8 @@ async function startMic(){
  if(audioCtx.audioWorklet?.addModule){
   const workletCode=[
    "class CosmicMicProcessor extends AudioWorkletProcessor {",
-   "constructor(){super();this.phase=0;this.chunk=new Float32Array(1600);this.index=0;}",
-   "process(inputs,outputs){const input=inputs[0]&&inputs[0][0];const output=outputs[0]&&outputs[0][0];if(output)output.fill(0);if(!input)return true;let energy=0;for(let i=0;i<input.length;i++){const v=input[i];energy+=v*v;this.phase+=16000;if(this.phase>=sampleRate){this.phase-=sampleRate;this.chunk[this.index++]=v;if(this.index===1600){const frame=this.chunk;this.port.postMessage({pcm:frame},[frame.buffer]);this.chunk=new Float32Array(1600);this.index=0;}}}this.port.postMessage({level:Math.sqrt(energy/input.length)});return true;}}",
+   "constructor(){super();this.phase=0;this.chunk=new Float32Array(1600);this.index=0;this.chunkEnergy=0;}",
+   "process(inputs,outputs){const input=inputs[0]&&inputs[0][0];const output=outputs[0]&&outputs[0][0];if(output)output.fill(0);if(!input)return true;for(let i=0;i<input.length;i++){const v=input[i];this.phase+=16000;if(this.phase>=sampleRate){this.phase-=sampleRate;this.chunk[this.index++]=v;this.chunkEnergy+=v*v;if(this.index===1600){const frame=this.chunk;const level=Math.sqrt(this.chunkEnergy/1600);this.port.postMessage({pcm:frame,level},[frame.buffer]);this.chunk=new Float32Array(1600);this.index=0;this.chunkEnergy=0;}}}return true;}}",
    "registerProcessor('cosmic-mic-processor',CosmicMicProcessor);"
   ].join("");
   workletUrl=URL.createObjectURL(new Blob([workletCode],{type:"text/javascript"}));
