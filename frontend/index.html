@@ -502,6 +502,13 @@ renderDevices();renderAuto();renderSessions();renderPlaylist();renderNotes();dra
 <!-- COSMIC VVA / MYRAA integration -->
 <style id="cosmic-vva-launcher-style">#cosmic-vva-launcher{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:2147483000;border:1px solid rgba(135,95,255,.65);background:linear-gradient(135deg,#25115d,#6735b9);color:white;padding:13px 18px;border-radius:999px;font:600 14px system-ui;box-shadow:0 8px 28px #5b2bc755;cursor:pointer}#cosmic-vva-overlay{display:none;position:fixed;inset:0;z-index:2147483001;background:#03020a}#cosmic-vva-overlay.open{display:block}#cosmic-vva-frame{width:100%;height:100%;border:0;background:#03020a}#cosmic-vva-close{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:3;background:#24164c;color:#fff;border:1px solid #a78bfa;border-radius:50%;width:44px;height:44px;font-size:24px;cursor:pointer}</style>
 <button id="cosmic-vva-launcher" type="button" aria-label="Open COSMIC Virtual Voice Assistant">MYRAA · VVA</button>
-<div id="cosmic-vva-overlay" aria-hidden="true"><button id="cosmic-vva-close" aria-label="Close VVA">×</button><iframe id="cosmic-vva-frame" title="MYRAA Virtual Voice Assistant" src="/frontend/MYRAA_Ultra_Fast.html" allow="microphone; camera; autoplay; display-capture"></iframe></div>
+<div id="cosmic-vva-overlay" aria-hidden="true"><button id="cosmic-vva-close" aria-label="Close VVA">×</button><iframe id="cosmic-vva-frame" title="MYRAA Virtual Voice Assistant" src="/myraa" allow="microphone; camera; autoplay; display-capture"></iframe></div>
 <script id="cosmic-vva-launcher-script">(function(){const b=document.getElementById('cosmic-vva-launcher'),o=document.getElementById('cosmic-vva-overlay'),c=document.getElementById('cosmic-vva-close');if(!b||!o||!c)return;function open(){o.classList.add('open');o.setAttribute('aria-hidden','false')}function close(){o.classList.remove('open');o.setAttribute('aria-hidden','true')}b.addEventListener('click',open);c.addEventListener('click',close);document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});})();</script>
+<script src="/js/cosmic-enhancements.js?v=1" defer></script>
+<script src="/js/cosmic-live.js?v=6" defer></script>
+<script src="/js/cosmic-device-vision.js?v=1" defer></script>
+<script src="/js/cosmic-live-2d.js?v=2" defer></script>
+<script src="/js/provider-keys-settings.js?v=1" defer></script>
+<script src="/js/cosmic-vva.js?v=1" defer></script>
+<script src="/js/myraa-integration.js?v=1" defer></script>
 </body></html>
