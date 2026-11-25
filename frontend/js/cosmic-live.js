@@ -2,7 +2,7 @@
 "use strict";
 if (window.COSMIC_LIVE && window.COSMIC_LIVE.version === "3.0.0") return;
 const API_BASE = () => String(window.COSMIC_API_BASE || location.origin).replace(/\/+$/, "");
-const MODEL = window.COSMIC_LIVE_MODEL || "gemini-3.1-flash-live-preview";
+const MODEL = window.COSMIC_LIVE_MODEL || "gemini-3.8-live";
 const VOICE = window.COSMIC_LIVE_VOICE || "Aoede";
 const TARGET_RATE = 16000, CHUNK_SAMPLES = 1600;
 let ws=null,stream=null,audioCtx=null,outputAnalyser=null,micSource=null,micNode=null,micGain=null,state="idle",queue=[],nextTime=0,workletUrl=null,fallbackBuffer=[],shuttingDown=false,setupTimer=null,lastOutputText="";
@@ -14,7 +14,7 @@ function b64(buffer){const u=new Uint8Array(buffer);let s="";for(let i=0;i<u.len
 function pcm16(f){const a=new Int16Array(f.length);for(let i=0;i<f.length;i++){const v=Math.max(-1,Math.min(1,f[i]));a[i]=v<0?v*32768:v*32767}return a}
 function rms(a){let s=0;for(let i=0;i<a.length;i++)s+=a[i]*a[i];return Math.sqrt(s/Math.max(1,a.length))}
 function resample(a,from,to){if(from===to)return a;const ratio=from/to,n=Math.floor(a.length/ratio),o=new Float32Array(n);for(let i=0;i<n;i++){const p=i*ratio,l=Math.floor(p),r=Math.min(l+1,a.length-1),f=p-l;o[i]=a[l]*(1-f)+a[r]*f}return o}
-function sendPcm(samples){if(!ws||ws.readyState!==WebSocket.OPEN||!samples?.length||ws.bufferedAmount>512000)return;const p=pcm16(samples);ws.send(JSON.stringify({realtimeInput:{audio:{mimeType:"audio/pcm;rate=16000",data:b64(p.buffer)}}}))}
+function sendPcm(samples){if(state!=="connected"||!ws||ws.readyState!==WebSocket.OPEN||!samples?.length||ws.bufferedAmount>512000)return;const p=pcm16(samples);ws.send(JSON.stringify({realtimeInput:{audio:{mimeType:"audio/pcm;rate=16000",data:b64(p.buffer)}}}))}
 function clearPlayback(){queue.forEach(n=>{try{n.stop(0)}catch(_){}});queue=[];nextTime=audioCtx?audioCtx.currentTime:0}
 function playChunk(encoded,mime){if(!audioCtx||!encoded)return;const raw=atob(encoded),bytes=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);const len=bytes.length-bytes.length%2;if(!len)return;const view=new DataView(bytes.buffer,bytes.byteOffset,len),samples=new Float32Array(len/2);for(let i=0;i<samples.length;i++)samples[i]=view.getInt16(i*2,true)/32768;const m=String(mime||"").match(/rate=(\d+)/i),rate=m?Number(m[1]):24000,level=rms(samples);emit("cosmic:live-audio-level",{level:Math.min(1,level*5),rms:level,sampleRate:rate});const b=audioCtx.createBuffer(1,samples.length,rate);b.copyToChannel(samples,0);const n=audioCtx.createBufferSource();n.buffer=b;n.connect(outputAnalyser||audioCtx.destination);const t=Math.max(audioCtx.currentTime+.012,nextTime);n.start(t);nextTime=t+b.duration;queue.push(n);n.onended=()=>{queue=queue.filter(x=>x!==n);if(queue.length===0)emit("cosmic:live-playback-ended",{})}}
 function stopMic(){try{micNode?.disconnect()}catch(_){}try{micSource?.disconnect()}catch(_){}try{micGain?.disconnect()}catch(_){}micNode=micSource=micGain=null;stream?.getTracks().forEach(t=>t.stop());stream=null;if(workletUrl){URL.revokeObjectURL(workletUrl);workletUrl=null}fallbackBuffer=[]}
