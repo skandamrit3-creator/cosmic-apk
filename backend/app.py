@@ -579,7 +579,7 @@ def error_handler(error):
 def cosmic_live_token():
     """Provision a short-lived Gemini Live token; never expose the account's long-lived key."""
     data = request.get_json(silent=True) or {}
-    model = str(data.get("model", os.getenv("COSMIC_LIVE_MODEL", "gemini-3.1-flash-live-preview"))).strip()
+    model = str(data.get("model", os.getenv("COSMIC_LIVE_MODEL", "gemini-3.8-live"))).strip()
     allowed = {"gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.1-flash-live-preview", "gemini-3.8-live"}
     if model not in allowed:
         return jsonify(success=False, error="Unsupported Live model."), 400
