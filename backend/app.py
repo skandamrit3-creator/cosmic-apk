@@ -7,7 +7,7 @@ from backend.core.kernel.kernel import process_message
 from backend.config import APP_NAME, APP_VERSION, HOST, PORT
 from backend.integrations.tripo import TripoService, TripoError
 from backend.platform_api import require_account
-import os, platform, time
+import os, platform, time, re
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -24,9 +24,12 @@ def frontend_index():
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
     extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
-    live_script = '<script src="/js/cosmic-live.js?v=4" defer></script>'
+    live_script = '<script src="/js/cosmic-live.js?v=5" defer></script>'
     device_script = '<script src="/js/cosmic-device-vision.js?v=1" defer></script>'
-    avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=1" defer></script>'
+    avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=2" defer></script>'
+    # Drop stale Live/avatar script tags before injecting the current versions.
+    html = re.sub(r"<script[^>]*src=[\"'][^\"']*cosmic-live\.js(?:\?[^\"']*)?[\"'][^>]*>\s*</script>", "", html, flags=re.I)
+    html = re.sub(r"<script[^>]*src=[\"'][^\"']*cosmic-live-2d\.js(?:\?[^\"']*)?[\"'][^>]*>\s*</script>", "", html, flags=re.I)
     if "cosmic-enhancements.js" not in html:
         html = html.replace("</body>", extra + "</body>", 1)
     if "cosmic-live.js" not in html:
@@ -52,7 +55,7 @@ def frontend_index():
 def myraa_page():
     """Serve the original MYRAA document with a non-destructive Live event bridge."""
     html = (FRONTEND_DIR / "MYRAA_Ultra_Fast.html").read_text(encoding="utf-8")
-    bridge = '<script src="/js/myraa-live-bridge.js?v=1" defer></script>'
+    bridge = '<script src="/js/myraa-live-bridge.js?v=2" defer></script>'
     if "myraa-live-bridge.js" not in html:
         html = html.replace("</body>", bridge + "</body>", 1) if "</body>" in html else html + bridge
     response = Response(html, mimetype="text/html")
