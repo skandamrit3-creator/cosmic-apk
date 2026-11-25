@@ -55,6 +55,11 @@ def frontend_index():
 def myraa_page():
     """Serve the original MYRAA document with a non-destructive Live event bridge."""
     html = (FRONTEND_DIR / "MYRAA_Ultra_Fast.html").read_text(encoding="utf-8")
+    # Bind Gemini Live directly to the original character renderer setFrameInput API.
+    renderer_marker = 'te.useEffect(()=>{m.current?.setFrameInput({activity:e,emotion:t,outputAnalyser:a,inputAnalyser:r})},[e,t,a,r]),'
+    renderer_hook = 'te.useEffect(()=>{const w=R=>{const D=R.detail||{};m.current?.setFrameInput({activity:D.activity||"idle",emotion:D.emotion||"idle",outputAnalyser:D.outputAnalyser||null,inputAnalyser:null})};window.addEventListener("cosmic:myraa-frame-input",w);return()=>window.removeEventListener("cosmic:myraa-frame-input",w)},[]),'
+    if renderer_marker in html and "cosmic:myraa-frame-input" not in html:
+        html = html.replace(renderer_marker, renderer_marker + renderer_hook, 1)
     bridge = '<script src="/js/myraa-live-bridge.js?v=2" defer></script>'
     if "myraa-live-bridge.js" not in html:
         html = html.replace("</body>", bridge + "</body>", 1) if "</body>" in html else html + bridge
