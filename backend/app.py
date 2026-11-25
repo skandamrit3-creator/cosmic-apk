@@ -24,7 +24,7 @@ def frontend_index():
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
     extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
-    live_script = '<script src="/js/cosmic-live.js?v=5" defer></script>'
+    live_script = '<script src="/js/cosmic-live.js?v=6" defer></script>'
     device_script = '<script src="/js/cosmic-device-vision.js?v=1" defer></script>'
     avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=2" defer></script>'
     # Drop stale Live/avatar script tags before injecting the current versions.
@@ -60,7 +60,7 @@ def myraa_page():
     renderer_hook = 'te.useEffect(()=>{const w=R=>{const D=R.detail||{};m.current?.setFrameInput({activity:D.activity||"idle",emotion:D.emotion||"idle",outputAnalyser:D.outputAnalyser||null,inputAnalyser:null})};window.addEventListener("cosmic:myraa-frame-input",w);return()=>window.removeEventListener("cosmic:myraa-frame-input",w)},[]),'
     if renderer_marker in html and "cosmic:myraa-frame-input" not in html:
         html = html.replace(renderer_marker, renderer_marker + renderer_hook, 1)
-    bridge = '<script src="/js/myraa-live-bridge.js?v=2" defer></script>'
+    bridge = '<script src="/js/myraa-live-bridge.js?v=3" defer></script>'
     if "myraa-live-bridge.js" not in html:
         html = html.replace("</body>", bridge + "</body>", 1) if "</body>" in html else html + bridge
     response = Response(html, mimetype="text/html")
