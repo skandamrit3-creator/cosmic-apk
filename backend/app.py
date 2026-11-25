@@ -41,9 +41,17 @@ def frontend_index():
     vva_script = '<script src="/js/cosmic-vva.js?v=1" defer></script>'
     if "cosmic-vva.js" not in html:
         html = html.replace("</body>", vva_script + "</body>", 1)
+    myraa_script = '<script src="/js/myraa-integration.js?v=1" defer></script>'
+    if "myraa-integration.js" not in html:
+        html = html.replace("</body>", myraa_script + "</body>", 1)
     response = Response(html, mimetype="text/html")
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
+@app.get("/myraa")
+def myraa_page():
+    """Serve the original MYRAA HTML as-is, on the same origin as COSMIC."""
+    return send_from_directory(FRONTEND_DIR, "MYRAA_Ultra_Fast.html")
 
 @app.get("/frontend/<path:filename>")
 def frontend_files(filename):
