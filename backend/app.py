@@ -561,6 +561,7 @@ def error_handler(error):
 if __name__ == "__main__":
     socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
 
+@app.post("/api/assistant/live-token")
 @app.post("/api/live/token")
 @require_account
 def cosmic_live_token():
