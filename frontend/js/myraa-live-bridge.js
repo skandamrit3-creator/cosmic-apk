@@ -4,6 +4,7 @@ if (window.COSMIC_MYRAA_LIVE_BRIDGE) return;
 const root = document.documentElement;
 let mouthAnimations = [];
 let lastExpression = "neutral";
+let liveOutputAnalyser = null;
 function expressionFrom(text) {
   const s = String(text || "").toLowerCase();
   if (/\b(love|great|excellent|wonderful|happy|glad|congratulations|awesome|yes!)\b/.test(s)) return "happy";
@@ -95,12 +96,13 @@ function avatarEmotion(value) {
 window.addEventListener("cosmic:live-audio-level", event => {
   const detail = event.detail || {};
   root.dataset.cosmicMyraaState = "speaking";
-  frameInput("talking", avatarEmotion(lastExpression), detail.outputAnalyser);
+  liveOutputAnalyser = detail.outputAnalyser || liveOutputAnalyser;
+  frameInput("talking", avatarEmotion(lastExpression), liveOutputAnalyser);
   animateMouth(detail.level);
 });
 window.addEventListener("cosmic:live-output", event => {
   setExpression(expressionFrom(event.detail?.text));
-  frameInput("talking", avatarEmotion(lastExpression), null);
+  frameInput("talking", avatarEmotion(lastExpression), liveOutputAnalyser);
 });
 window.addEventListener("cosmic:live-text", event => {
   setExpression(expressionFrom(event.detail?.text));
@@ -113,6 +115,7 @@ window.addEventListener("cosmic:live-input", () => {
 window.addEventListener("cosmic:live-ready", () => frameInput("listening", "idle", null));
 window.addEventListener("cosmic:live-playback-ended", () => {
   root.dataset.cosmicMyraaState = "listening";
+  liveOutputAnalyser = null;
   frameInput("listening", "idle", null);
   animateMouth(0);
 });
@@ -123,6 +126,7 @@ window.addEventListener("cosmic:live-interrupted", () => {
 });
 window.addEventListener("cosmic:live-ended", () => {
   root.dataset.cosmicMyraaState = "idle";
+  liveOutputAnalyser = null;
   frameInput("idle", "idle", null);
   animateMouth(0);
 });
