@@ -84,6 +84,52 @@ function receive(event) {
   }
 }
 window.addEventListener("message", receive);
+function frameInput(activity, emotion="idle", analyser=null) {
+  window.dispatchEvent(new CustomEvent("cosmic:myraa-frame-input", {
+    detail: { activity, emotion, outputAnalyser: analyser || null }
+  }));
+}
+function avatarEmotion(value) {
+  return ({ neutral:"idle", concerned:"sad", happy:"happy", curious:"curious", thinking:"thinking" })[value] || "idle";
+}
+window.addEventListener("cosmic:live-audio-level", event => {
+  const detail = event.detail || {};
+  root.dataset.cosmicMyraaState = "speaking";
+  frameInput("talking", avatarEmotion(lastExpression), detail.outputAnalyser);
+  animateMouth(detail.level);
+});
+window.addEventListener("cosmic:live-output", event => {
+  setExpression(expressionFrom(event.detail?.text));
+  frameInput("talking", avatarEmotion(lastExpression), null);
+});
+window.addEventListener("cosmic:live-text", event => {
+  setExpression(expressionFrom(event.detail?.text));
+  frameInput("talking", avatarEmotion(lastExpression), null);
+});
+window.addEventListener("cosmic:live-input", () => {
+  root.dataset.cosmicMyraaState = "listening";
+  frameInput("listening", "curious", null);
+});
+window.addEventListener("cosmic:live-ready", () => frameInput("listening", "idle", null));
+window.addEventListener("cosmic:live-playback-ended", () => {
+  root.dataset.cosmicMyraaState = "listening";
+  frameInput("listening", "idle", null);
+  animateMouth(0);
+});
+window.addEventListener("cosmic:live-interrupted", () => {
+  root.dataset.cosmicMyraaState = "listening";
+  frameInput("listening", "idle", null);
+  animateMouth(0);
+});
+window.addEventListener("cosmic:live-ended", () => {
+  root.dataset.cosmicMyraaState = "idle";
+  frameInput("idle", "idle", null);
+  animateMouth(0);
+});
+window.addEventListener("cosmic:live-state", event => {
+  const state = event.detail?.state || "idle";
+  frameInput(state === "connected" ? "listening" : "idle", "idle", null);
+});
 window.COSMIC_MYRAA_LIVE_BRIDGE = Object.freeze({
   version: "1.0.0",
   setExpression,
