@@ -12,8 +12,19 @@ function expressionFrom(text) {
   if (/\b(think|consider|analy[sz]e|perhaps|maybe|let me)\b/.test(s)) return "thinking";
   return "neutral";
 }
+function invokeAvatar(methods, ...args) {
+  const targets = [window.MYRAA, window.myraa, window.myraaAvatar, window.myraaController, window.avatarController, window.avatar];
+  for (const target of targets) {
+    if (!target) continue;
+    for (const method of methods) {
+      try { if (typeof target[method] === "function") { target[method](...args); return true; } } catch (_) {}
+    }
+  }
+  return false;
+}
 function setExpression(value) {
   lastExpression = value || "neutral";
+  invokeAvatar(["setExpression","setEmotion","setMood","changeExpression"], lastExpression);
   root.dataset.cosmicMyraaExpression = lastExpression;
   root.classList.remove("cosmic-myraa-happy","cosmic-myraa-concerned","cosmic-myraa-curious","cosmic-myraa-thinking","cosmic-myraa-neutral");
   root.classList.add("cosmic-myraa-" + lastExpression);
@@ -41,6 +52,8 @@ function animateMouth(level) {
     } catch (_) {}
   }
   root.dataset.cosmicMyraaMouth = amount.toFixed(3);
+  invokeAvatar(["setMouthOpen","setMouthOpenness","setVoiceLevel","setAudioLevel","updateLipSync"], amount);
+  invokeAvatar(["setSpeaking"], amount > 0.035);
   window.dispatchEvent(new CustomEvent("cosmic:myraa-mouth", { detail: { level: amount, nodes: nodes.length } }));
 }
 function receive(event) {
@@ -56,13 +69,18 @@ function receive(event) {
     setExpression(expressionFrom(detail.text));
   } else if (data.event === "cosmic:live-input") {
     root.dataset.cosmicMyraaState = "listening";
+    invokeAvatar(["setListening"], true);
+    invokeAvatar(["setSpeaking"], false);
     setExpression("curious");
   } else if (data.event === "cosmic:live-interrupted" || data.event === "cosmic:live-ended" || data.event === "cosmic:live-playback-ended") {
     root.dataset.cosmicMyraaState = "idle";
+    invokeAvatar(["setListening"], false);
+    invokeAvatar(["setSpeaking"], false);
     animateMouth(0);
     setExpression("neutral");
   } else if (data.event === "cosmic:live-state") {
     root.dataset.cosmicMyraaState = detail.state || "idle";
+    invokeAvatar(["setState","setStatus"], detail.state || "idle");
   }
 }
 window.addEventListener("message", receive);
