@@ -24,7 +24,7 @@ def frontend_index():
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
     extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
-    live_script = '<script src="/js/cosmic-live.js?v=1" defer></script>'
+    live_script = '<script src="/js/cosmic-live.js?v=2" defer></script>'
     device_script = '<script src="/js/cosmic-device-vision.js?v=1" defer></script>'
     avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=1" defer></script>'
     if "cosmic-enhancements.js" not in html:
