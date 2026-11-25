@@ -24,7 +24,7 @@ def frontend_index():
     html = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
     script = '<script src="/js/provider-keys-settings.js?v=1" defer></script>'
     extra = '<script src="/js/cosmic-enhancements.js?v=1" defer></script>'
-    live_script = '<script src="/js/cosmic-live.js?v=3" defer></script>'
+    live_script = '<script src="/js/cosmic-live.js?v=4" defer></script>'
     device_script = '<script src="/js/cosmic-device-vision.js?v=1" defer></script>'
     avatar2d_script = '<script src="/js/cosmic-live-2d.js?v=1" defer></script>'
     if "cosmic-enhancements.js" not in html:
@@ -50,8 +50,14 @@ def frontend_index():
 
 @app.get("/myraa")
 def myraa_page():
-    """Serve the original MYRAA HTML as-is, on the same origin as COSMIC."""
-    return send_from_directory(FRONTEND_DIR, "MYRAA_Ultra_Fast.html")
+    """Serve the original MYRAA document with a non-destructive Live event bridge."""
+    html = (FRONTEND_DIR / "MYRAA_Ultra_Fast.html").read_text(encoding="utf-8")
+    bridge = '<script src="/js/myraa-live-bridge.js?v=1" defer></script>'
+    if "myraa-live-bridge.js" not in html:
+        html = html.replace("</body>", bridge + "</body>", 1) if "</body>" in html else html + bridge
+    response = Response(html, mimetype="text/html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
 
 @app.get("/frontend/<path:filename>")
 def frontend_files(filename):
@@ -567,8 +573,8 @@ if __name__ == "__main__":
 def cosmic_live_token():
     """Provision a short-lived Gemini Live token; never expose the account's long-lived key."""
     data = request.get_json(silent=True) or {}
-    model = str(data.get("model", os.getenv("COSMIC_LIVE_MODEL", "gemini-2.5-flash-native-audio-preview-12-2025"))).strip()
-    allowed = {"gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.8-live"}
+    model = str(data.get("model", os.getenv("COSMIC_LIVE_MODEL", "gemini-3.1-flash-live-preview"))).strip()
+    allowed = {"gemini-2.5-flash-native-audio-preview-12-2025", "gemini-3.1-flash-live-preview", "gemini-3.8-live"}
     if model not in allowed:
         return jsonify(success=False, error="Unsupported Live model."), 400
     try:
@@ -587,3 +593,7 @@ def cosmic_live_token():
         return jsonify(success=True, token=token, model=model, expires=resp.json().get("expireTime"), sessionConfig={"responseModalities": ["AUDIO"], "voice": os.getenv("COSMIC_LIVE_VOICE", "Aoede"), "inputAudioTranscription": True, "outputAudioTranscription": True})
     except Exception as exc:
         return jsonify(success=False, error="Live token request failed: " + str(exc)[:160]), 502
+
+
+if __name__ == "__main__":
+    socketio.run(app, host=HOST, port=PORT, debug=False, allow_unsafe_werkzeug=True)
