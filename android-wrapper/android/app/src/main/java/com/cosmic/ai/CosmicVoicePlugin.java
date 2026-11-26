@@ -181,6 +181,47 @@ public class CosmicVoicePlugin extends Plugin {
         } catch (Exception e) { call.reject("Could not open app settings: " + e.getMessage()); }
     }
 
+    @PluginMethod
+    public void startBackgroundMode(PluginCall call) {
+        if (getPermissionState("microphone") != PermissionState.GRANTED) {
+            requestPermissionForAlias("microphone", call, "startBackgroundMicPermission");
+            return;
+        }
+        startWakeWordService(call);
+    }
+
+    @PermissionCallback
+    private void startBackgroundMicPermission(PluginCall call) {
+        if (getPermissionState("microphone") == PermissionState.GRANTED) startWakeWordService(call);
+        else call.reject("Microphone permission denied");
+    }
+
+    private void startWakeWordService(PluginCall call) {
+        String phrase = call.getString("wakePhrase", "hey myraa");
+        Intent service = new Intent(getContext(), CosmicWakeWordService.class);
+        service.setAction(CosmicWakeWordService.ACTION_START);
+        service.putExtra(CosmicWakeWordService.EXTRA_PHRASE, phrase);
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26) getContext().startForegroundService(service);
+            else getContext().startService(service);
+            call.resolve(new JSObject().put("success", true).put("wakePhrase", phrase));
+        } catch (Exception e) {
+            call.reject("Could not start foreground wake-word service: " + e.getMessage());
+        }
+    }
+
+    @PluginMethod
+    public void stopBackgroundMode(PluginCall call) {
+        Intent service = new Intent(getContext(), CosmicWakeWordService.class);
+        service.setAction(CosmicWakeWordService.ACTION_STOP);
+        try {
+            getContext().startService(service);
+            call.resolve(new JSObject().put("success", true));
+        } catch (Exception e) {
+            call.reject("Could not stop wake-word service: " + e.getMessage());
+        }
+    }
+
     @Override
     protected void handleOnDestroy() {
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
