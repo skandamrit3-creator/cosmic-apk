@@ -3,6 +3,8 @@ package com.cosmic.ai;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
@@ -24,6 +26,24 @@ import java.util.*;
  strings = {Manifest.permission.RECORD_AUDIO})})
 public class CosmicVoicePlugin extends Plugin {
     private TextToSpeech tts;
+    private BroadcastReceiver wakeReceiver;
+
+    @Override public void load() {
+        super.load();
+        wakeReceiver = new BroadcastReceiver() {
+            @Override public void onReceive(Context context, Intent intent) {
+                Intent stop = new Intent(getContext(), CosmicWakeWordService.class);
+                stop.setAction(CosmicWakeWordService.ACTION_STOP);
+                try { getContext().startService(stop); } catch (Exception ignored) {}
+                JSObject data = new JSObject();
+                data.put("phrase", intent.getStringExtra("phrase"));
+                notifyListeners("wakePhraseDetected", data, true);
+            }
+        };
+        IntentFilter filter = new IntentFilter("com.cosmic.ai.WAKE_PHRASE_DETECTED");
+        if (android.os.Build.VERSION.SDK_INT >= 33) getContext().registerReceiver(wakeReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        else getContext().registerReceiver(wakeReceiver, filter);
+    }
 
     @PluginMethod
     public void listen(PluginCall call) {
@@ -224,6 +244,7 @@ public class CosmicVoicePlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
+        if (wakeReceiver != null) { try { getContext().unregisterReceiver(wakeReceiver); } catch (Exception ignored) {} wakeReceiver = null; }
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
         super.handleOnDestroy();
     }
