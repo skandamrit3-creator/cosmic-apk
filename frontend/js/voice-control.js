@@ -8,7 +8,7 @@ const locales=[
  ["Bengali","bn-IN"],["Marathi","mr-IN"],["Urdu","ur-IN"],["Kannada","kn-IN"],
  ["Malayalam","ml-IN"],["Gujarati","gu-IN"],["English (US)","en-US"]
 ];
-let listening=false,recognition=null,nativeLoop=false,loopGeneration=0;
+let listening=false,recognition=null,nativeLoop=false,loopGeneration=0,wakeEnabled=false;
 function setStatus(text){const el=document.querySelector("#sessionState");if(el)el.textContent=text;}
 function languageSelect(){
  let select=document.querySelector("#cosmicVoiceLanguage");
@@ -35,6 +35,23 @@ async function command(text){
   document.dispatchEvent(new CustomEvent("cosmic:voice-command",{detail:{text:value,handled:true}}));return;
  }
  window.COSMIC?.executeCommand?.();
+}
+function installWakeControl(){
+ if(document.getElementById("cosmicWakeToggle"))return;
+ const actions=document.querySelector(".command-actions");if(!actions)return;
+ const wake=document.createElement("button");wake.id="cosmicWakeToggle";wake.type="button";wake.className=button?.className||"";
+ wake.textContent="Enable Hey MYRAA";wake.setAttribute("aria-pressed","false");
+ wake.title="Enable user-started Android background wake phrase listening";
+ wake.addEventListener("click",async()=>{
+  const plugin=api();if(!plugin?.startBackgroundMode||!plugin?.stopBackgroundMode){setStatus("BACKGROUND WAKE UNAVAILABLE · REBUILD APK");return;}
+  wake.disabled=true;
+  try{
+   if(!wakeEnabled){await plugin.startBackgroundMode({wakePhrase:"hey myraa"});wakeEnabled=true;wake.textContent="Disable Hey MYRAA";wake.setAttribute("aria-pressed","true");setStatus("WAKE PHRASE ENABLED · ANDROID FOREGROUND SERVICE");}
+   else{await plugin.stopBackgroundMode();wakeEnabled=false;wake.textContent="Enable Hey MYRAA";wake.setAttribute("aria-pressed","false");setStatus("WAKE PHRASE DISABLED");}
+  }catch(error){setStatus("WAKE SERVICE ERROR");alert(error?.message||"Could not change background wake setting.");}
+  finally{wake.disabled=false;}
+ });
+ actions.append(wake);
 }
 function stop(){
  listening=false;nativeLoop=false;loopGeneration++;
@@ -83,6 +100,7 @@ function start(){
 if(button){
  button.addEventListener("click",event=>{event.preventDefault();if(listening)stop();else start();});
  languageSelect();
+ installWakeControl();
 }
 document.addEventListener("cosmic:reply",event=>{
  const text=String(event.detail?.text||"").trim();
@@ -104,5 +122,8 @@ document.addEventListener("cosmic:reply",event=>{
  }
 });
 window.COSMIC_VOICE={start,stop,get listening(){return listening;}};
+document.addEventListener("DOMContentLoaded",installWakeControl,{once:true});
+if(document.readyState!=="loading")installWakeControl();
+document.addEventListener("cosmic:wake-phrase-detected",()=>window.COSMIC_LIVE?.start?.());
 console.log("COSMIC multilingual voice loop ready (foreground, user-started).");
 })();
