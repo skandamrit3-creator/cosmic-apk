@@ -59,6 +59,10 @@ async function start(){
 function cleanup(closeSocket=true){clearTimeout(setupTimer);stopMic();clearPlayback();if(closeSocket&&ws){const s=ws;ws=null;try{s.close(1000,"client stopped")}catch(_){}}else ws=null;if(audioCtx){const c=audioCtx;audioCtx=null;outputAnalyser=null;try{c.close()}catch(_){}}}
 function stop(){shuttingDown=true;cleanup(true);emit("cosmic:live-ended",{});status("stopped")}
 function install(){if(document.getElementById("cosmicLiveButton"))return;const b=document.createElement("button");b.id="cosmicLiveButton";b.type="button";b.textContent="Start COSMIC AI · MYRAA Live";b.style.cssText="position:fixed;bottom:20px;right:20px;z-index:99999;border-radius:999px;padding:13px 18px;background:#6d55ff;color:white;border:0;font-weight:700;box-shadow:0 4px 18px #0005;cursor:pointer";b.addEventListener("click",start);const s=document.createElement("div");s.id="cosmicLiveStatus";s.textContent="LIVE STANDBY";s.style.cssText="position:fixed;bottom:76px;right:20px;z-index:99999;color:inherit;font:12px sans-serif;background:#0008;padding:6px 10px;border-radius:8px";document.body.append(b,s)}
-window.COSMIC_LIVE=Object.freeze({start,stop,get state(){return state},version:"3.0.0"});
+let wakeListener=null;
+function connectNativeWake(){const plugin=window.Capacitor?.Plugins?.CosmicVoice;if(!plugin?.addListener||wakeListener)return;plugin.addListener("wakePhraseDetected",()=>{if(state==="idle"||state==="stopped"||state==="disconnected")start()}).then(h=>{wakeListener=h}).catch(()=>{});}
+window.COSMIC_LIVE=Object.freeze({start,stop,get state(){return state},connectNativeWake,version:"3.0.0"});
+connectNativeWake();
+document.addEventListener("cosmic:capacitor-ready",connectNativeWake);
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
 })();
