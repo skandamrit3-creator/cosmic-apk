@@ -44,6 +44,9 @@ def frontend_index():
     vva_script = '<script src="/js/cosmic-vva.js?v=1" defer></script>'
     if "cosmic-vva.js" not in html:
         html = html.replace("</body>", vva_script + "</body>", 1)
+    smart_chat_script = '<script src="/js/cosmic-smart-chat.js?v=1" defer></script>'
+    if "cosmic-smart-chat.js" not in html:
+        html = html.replace("</body>", smart_chat_script + "</body>", 1)
     myraa_script = '<script src="/js/myraa-integration.js?v=1" defer></script>'
     if "myraa-integration.js" not in html:
         html = html.replace("</body>", myraa_script + "</body>", 1)
